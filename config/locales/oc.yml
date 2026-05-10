@@ -621,6 +621,8 @@ oc:
   identify: Identificar
   identify_observations: "Identificar las observacions"
   identify_title: "Identificar"
+  #e.g. "With iNaturalist, you can identify nature nearby"
+  identify_verb: Identificar
   identification: identificacion
   #Notification when an identification has been deleted
   identification_deleted: identificacion suprimida.
@@ -1030,7 +1032,6 @@ oc:
   rotate_left: Virar a esquèrra
   rotate_right: Virar a dreita
   row_singular_or_plural: Linha(s)
-  said: dich
   satellite: satellit
   save: Enregistrar
   save_all: Enregistrar tot
@@ -1079,6 +1080,8 @@ oc:
   status: Estat
   summary: Resumit
   taxa: Taxons
+  #As in Terms of Service, an explicit description of what iNat the extent
+  #and limitations of the service provided to users
   terms: Condicions
   terms_service: Condicions d’utilizacion
   thats_not_a_real_date: Es pas una vertadièra data !

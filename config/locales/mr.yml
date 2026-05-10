@@ -20,12 +20,6 @@ mr:
   x_identifications_:
     one: '%{count} ओळख'
     other: '%{count} ओळखी'
-  #Number of people who have added identifications
-  x_identifiers_html:
-    #Number of people who have added identifications
-    one: '<span class="count">%{count}</span> ओळखकर्ता'
-    #Number of people who have added identifications
-    other: '<span class="count">%{count}</span> ओळखकर्ता'
   x_languages:
     one: "%{count} भाषा"
     other: "%{count} भाषा"
@@ -70,9 +64,6 @@ mr:
   x_observations_reviewed_html:
     one: "<span class='count'>%{count}</span> निरीक्षण समीक्षा"
     other: "<span class='count'>%{count}</span> निरीक्षणे समीक्षा"
-  x_observers_html:
-    one: '<span class="count">%{count}</span> निरीक्षक'
-    other: '<span class="count">%{count}</span> निरीक्षक'
   x_others:
     one: "%{count} इतर"
     other: "%{count} इतर अनेक"
@@ -274,6 +265,7 @@ mr:
   add_notes_about_this_taxon: या ठिकाणी या वर्गाबद्दल टीपा जोडा, उदा. कुठे आणि केव्हा सापडते.
   add_obs_from_a_link: "सूचीमधून निरीक्षण जोडा: %{link}"
   add_obs_from_a_list: सूचीमधून निरीक्षण जोडा
+  add_observation_fields: निरीक्षणाचे वर्गीकरण जोडा
   add_observations: निरीक्षणे जोडा
   add_observations_by_checking_off: सूचीमधून प्रजाती वगळून निरीक्षणे जोडा.
   add_observations_project: या प्रकल्पामध्ये निरीक्षणे जोडा
@@ -352,6 +344,8 @@ mr:
   added_by: नी जोडलेले
   added_by_user_on_date_html: "नी जोडलेले %{user} ला %{date}"
   added_on_datetime: "ला जोडलेले %{datetime}"
+  #Message displayed after a project user changes role, e.g. they become a manager or a curator
+  added_role: प्रस्थापित केलेला हुद्दा
   added_to_favorites_html: |
     जोडलेले मध्ये <a href="%{url}">आवडीचे</a>
   adding: "जोडले जात आहे..."
@@ -459,6 +453,8 @@ mr:
   any_license: कोणतेही
   #Label for an option to show content with photos, sounds, or neither
   any_media: कोणतेही
+  #Label for an option to show any place
+  any_place: कोणतेही
   #Label for an option to show content from any project
   any_project: कोणतेही
   #Label for an option to show content with any quality grade
@@ -471,24 +467,51 @@ mr:
   anyone: कोणीही
   app_owner_application_explanation_required: |
     आपण काय तयार करू इच्छिता याचे अधिक तपशीलवार स्पष्टीकरण प्रदान करणे आवश्यक आहे.
+  app_owner_application_about_p2_html: |
+    2022 पर्यंत आम्हाला एपीआय क्लायंट बनवू इच्छिणाऱ्या वापरकर्त्यांसाठी मॅन्युअल मंजुरीची आवश्यकता आहे.
+    थर्ड पार्टी अॅप्स तयार करण्यासाठी, आपण प्रथम बनण्यासाठी एक अर्ज सबमिट करणे आवश्यक आहे
+    एक "अॅप मालक" हे अनुप्रयोग आपल्या प्रस्तावित अॅपच्या कार्यक्षमतेचे वर्णन केले पाहिजे
+    आणि आपण ते कसे वापरण्याची योजना आखत आहात. अर्ज सबमिट करण्यासाठी तुमचे खाते येथे असणे आवश्यक आहे.
+    कमीत कमी 2 महिन्यांचे आणि कमीतकमी 10 बनवलेले असणे आवश्यक आहे <a href="https://help.inaturalist.org/support/solutions/articles/151000170241"
+    target="_blank">ओळख सुधारणे</a> गेल्या महिन्यात. आम्ही पाठपुरावा विचारू शकतो
+    आपल्या योजनेबद्दल प्रश्न आणि आम्ही कोणत्याही कारणास्तव अर्ज नाकारण्याचा अधिकार राखून ठेवतो.
   apply_app_owner: लागू करा
   #Button label and section header when submitting a form to request to be a
   #curator
   apply_curator: लागू करा
   apply_to_be_an_app_owner: अॅप मालक होण्यासाठी अर्ज करा
+  arachnids: अष्टपाद
+  archives: संग्रह
   are_you_sure?: नक्की ?
   are_you_sure_no_undo: तुमचं नक्की आहे? हे पूर्ववत केले जाऊ शकत नाही.
   are_you_sure_delete_conservation_status: |
     तुम्हाला खात्री आहे की तुम्ही ही संवर्धन स्थिती हटवू इच्छिता? हा वर्ग आणि वर्गामधील निरीक्षणांची अस्पष्टता ह्यामुळे बदलू शकते.
   are_you_sure_delete_post: आपण खरंच ही टिप्पणी हटवू इच्छिता?
+  are_you_sure_delete_this_place: तुम्हाला हे ठिकाण नक्की खोडून टाकायचे आहे ना?
+  are_you_sure_leave_this_project: तुम्हाला नक्की प्रकल्प सोडायचा आहे ?
+  are_you_sure_merge_these_places: तुम्हाला हि ठिकाणे नक्की एकत्र करायची आहेत ना? ती परत विलग करता येणार नाहीत.
+  are_you_sure_remove_photo: "तुम्हाला नक्की हे छायाचित्र काढून टाकायचे आहे ना?"
+  #A confirmation message after a user initially presses the delete button for a sound to ensure they want to proceed with deletion.
+  are_you_sure_you_want_to_delete_this_sound?: तुम्हाला खात्री आहे का की तुम्हाला हा आवाज हटवायचा आहे?
+  artificially_generated_content: कृत्रिमरित्या व्युत्पन्न केलेली सामग्री
+  artificially_generated_content_desc: कृत्रिम बुद्धिमत्तेद्वारे मुख्यतः किंवा पूर्णपणे व्युत्पन्न केलेली सामग्री समाविष्ट करते.
   #Shows photo attribution along with who uploaded the photo. %
   #{attribution} will be one of the copyright.* keys, like
   #copyright.all_rights_reserved. @vow_or_con refers to %{user}
   attribution_uploaded_by_user: "%{attribution}, ने अपलोड केले %{user}"
+  birds: पक्षी
   birthday: जन्मतारीख
   block: प्रतिबंध
   blocking_description: अवरोधित केल्याने तुमचा आणि दुसर्‍या वापरकर्त्यामधील कोणताही संवाद प्रतिबंधित होतो. काही विशिष्ट परिस्थितींमध्ये, जसे की तुमच्या व्यवहारांवर कोणी पाळत ठेऊन आढळल्यास किंवा तुमच्याबरोबर कोणी गैरवर्तन करीत असल्यास, तुमची सुरक्षितता लक्षात घेता, अशा प्रकारचा प्रतिबंध लावता येऊ शकतो.
+  blue_butterfly_etc: "निळे, फुलपाखरू, इत्यादी"
+  by_everyone: सर्वांनी
+  by_user: "%{user} ने"
+  by_you: तुम्ही
   calendar: दिनदर्शिका
+  change_group: गट बदल
+  change_types:
+    change_types: बदलाचा प्रकार
+    split: विभाजन
   #Plural noun, as in changes to a taxon record over time
   changes: बदल
   check_this_box_if_html: |
@@ -503,6 +526,7 @@ mr:
   comment_unhidden: टिपण्णी न लपविलेली
   community: समुदाय
   community_guidelines: समुदाय मार्गदर्शक तत्वे
+  community_taxon_matches_observation_taxon: कम्युनिटी टॅक्सॉन निरीक्षण टॅक्सॉनशी जुळते
   #Name for the statistical model used to determine visual similarity between
   #photos and taxa
   computer_vision_model: संगणकीय दृश्य प्रतिमा
@@ -510,9 +534,24 @@ mr:
   computer_vision_model_included: समाविष्ट
   #Status of a taxon that the Computer Vision Model cannot yet recognize
   computer_vision_model_pending: प्रलंबित
+  confirming_ids: कन्फर्मिंग आयडी
+  confirming_ids_description: |
+    जर आपण हे बंद केले तर आपल्याला यापुढे सहमत असलेल्या आयडीबद्दल सूचित केले जाणार नाही
+    जोपर्यंत त्यांच्याकडे अतिरिक्त टिप्पण्या नाहीत तोपर्यंत आपल्याबरोबर.
   conservation_status_created: संवर्धन स्थिती निर्माण केली
   conservation_status_deleted: संवर्धन स्थिती हटवली
   conservation_status_updated: संवर्धन स्थिती अद्ययावत केली
+  conservation_status_descriptions:
+    iucn: |
+      समतुल्य आययूसीएन रेड लिस्ट कोड. हे वास्तविक आययूसीएन मूल्यांकन नाही,
+      फक्त आययूसीएन कोड जो समन्वय प्रकटीकरणाच्या धोक्याशी सर्वात चांगला जुळतो
+      या स्थितीद्वारे सूचित केले जाते. जर ते "कमीतकमी" असेल तर हे भूगोपनीयतेवर मात करेल
+      चिंता" किंवा खाली, म्हणून जर आपल्याला याची निरीक्षणे अस्पष्ट करायची असतील तर
+      टॅक्सन, हे "नियर थ्रेट" किंवा त्यापेक्षा जास्त सेट करा.
+  #e.g. "With iNaturalist, you can contribute to real science"
+  contribute: योगदान द्या
+  #e.g. "Contribute to iNaturalist"
+  contribute_cta: योगदान द्या
   controlled_term_labels:
     #Value displayed when a filter is not filtering by a specific value for this attribute
     any_sex: कोणताही
@@ -526,6 +565,7 @@ mr:
     any_evidence_of_presence: कोणताही
     pupa: कोष
     larva: अळी
+    #Evidence of an egg of an organism
     egg: अंडे
     evidence_of_presence: उपस्थितीचा पुरावा
     #As in the feather on a bird
@@ -559,23 +599,60 @@ mr:
     साइट क्युरेटर होण्यासाठी अर्ज करण्यासाठी तुमचे खाते ६० दिवस किंवा त्यापेक्षा अधिक काळ आस्तित्वात असणे, तुम्ही किमान ५ निशाण जोडलेले असणे आणि तुमच्यासह इतर कोणाच्याही १०० हुन अधिक निरीक्षणांमध्ये सुधारित ओळख जोडलेली असणे आवश्यक आहे.
   curator_application_you_should_apply_if_you_have_added_flags: |
     तुम्ही काही निशाण जोडून क्युरेशन प्रक्रिया समजून घेतल्याचे दर्शविलेले आहे.
+  #Label for a menu item linking to a help page aimed at curators
+  curator_guide: क्युरेटर मार्गदर्शक
+  curator_coordinate_access: क्यूरेटर कोऑर्डिनेट अॅक्सेस
+  curator_coordinate_access_desc: |
+    पारंपारिक प्रकल्पांसाठी क्युरेटर समन्वय प्रवेश कोणी जोडला यावर अवलंबून असतो
+    प्रकल्पाचे निरीक्षण. हे फक्त डिफॉल्ट सेटिंग आहे
+    प्रकल्पांमधील निरीक्षणे. पर्यवेक्षक यासाठी हे बदलणे देखील निवडू शकतात
+    वैयक्तिक निरीक्षणे[संपादन]।
+  #Text to inform the user what the current consensus is for a given specimen's identification (aka taxon)
+  current_community_id: "सध्याचे समुदाय वर्गीकरण: %{taxon}"
   #Label for a custom boundary for an observation search
   custom_boundary: स्वनिर्मित सीमारेषा
   dashboard: मुख्यपटल
+  dashboard_pilots:
+    #button asking to participate in a pilot
+    pilot_participate: "हो! मला सहभागी व्हायला आवडेल."
+    #title for a pilot asking users to help fill species gaps by identifiying needs_id observations of species not in the computer vision model
+    gaps_id_pilot_title: "आयडेंटिफिकेशन गॅप पायलट: आयडी वॉन्टेड प्रजातींची आवश्यकता"
   date_obscured_notice: वैयक्तिक किंवा सजीवाच्या गोपनीयतेच्या संरक्षणासाठी तारीख अनिश्चित ठेवली आहे
   default_display_time_zone: सर्वसाधारण दृश्यमान वेळ क्षेत्र
   default_time_zone_desc: |
     हे सर्वसाधारण वेळ क्षेत्र आहे. अंतिम वेळ क्षेत्र निरीक्षणाच्या स्थानावर आधारित जेव्हा ते जतन केले जाते त्यानुसार नियुक्त केले जाईल.
+  #Label for a button to delete a sound file
+  delete_sound: ध्वनी हटवा
   devise:
     confirmations:
       #Message a user sees when they try to manually trigger email
       #confirmation. This is a feature we'd like to use in the future.
       send_paranoid_instructions: |
         जर आपला ईमेल पत्ता आमच्या डेटाबेसमध्ये उपलब्ध असेल, तर आपल्याला काही मिनिटांतच आपल्या ईमेल पत्त्याची पुष्टी कशी करावी यासंबंधीच्या सूचनांसह एक ईमेल प्राप्त होईल.
+    failure:
+      #Error message seen when using attempting to reset a password using an invalid reset token
+      reset_password_token_invalid: रीसेट पासवर्ड टोकन अवैध आहे. कृपया नुकत्याच पाठविलेल्या रीसेट पासवर्ड ईमेलमधील दुवा वापरा, किंवा <a href="%{url}">नवीन विनंती करा</a>.
     registrations:
       updated_but_not_signed_in: "तुमचे खाते यशस्वीरित्या अपडेट केले गेले आहे, परंतु तुमचा पासवर्ड बदलला असल्याने, तुम्हाला पुन्हा साइन इन करणे आवश्यक आहे."
+  #message informing the user the must confirm their email address to interact with other users
+  devise_confirmation_instructions_please_click2: |
+    आपला ईमेल पत्ता निश्चित करण्यासाठी कृपया खालील लिंकवर क्लिक करा. आपण आपल्या ईमेलची पुष्टी न केल्यास
+    पत्ता, आपण इतर वापरकर्त्यांच्या सामग्रीशी संवाद साधू शकणार नाही.
+  #e.g. "With iNaturalist, you can discover nature nearby"
+  discover: शोधा
+  #Checkbox controlling whether to show observations that have disagreeing
+  #identifications or not
+  disagreements: मतभेद
+  #Title / tooltip for the disagreements checkbox
+  disagreements_show_observations_that: असहमत ओळख असलेली निरीक्षणे दाखवा
   #Label for a button that dismisses an alert or popup
   dismiss: बाद करा
+  documentation_for_developers_html: यासाठी दस्तऐवजीकरण <a href="/pages/developers">विकासक[संपादन]</a>
+  #Button text to donate to iNaturalist. Please try to keep translations as
+  #short as possible
+  donate: देणगी द्या
+  #Imperative verb; link to a page where a user can donate money to iNaturalist
+  donate_: देणगी देणे
   #Title for pages and sections that encourage people to donate to iNaturalist
   donate_to_inaturalist: iNaturalist ला देणगी द्या
   download_caps: डाउनलोड करा
@@ -589,15 +666,26 @@ mr:
   edit_observations: निरीक्षणात बदल करा
   edit_this_taxon_after_you_create_it_to_add_conservation_statuses: |
     हा वर्ग तयार केल्यानंतर तो संवर्धन स्थितीत जोडण्यासाठी संपादित करा
+  #Title for a page to edit an announcement
+  editing_announcement_x: संपादन घोषणा %{id}
   email: ई-मेल
   email_copyright2: "&copy; %{year} iNaturalist, सर्व हक्क राखीव"
+  #The text response for when a sound file's data (i.e. creative commons licensing information) failed to update in our database.
+  error_updating_sound: "ध्वनी अद्यतनित करण्यात त्रुटी: %{sound_errors}"
   #Description of the "Estimate IDs" tool for taxon changes. "Estimate" is a verb.
   estimate_which_input2: |
     इनपुट वर्गापैकी कोणती निरीक्षणे आऊटपुट वर्गात बदलली जातील आणि कोणती विभक्त झाल्यानंतर सामाईक पूर्वजापर्यंत सीमित केली जातील याचा अंदाज लावा. या संगणनास थोडा वेळ लागू शकतो. निरीक्षणांसाठीचे दुवे २०० च्या उपसंचांमध्ये विभागले आहेत.
   explore: सर्वेक्षण
+  evidence_accurately_depicts_organism_or_scene: पुरावा जीव किंवा दृश्य अचूकपणे दर्शवितो
+  facebook: फेसबुक
   favorites: "आवडते"
+  feedback: अभिप्राय
   #Button to show fewer places
   fewer__context_places: कमी
+  #Label for a computer file's content type. Example values: audio/mp3, image/gif
+  file_format: संचिकेचे स्वरूप
+  #Label for the URL to a file (i.e. to a sound file, image file)
+  file_url: फाईल URL
   find_a_post: पोस्ट शोधा
   find_posts_for: "याठिकाणी पोस्ट शोधा %{journal_name}"
   forum: मंच
@@ -605,8 +693,12 @@ mr:
   geomodel_expected_nearby_label_is_derived: |
     "अपेक्षित जवळपास" तर्क जिओमॉडेलवरून घेतला आहे.
     <a href="%{url}">येथे जिओमॉडेलबद्दल अधिक जाणून घ्या</a>.
+  #Label for a menu item linking to a help page about how to get started using iNaturalist
+  getting_started: प्रारंभ करणे
   grid: ओळखलेली निरीक्षणे
   guides: मार्गदर्शक
+  #A warning in a small header to a user that this sound is considered problematic to listen to by another user (i.e. it is spam, has offensive content)
+  heads_up_this_sound_has_been_flagged: "हेड्स अप: हा आवाज ध्वजांकित केला गेला आहे."
   help: मदत
   #Label showing hours adjusted in the time shifter in the Uploader
   hours_to_adjust: "समायोजित करण्याचे तासः"
@@ -621,6 +713,10 @@ mr:
     तुम्ही तुमची परवाना प्राधान्ये बदलू शकता
     <a class="linky" href="/users/edit#content">खाते सेटिंग्ज</a>.
   identify: ओळखा
+  #e.g. "With iNaturalist, you can identify nature nearby"
+  identify_verb: ओळखा
+  #e.g. "Identify using iNaturalist"
+  identify_cta: ओळखा
   identifications: ओळखलेली निरीक्षणे
   inaturalist_global_year_in_review: "iNaturalist चे जागतिक %{year} वर्षाचे पुनरावलोकन"
   #As in a reason to flag something
@@ -631,10 +727,17 @@ mr:
   #Status of a taxon that is not available for general use on iNat, e.g. an
   #output taxon in a split that hasn't been committed
   inactive_taxon_status: निष्क्रिय
+  #Title for a preference to control whether you receive notifications about
+  #infraspecies IDs, i.e. identifications of taxa below the species level,
+  #like subspecies
+  infraspecies_ids: इन्फ्रास्पिसिज आयडी
+  instagram: इन्स्टाग्राम
+  jobs: जॉब्स
   join_the_largest_group_of_naturalists_in_the_world: जगातील निसर्गशास्त्रज्ञांच्या सर्वात मोठ्या गटात सामील व्हा!
   journal: नोंदवही
   journal_posts: नोंदवहीतील नोंदी
   labels: खूण चिट्ठी
+  #e.g. "With iNaturalist, you can learn from a global community of naturalists"
   learn: जाणून घ्या
   learn_more: अधिक जाणून घ्या
   lexicons:
@@ -706,6 +809,10 @@ mr:
     mr: मराठी
     sr: सर्बियन
   log_in: लॉग इन करा
+  #Adjectival phrase describing state of being logged in
+  logged_in: लॉग इन केले
+  #Adjectival phrase describing state of being logged out
+  logged_out: लॉग आऊट केले
   #Status message shown while logging in
   logging_in: तुमचे खाते उघडत आहे
   #Name of a website showing geologic maps around the world: https://macrostrat.org
@@ -719,6 +826,8 @@ mr:
   #If a single word won't work, a symbol like "+" would be fine.
   media_and: आणि
   meet: भेटा
+  member_of_the_inaturalist_network_html: |
+    सदस्य[संपादन] <a href="%{url}">iNaturalist नेटवर्क</a>
   #title for section describing people who donate to iNat every month
   monthly_supporters: मासिक समर्थक
   more: अधिक
@@ -731,12 +840,20 @@ mr:
   #Button to show more translators, as in people who added translations
   more__context_translators_caps: अधिक
   more_caps: अधिक
+  #Label for a button or section that shows additional options
+  more_options: अधिक पर्याय
   #Imperative verb, label for a button that lets you mute another user
   mute: म्यूट करा
   muting_description: एखाद्याला म्यूट करणे तुम्हाला त्यांच्या कोणत्याही गतिविधीबद्दल सूचित होण्यापासून प्रतिबंधित करते, ज्यामध्ये "@" उल्लेख, संदेश किंवा टिप्पण्या आणि तुमच्या निरीक्षणावरील ओळख यांचा समावेश आहे.
   new_conservation_status: नवीन संवर्धन स्थिती
+  #A user who is not a curator
+  non_curator: नॉन-क्यूरेटर
+  #A user who does not admin any projects
+  non_project_admin: नॉन-प्रोजेक्ट अॅडमिन
   #Filter for observations not in a particular place
   not_in_place: याठिकाणी नाही
+  #verb, call to action, e.g. "Observe nature nearby"
+  observe: निरीक्षण करा
   #Basic observation export fields
   observation_export_column_type_basic: सामान्य
   #Geographic observation export fields
@@ -745,6 +862,7 @@ mr:
   observation_export_column_type_taxon: टॅक्सन
   #Extra taxon-related observation export fields
   observation_export_column_type_taxon_extras: टॅक्सन व्यतिरिक्त
+  observation_fields_for_projects: प्रकल्पांसाठी निरीक्षण क्षेत्रे
   observer_prefers_addition_to_traditional_projects_joined: |
     निरीक्षक इतर लोकांना त्याची निरीक्षणे फक्त अशा पारंपारिक प्रकल्पांमध्ये जोडण्याची परवानगी देतो ज्याचा तो स्वतः सदस्य आहे.
   observer_prefers_no_traditional_project_addition: |
@@ -757,6 +875,7 @@ mr:
     एक किंवा अधिक अंतर्भूत वर्ग १००० पेक्षा जास्त निरीक्षणांशी संबंधित आहेत, म्हणून निश्चिती प्रक्रियेसाठी काहीसा वेळ लागू शकतो. तुम्हाला खात्री आहे की हा वर्ग बदलला जाणे आवश्यक आहे? लक्षात ठेवा की वर्गातील बदल हे पूर्ववत केले जाऊ शकत नाहीत.
   options: पर्याय
   or: किंवा
+  our_blog: आमचा ब्लॉग
   password: परवलीचा शब्द (पासवर्ड)
   password_confirmation: 'पासवर्ड पुष्टी'
   password_change_description: तुमचा पासवर्ड बदलल्याने तुम्ही तुमच्या डिव्हाइसवरील सर्व सक्रिय iNaturalist सत्रांमधून लॉग आउट कराल
@@ -805,20 +924,50 @@ mr:
     मी माझी वैयक्तिक माहिती युनायटेड स्टेट्स ऑफ अमेरिका कडे हस्तांतरित करण्याची परवानगी देण्यास मी संमती देतो
   data_transfer_consent_child_label: |
     माझ्या मुलाची वैयक्तिक माहिती युनायटेड स्टेट्स ऑफ अमेरिका कडे हस्तांतरित करण्याची परवानगी देण्यास मी संमती देतो
+  #message describing a delay between importing a place and observations appearing in it
+  place_imported_delay: निरीक्षणे या ठिकाणाशी संबंधित होण्यास एक दिवस लागू शकतो.
   places: ठिकाणे
   places_warning_look_for_existing2_html: |
     तुम्ही डुप्लिकेट स्थान तयार करत नाही आहात ना याची खात्री करण्यासाठी <a href="/search?source[]=places">विद्यमान ठिकाणे</a> शोधा. आमच्याकडे आधीपासूनच सर्व खंड, देश आणि इतर अनेक राजकीय सीमा इत्यादी स्थाने उपलब्ध आहेत.
   places_warning_please_keep_in_mind: |
     कृपया खालील निर्बंध लक्षात ठेवा:
+  #user-facing guidance that new places cannot be too large
+  places_warning_area: |
+    जागा ७,००,००० चौरस किलोमीटरपेक्षा मोठी असू शकत नाही.
+  #user-facing guidance that new places cannot be too large, with a smaller max area
+  #when we have enable the "content-freeze" mode to reduce processing on the site
+  places_warning_area_during_content_freeze: |
+    ठिकाणे ७०,००० चौरस किलोमीटरपेक्षा मोठी असू शकत नाहीत.
+  #user-facing guidance that new places cannot contain too many observations
+  places_warning_observation_count: |
+    ठिकाणी दोन लाखांहून अधिक निरीक्षणे असू शकत नाहीत.
+  #user-facing guidance that new places cannot contain too many observations, with a lower max
+  #observat count when we have enable the "content-freeze" mode to reduce processing on the site
+  places_warning_observation_count_during_content_freeze: |
+    ठिकाणी १०,००० पेक्षा जास्त निरीक्षणे असू शकत नाहीत.
   play_first_sound: पहिला आवाज प्ले करा
   #Shows the date a journal post was published
   posted_on_date_html: पोस्ट केले रोजी %{date}
   #Shows the date a journal post was published and who published it. @vow_or_con applies to %{user}
   posted_on_date_by_user_html: पोस्ट केले रोजी %{date} द्वारे %{user}
+  powered_by_inaturalist_open_source_software_html: 'द्वारे समर्थित <a href="https://github.com/inaturalist/inaturalist" target="_new" >iNaturalist ओपन सोर्स सॉफ्टवेअर</a>'
+  press: दाबा
   privacy: गोपनीयता
   profile: प्रोफाइल
+  #A user who admin's a project
+  project_admin: प्रकल्प व्यवस्थापक
   projects: प्रकल्प
   radius_km: त्रिज्या (किमी)
+  rank_levels:
+    #Label when displaying genus level, which is the same for genus and
+    #genushybrid
+    genus: जीनस / जीनसहायब्रीड
+    #Label when displaying species level, which is the same for species and
+    #hybrid
+    species: प्रजाती / संकरित
+    #Label when displaying infraspecies level, which is the same for all the
+    #infraspecies ranks
+    subspecies: उपजाती / प्रकार / प्रकार
   #Record as a noun, as in "According to our records, you love whales"
   record_noun: नोंद
   #Label for a button to reset search parameters, as in "Reset the observation search parameters"
@@ -838,6 +987,7 @@ mr:
   show_more_login_options: अधिक लॉगिन पर्याय दाखवा
   sign_out: साइन आउट करा
   sign_up: साइन अप करा
+  sign_up_sentence_case: साइन अप करा
   #@vow_or_con should work with %{site}
   site_year_in_review: "%{site} चे %{year} पुनरावलोकनाचे वर्ष"
   site_stats: साइट आकडेवारी
@@ -850,11 +1000,26 @@ mr:
     <strong>जर आपल्या संस्थेला iNaturalist नेटवर्क मध्ये सामील होण्यास स्वारस्य असेल, 
     तर आपण अधिक तपशील इथे शोधू शकता 
     %{start_tag_join}here%{end_tag_join}.</strong>
+  sounds:
+    #The title to an uploaded sound file. Id is typically a number, and Attribution is the name of the uploader plus creative licensing information i.e. "all rights reserved"
+    sound_by_id_attribution: आवाज %{id}, %{attribution}
+    #Message that notifies a user that their sound was successfully deleted
+    sound_deleted: ध्वनी हटविला
+    #Notifies an admin/curator that they successfully censored a sound from the website
+    sound_hidden: लपलेला आवाज
+    #Notifies an admin/curator that they successfully UNcensored a sound -- the sound can now be listened to by everyone
+    sound_unhidden: न लपविलेला आवाज
   #Displayed on the taxon detail page when a conservation status is being
   #applied from a taxon that contains the current taxon
   status_applied_from_higher_level_taxon_html: |
     <strong>उच्च-स्तरीय वर्गीकरणातून लागू करण्यात आलेला संवर्धन दर्जा:</strong>%{taxon}
+  #As in a place to purchase things. We use it as a link to a place where you
+  #can buy merchandise. Please try to keep translations as short as possible
+  store: स्टोअर
   store_caps: स्टोअर
+  #Label for a button that subscribes the user to updates on a resource, e.g.
+  #comments on a journal post
+  subscribe: सदस्यता घ्या
   suspend_user_html: निलंबित %{user}
   taxa_show_obs_photo_search_tip: |
     टीप: तुम्हाला विशिष्ट निरीक्षणातून फोटो निवडायचा असल्यास शोध क्षेत्रात निरीक्षणाचा अनुक्रमांक भरा.
@@ -863,6 +1028,7 @@ mr:
     वर्ग बदल निश्चिती प्रक्रिया चालू असल्याने कदाचित काही नोंदी अद्ययावत झालेल्या नसतील हे ध्यानात घ्या.
   taxon_history_notice: वर्ग-इतिहास हा बदल फेब्रुवारी २०२२ पासून अमलात आणला गेला, त्यामुळे त्याआधीच्या तारखांसाठी वर्ग-इतिहास उपलब्ध नाही.
   teachers_guide: शिक्षकांसाठी मार्गदर्शक
+  terms_service: वापराच्या अटी
   terrain: भूभाग
   this_taxon_has_more_than_1000_alt: |
     या वर्गाशी संबंधित १००० हून अधिक निरीक्षणे आहेत, म्हणून ह्या बदल प्रक्रियेसाठी काही वेळ लागू शकतो. तुम्हाला खात्री आहे की ते आवश्यक आहेत?
@@ -988,6 +1154,12 @@ mr:
     मी <a href="/terms" target="_blank">वापराच्या अटींना</a> सहमत आहे आणि
     <a href="/privacy" target="_blank">गोपनीयता धोरण</a> आणि मी पुनरावलोकन केले आहे
     <a href="/pages/community+guidelines" target="_blank">समुदाय मार्गदर्शक तत्त्वे</a>.
+  #e.g. "With iNaturalist, you can track species you've seen worldwide"
+  track: मार्ग दुवा / मागोवा 
+  #Label for a menu item linking to a help page describing how iNaturalist Projects work
+  understanding_projects: प्रकल्प समजून घेणे
+  #Notifies a user that they were able to successfully change information about a sound file (i.e. creative licensing information)
+  updated_sound: ध्वनी अद्ययावत करणे
   upload: अपलोड करा
   user_faved_an_observation_by_you: "%{user} ला तुमचे निरीक्षण आवडले"
   user_trusts_this_project_for_none: वापरकर्त्याचा गुप्त निर्देशांकांबाबत या प्रकल्पावर विश्वास नाही.
@@ -995,24 +1167,15 @@ mr:
     कोणत्याही कारणास्तव अस्पष्ट असलेल्या गुप्त निर्देशांकांबाबत वापरकर्ता या प्रकल्पावर विश्वास ठेवतो.
   user_trusts_this_project_for_taxon: |
     वापरकर्ता केवळ धोक्यात असलेल्या वर्गांसाठी अस्पष्ट असलेल्या गुप्त निर्देशांकांबाबत या प्रकल्पावर विश्वास ठेवतो.
+  user_trusts_this_project_when_added_by_any: |
+    वापरकर्ते निरीक्षणांचे छुपे निर्देशांक जोडून प्रोजेक्ट क्युरेटर्सवर विश्वास ठेवतात
+    प्रकल्पास कोणीही मदत करतो.
+  user_trusts_this_project_when_added_by_observer: |
+    वापरकर्ते निरीक्षणांचे छुपे निर्देशांक जोडून प्रोजेक्ट क्युरेटर्सवर विश्वास ठेवतात
+    पर्यवेक्षकाद्वारे प्रकल्पाला.
+  user_trusts_this_project_when_added_by_none: |
+    वापरकर्ते लपलेल्या निर्देशांक असलेल्या प्रोजेक्ट क्युरेटर्सवर विश्वास ठेवत नाहीत.
   username: वापरकर्ता नाव
-  users_edit_send_confirmation_prompt_with_grace_html: |
-    <p>
-    कृपया तुमचा ईमेल पत्ता बरोबर असल्याची खात्री करा. आम्ही पुष्टीकरणासाठीची ईमेल लिंक पाठवण्यासाठीचा ईमेल पत्ता हा आहे:
-    </p>
-    <pre class="text-center text-large">%{email}</pre>
-    <p>
-    तुम्हाला ईमेल न मिळाल्यास, येथे काही सूचना आहेत:
-    </p>
-    <ul>
-    <li><p>तुमचे स्पॅम फोल्डर तपासा</p></li>
-    <li><p>तुमच्या इनबॉक्समधून आमचे ईमेल काढून टाकण्यासाठी तुम्ही तयार केलेले कोणतेही फिल्टर तपासा</p></li>
-    </ul>
-    <p>
-    तुम्हाला तरीही पुष्टीकरण ईमेल प्राप्त होत नसल्यास, कृपया आमच्याशी येथे संपर्क साधा
-    <a href="mailto:help+confirmation@inaturalist.org">help@inaturalist.org</a>
-    त्यामुळे आम्ही तुम्हाला मदत करू शकतो.
-    </p>
   users_edit_send_confirmation_prompt_html: |
     <h3>तुम्ही साइन आउट करत आहात</h3>
     <p>
@@ -1031,6 +1194,7 @@ mr:
     </p>
   #@vow_or_con should work with %{site}
   users_site_year_in_review: "%{user} चे %{year} %{site} पुनरावलोकनाचे वर्ष"
+  video_tutorials: माहितीपर व्हिडीओ
   view_all_caps: सर्व पहा
   view_all_fields: सर्व जागा पहा
   view_inaturalist_global_year_in_review: iNaturalist चे जागतिक %{year} वर्षाचे पुनरावलोकन पहा
@@ -1042,11 +1206,20 @@ mr:
   view_more_observations_from_this_place: ह्या ठिकाणाभोवतीची इतर निरीक्षणे पहा
   view_your_personal_year_in_review: "तुमचे वैयक्तिक %{year} पुनरावलोकनाचे वर्ष पहा"
   view_your_personal_year_in_review_caps: "तुमचे वैयक्तिक %{year} वार्षिक पुनरावलोकन पहा"
-  video_tutorials: माहितीपर व्हिडीओ
-  we_also_support2: |
-    आम्ही <a href="http://flickr.com">Flickr</a> आणि <a href="http://photos.google.com">Google Photos</a> वरून फोटो आयात करण्यास देखील समर्थन देतो.
+  we_also_support3: |
+    आम्ही फोटो आयात करण्यास देखील समर्थन देतो <a href="http://flickr.com">फ्लिकर</a>.
+  #e.g. "What was observed?"
+  what: काय आहे
+  #e.g. "When was it observed?"
+  when: जेव्हा
+  #e.g. "Where was it observed?"
+  where: कुठे
   #Prompt to explain why a user is changing a record, e.g. changing a taxon name or updating a taxon
   why_are_you_making_this_change_optional: आपण हा बदल का घडवत आहात? (ऐच्छिक)
+  #e.g. "Who observed it?"
+  who: कोण
+  #Question mark added to the end of the word "Why" to make it a question. e.g. "Why should I use iNaturalist?"
+  why_question: का?
   #Filter for observations not in a particular taxon
   without_taxon: टॅक्सन मध्ये नसलेले
   year_in_review2: "वार्षिक पुनरावलोकन %{year}"
@@ -1066,6 +1239,62 @@ mr:
   your_observations: माझी निरीक्षणे
   your_recent_projects: माझे अलीकडील प्रकल्प
   views:
+    announcements:
+      locales_desc: |
+        एकाधिक निवडण्यासाठी सीएमडी- किंवा शिफ्ट-क्लिक करा. "सर्व" निवडणे किंवा न करणे
+        एक निवड सर्व वापरकर्त्यांना घोषणा दर्शवेल
+        लोकेशन. प्रदेश नसलेली भाषा निवडणे *नाही* लक्ष्य असेल
+        प्रदेशांसह लोकेशन्स, उदा. आपण इंग्रजी निवडल्यास ते दिसणार नाही
+        ज्या लोकांनी इंग्रजी (यूके) निवडली आहे त्यांच्यासाठी.
+      clients_desc: |
+        एकाधिक निवडण्यासाठी सीएमडी- किंवा शिफ्ट-क्लिक करा. "सर्व" निवडणे किंवा न करणे
+        एक निवड सर्व वापरकर्त्यांना घोषणा दर्शवेल
+        अशील।
+      end_desc: |
+        ही घोषणा थांबेल अशी वेळ तुमच्या अकाऊंट टाईम झोनमध्ये
+        प्रकट होत आहे. टाइम झोनमध्ये लागू होते, जेणेकरून प्रत्येकजण पाहणे बंद करेल
+        त्याच वेळी, त्यांच्या स्थानिक वेळेच्या सापेक्ष नाही.
+      excludes_non_site_desc: |
+        जर आपली घोषणा एखाद्या साइटला लक्ष्य करते (आपण असल्यास डिफॉल्ट आहे
+        साइट अॅडमिन), हे सर्व साइट्सला लक्ष्य करणार्या घोषणा वगळेल
+        हे प्लेसमेंट.
+      ip_countries_desc: |
+        एकाधिक निवडण्यासाठी सीएमडी- किंवा शिफ्ट-क्लिक करा. "सर्व" निवडणे किंवा न करणे
+        एक निवड सर्व वापरकर्त्यांना घोषणा दर्शवेल
+        आयपी देश.
+      exclude_ip_countries_desc: |
+        अनेक निवडण्यासाठी सीएमडी- किंवा शिफ्ट-क्लिक करा. निवडलेले देश दाखवले जाणार नाहीत
+        ही घोषणा आहे. आयपी देश निवडल्यास, निवडलेले आयपी देश वगळा
+        पूर्वीपासून वजा केले जाईल.
+      #Note about how the announcement last observation date property works
+      last_observation_date_desc: |
+        लक्षात घ्या की वापरकर्त्याने अलीकडेच तयार केलेल्या निर्मितीची तारीख
+        निरीक्षण कॅश केले गेले आहे, म्हणून लक्ष्य करण्यासाठी काही तास लागू शकतात
+        अंमलात आणा.
+      observation_oauth_application_ids_desc: |
+        एकाधिक निवडण्यासाठी सीएमडी- किंवा शिफ्ट-क्लिक करा. "सर्व" निवडणे किंवा न करणे
+        एक निवड सर्व वापरकर्त्यांना घोषणा दर्शवेल
+        अ ॅप.
+      site_ids_desc: |
+        एकाधिक निवडण्यासाठी सीएमडी- किंवा शिफ्ट-क्लिक करा. "सर्व" निवडणे किंवा न करणे
+        एक निवड सर्व वापरकर्त्यांना घोषणा दर्शवेल
+        साइट संलग्नता।
+      start_desc: |
+        ही घोषणा सुरू होईल अशी वेळ तुमच्या अकाऊंट टाईम झोनमध्ये
+        प्रकट होत आहे. टाइम झोनमध्ये लागू होते, जेणेकरून सर्वांना दिसू लागेल
+        त्याच वेळी, त्यांच्या स्थानिक वेळेच्या सापेक्ष नाही.
+      #Description of a group of options for targeting announcements based
+      #on donation behavior
+      target_users_by_donation_behavior: देणगी वर्तनाद्वारे वापरकर्त्यांना लक्ष्य करा
+      #Description of a group of options for targeting announcements based
+      #on identification behavior
+      target_users_by_identification_behavior: ओळख वर्तनाद्वारे वापरकर्त्यांना लक्ष्य करा
+      #Description of a group of options for targeting announcements based
+      #on observation behavior
+      target_users_by_observation_behavior: निरीक्षण वर्तनाद्वारे वापरकर्त्यांना लक्ष्य करा
+      #Description of a group of options for targeting announcements based
+      #miscellaneous user attributes
+      target_users_by_other_attributes: इतर वैशिष्ट्यांद्वारे वापरकर्त्यांना लक्ष्य करा
     donate:
       donate_desc_moore_html: |
         <p class="lead">
@@ -1144,85 +1373,75 @@ mr:
           </p>
         thank_you_for_being_a_monthly_supporter: मासिक सहाय्यक असल्याबद्दल धन्यवाद!
         thank_you_for_being_a_monthly_supporter_caps: मासिक सहाय्यक असल्याबद्दल धन्यवाद!
+    email_confirmation:
+      click_here_to_resend_a_confirmation_email: पुष्टी ईमेल पुन्हा पाठविण्यासाठी येथे क्लिक करा
+      #message displayed after users trigger sending a email to confirm their email address
+      confirmation_email_sent: पुष्टी ईमेल पाठविला
+      #text displayed before showing a user the email address that we will
+      #resend a confirmation email to
+      here_is_the_email_colon: |
+        येथे ईमेल पत्ता आहे ज्यावर आम्ही पुष्टी पाठवू:
+      #statement introducing suggestions for users that do no receive confirmation emails
+      if_you_do_not_receive_the_email_here_are_tips_colon: |
+        आपल्याला ईमेल प्राप्त न झाल्यास, येथे काही टिपा आहेत:
+      #statement telling users to contact us if they are not receiving confirmation emails
+      if_you_are_still_not_receiving_email_contact_us_html: आपल्याला अद्याप पुष्टी ईमेल प्राप्त होत नसल्यास, कृपया आमच्याशी येथे संपर्क साधा <a href="mailto:help+confirmation@inaturalist.org">help@inaturalist.org</a> जेणेकरून आम्ही तुमची मदत करू शकू.
+      please_add_an_email_and_password: कृपया एक ईमेल आणि पासवर्ड जोडा जेणेकरून आपण आपल्या खात्यात प्रवेश गमावू नका
+      please_click_the_link_sent_to_email_to_confirm_html: कृपया पाठवलेल्या लिंकवर क्लिक करा <span class="email">%{email}</span> आपल्या ईमेल पत्त्याची पुष्टी करण्यासाठी.
+      please_confirm_that_email_is_the_best_contact_html: कृपया याची पुष्टी करा <span class="email">%{email}</span> आपल्याशी संपर्क साधण्याचा उत्तम मार्ग आहे. #message requesting users confirm their email address to be able to engage with other users
+      please_confirm_to_interact_and_access: कृपया इतर वापरकर्त्यांच्या सामग्रीशी संवाद साधण्यासाठी आणि विशिष्ट पृष्ठांवर प्रवेश करण्यासाठी आपल्या ईमेल पत्त्याची पुष्टी करा. #message requesting that a user confirm their email address, displaying the email to confirm
+      please_confirm_your_email_address_html: कृपया आपल्या ईमेल पत्त्याची पुष्टी करा <span class="email">%{email}</span>. #statement used in areas that might contain a form allowing users to add comments, etc. This # informs users they must confirm their email address if they want to be able to interact
+      please_confirm_to_interact: कृपया इतर वापरकर्त्यांच्या सामग्रीशी संवाद साधण्यासाठी आपल्या ईमेल पत्त्याची पुष्टी करा
+      #statement used on pages that are not functional unless a user has confirmed their email address
+      please_confirm_to_use_this_page: कृपया हे पृष्ठ वापरण्यासाठी आपल्या ईमेल पत्त्याची पुष्टी करा
+      #tip for users who do not receive confirmation emails to check if their email view is filtered
+      tips_check_email_filters: आपण बनविलेले कोणतेही फिल्टर तपासा जे आपल्या इनबॉक्समधून आमचे ईमेल काढून टाकू शकतात #tip for users who do not receive confirmation emails to check their email spam folder
+      tips_check_your_spam_folder: आपले स्पॅम फोल्डर तपासा
+      your_site_account_has_no_email: तुमचा %{site_name} खात्याशी संबंधित कोणताही ईमेल पत्ता नाही.
+    guides:
+      index:
+        funding2_html: |
+          मार्गदर्शकांच्या विकासासाठी निधी उपलब्ध करून देण्यात आला
+          <a href="http://eol.org"><img alt="Encyclopedia of Life" src="%{image_url}"></a>
+    messages:
+      index:
+        #Users cannot create messages if they lack the criteria for
+        #earning interaction privilege
+        interaction_privilege_notice: |
+          आपण आपल्या ईमेलची पुष्टी केल्यानंतर आपण नवीन संदेश पाठविण्यास सक्षम असाल
+          पत्ता। सध्या तुम्ही इतर लोकांनी पाठवलेला मेसेज वाचू आणि रिप्लाय देऊ शकता.
+        #Users cannot create messages if they lack the criteria for
+        #earning interaction or speech privilege
+        privilege_notice: |
+          आपण आपल्या ईमेलची पुष्टी केल्यानंतर आपण नवीन संदेश पाठविण्यास सक्षम असाल
+          पत्ता, आणि तीन पडताळणी योग्य निरीक्षणे किंवा तीन ओळख जोडली
+          इतरांसाठी. सध्या तुम्ही इतर लोकांनी पाठवलेला मेसेज वाचू आणि रिप्लाय देऊ शकता.
     observations:
-      field_descriptions:
-        user_name: |
-          निरीक्षकाचे नाव, सामान्यत: साइटवर श्रेय देण्यासाठी वापरले जाते.
-          हे एक ऐच्छिक क्षेत्र आहे आणि ते टोपणनाव असू शकते.
       show:
         ancestor_disagreements_desc2: |
           टॅक्सनच्या पूर्वजांपैकी ओळखलेल्या टॅक्साची संख्या, परंतु वर्गीकरणाशी असहमत (म्हणजे "मला वाटते की ते वंशात आहे पण हीच ती प्रजाती आहे ह्याच्याशी मी असहमत आहे")
         data_quality_assessment_desc3_html: |
           एखाद्या iNaturalist निरीक्षणाची गुणवत्ता पातळी जैवविविधता डेटाच्या दृष्टीकोनातून त्याची अचूकता, नि:संदिग्धता, पूर्णता, समर्पकता आणि योग्यता सूचित करते. 
           काही मूल्यांकने आपोआप ठरवली जातात, तर काही iNat वापरकर्त्यांद्वारे मताधिक्याने ठरविली जातात. iNaturalist परवानाधिकृत "संशोधन श्रेणी" तील निरीक्षणे विज्ञान आणि संवर्धनासाठी त्याच्या अनेक माहितीक्षेत्रातील भागीदारांसह शेअर करते.
-        quality_assessment_help2_html: |
-          <p>
-          डेटा गुणवत्तेचे मूल्यांकन हे निरीक्षणाच्या अचूकतेचा सारांश आहे. सर्व
-          निरीक्षणे <strong>"कॅज्युअल"</strong> ग्रेड म्हणून सुरू होतात आणि होतात
-          <strong>"आयडी आवश्यक आहे"</strong> तेव्हा
-          </p>
-
-          <ul>
-          <li>निरीक्षणाची <strong>तारीख आहे</strong></li>
-          <li>निरीक्षण <strong>भू-संदर्भित आहे</strong> (म्हणजे अक्षांश/लोन निर्देशांक आहेत)</li>
-          <li>निरीक्षणात <strong>फोटो किंवा ध्वनी आहेत</strong></li>
-          <li>निरीक्षण <strong>मानवाचे नाही</strong></li>
-          </ul>
-          <p>
-          जेव्हा निरीक्षणे <strong>"संशोधन श्रेणी"</strong> होतात
-          </p>
-          <ul>
-          <li>
-          %{site_name} <strong>समुदाय प्रजाती-स्तरीय आयडीवर सहमत आहे किंवा
-          कमी</strong>, म्हणजे जेव्हा २/३ पेक्षा जास्त अभिज्ञापक a वर सहमत असतात
-          taxon (जर समुदायाने मत दिले असेल की समुदाय टॅक्सन करू शकत नाही
-          यापुढे सुधारित केले जावे, हे उप-कुटुंब-स्तरीय आयडी किंवा कमी वर परत येईल)
-          </li>
-          </ul>
-          <p>
-          वरील अटींची पूर्तता न केल्यास किंवा समुदायाने सहमती दर्शविल्यास निरीक्षणे <strong>"कॅज्युअल"</strong> वर परत येतील
-          </p>
-          <ul>
-          <li>
-          <strong>स्थान दिसत नाही
-          अचूक</strong> (उदा. समुद्राच्या मध्यभागी माकडे,
-          कार्यालयीन इमारतींमध्ये हिप्पो इ.)
-          </li>
-          <li>
-          <strong>जीव जंगली/नैसर्गिक नाही</strong> (उदा. बंदिवान किंवा मानवांनी लागवड केलेले
-          किंवा बुद्धिमान स्पेस एलियन)
-          </li>
-          <li>
-          निरीक्षण <strong>का पुरावा सादर करत नाही
-          जीव</strong>, उदा. पाण्याच्या वैशिष्ट्यांच्या प्रतिमा,
-          खडक, लँडस्केप ज्यात जीव समाविष्ट नाही इ.
-          </li>
-          <li>
-          निरीक्षण <strong>चे अलीकडील (~१00 वर्षे) पुरावे सादर करत नाही
-          जीव</strong> (उदा. जीवाश्म, परंतु ट्रॅक, स्कॅट आणि मृत पाने
-          ठीक आहेत)
-          </li>
-          <li>
-          निरीक्षणाला यापुढे आयडीची आवश्यकता नाही <em>आणि</em> समुदाय आयडी कुटुंबात किंवा वर आहे
-          </li>
-          <li>
-          निरीक्षकाने समुदाय आयडी आणि समुदायाची निवड रद्द केली आहे
-          आयडी टॅक्सन संबंधित टॅक्सनचा पूर्वज किंवा वंशज नाही
-          निरीक्षकांच्या आयडीसह
-          </li>
-          </ul>
-          <p>
-          आणि जर ते पुरेसे क्लिष्ट नसेल, तर अशा परिस्थिती देखील आहेत जेथे सिस्टमला मत मिळते:
-          </p>
-          <ul>
-          <li>
-          निरीक्षण वन्य/नैसर्गिक नाही असे सिस्टम मत देईल
-          वंशाची किंवा त्यापेक्षा कमी १0 इतर निरीक्षणे असल्यास
-          सर्वात लहान काउंटी-, राज्य-, किंवा देश-समतुल्य ठिकाण
-          हे निरीक्षण आणि ८0% किंवा त्याहून अधिक निरीक्षणे समाविष्ट आहेत
-          वन्य/नैसर्गिक नाही म्हणून चिन्हांकित केले आहे.
-          </li>
-          </ul>
+        #One of a list of requirements an observation must meet to be in the Research Grade category
+        dqa_help_research_grade_community_observation_html: |
+          हे <strong>कम्युनिटी टॅक्सॉन आणि ऑब्झर्वेशन टॅक्सॉन मॅच</strong>
+          (त्या दुर्मिळ प्रसंगी जेव्हा निरीक्षण टॅक्सॉन अधिक असू शकते
+          समुदाय टॅक्सॉनपेक्षा विशिष्ट)
+        #One of a list of reasons for an observation to revert to Casual
+        dqa_help_casual_not_accurate_evidence_html: |
+          निरीक्षण <strong>जीवाचा अचूक पुरावा सादर करत नाही किंवा
+          तमाशा</strong> (उदा. कृत्रिम बुद्धिमत्ता जोडण्यासाठी, काढण्यासाठी किंवा पुनर्स्थित करण्यासाठी वापरली गेली
+          प्रतिमा किंवा ध्वनीमधील घटक. डिनॉइझिंग, फोकस स्टॅकिंग किंवा मेकिंग
+          सेन्सर धूळ काढून टाकणे यासारख्या लहान निराकरणे सहसा ठीक असतात).
+    sounds:
+      show:
+        #The user has been warned that an uploaded sound file has been noted as being problematic.
+        #To bypass the warning, this additional text provides a link to the sound and guidance.
+        view_original_html: |
+          आपण मूळ येथे पाहू शकता <a href="%{url}">%{url}</a>. कृपया
+          जर हा आवाज आला तर कॉपीराइट उल्लंघनाचे झेंडे निराकरण न झालेले म्हणून सोडा.
+          कॉपीराइटचे उल्लंघन करणे.
     stats:
       year:
         compare_desc: |
@@ -1247,12 +1466,19 @@ mr:
           one: "%{count} प्रकाशन पहा"
           other: "सर्व %{count} प्रकाशने पहा"
     taxa:
+      edit:
+        #a message when you try to save major changes to a taoxn name
+        you_can_only_make_minor_changes_to_the_species_epithet_directly_html: |
+          आपण केवळ प्रजातीच्या विशेषणात थेट किरकोळ बदल करू शकता (उदा. लिंग बदल, चुकीचे शब्दलेखन). एक जोडा <a target="_blank" href="%{url}">टॅक्सॉन स्वॅप</a> जर आपल्याला नावात इतर बदल हवे असतील तर.
       show:
         frequency:
           "Plant Phenology=No Evidence of Flowering": फुलल्याचा पुरावा नाही
           "Life Stage=Egg": अंडे
           "Life Stage=Larva": अळी
           "Life Stage=Pupa": कोष
+      #error message when the Flickr tagger feature fails
+      something_went_wrong_tags: |
+        ते टॅग पोस्ट करण्याचा प्रयत्न करताना काहीतरी चूक झाली: %{message}
     users:
       edit:
         common_scientific_name_display_order: सामान्य / वैज्ञानिक नाव दर्शनीय क्रम
@@ -1311,6 +1537,191 @@ mr:
         who_uses_site_name: "%{site_name} कोण वापरते?"
         what_are_you_waiting_for: कसली वाट पाहताय?
         join_today: आजच सहभागी व्हा
+    welcome_v2:
+      index:
+        hero:
+          #Main hero headline on the home page
+          headline: जिथे तुमची जिज्ञासा विज्ञानात योगदान देते.
+          #Hero subheadline describing the core value proposition
+          subheadline: >
+            पृथ्वीवरील जीवनाच्या जिवंत ऍटलासमध्ये भर घालताना वनस्पती, प्राणी, बुरशी आणि बरेच काही ओळखा.
+          #Primary call-to-action button in the hero section
+          cta_join: समुदायात सामील व्हा
+          #Tagline displayed beneath the hero CTA, emphasising the app's accessibility
+          tagline: विनामूल्य, ना-नफा, समुदाय-संचालित.
+        features:
+          #Section label introducing the three core user actions
+          intro: "iNaturalist सह, आपण हे करू शकता:"
+          #Description of what users can Identify
+          #Read as "{Identify} plants, animals, fungi, & more"
+          identify_desc: वनस्पती, प्राणी, बुरशी आणि बरेच काही
+          #Description of what users can Track
+          #Read as "{Track} species you've seen worldwide"
+          track_desc: आपण जगभरात पाहिलेल्या प्रजाती
+          #Description of where users can Contribute
+          #Read as "{Contribute} to real science"
+          contribute_desc: वास्तविक विज्ञानाकडे
+          #Description of what users can Discover
+          #Read as "{Discover} nature nearby"
+          discover_desc: निसर्ग जवळपासचा
+          #Description of what users can Learn
+          #Read as "{Learn} from a global community of naturalists"
+          learn_desc: निसर्गवाद्यांच्या जागतिक समुदायाकडून
+        stories:
+          #Section heading for real-world stories powered by community science
+          heading: समुदाय विज्ञानाची शक्ती
+          #Photo credit for each community-science story card; %{user} = observer login, %{place} = display place name
+          observation_credit: द्वारे पाहिले %{user} मध्ये %{place}
+          #Heading for the story about rediscovering an extinct moth species
+          moth_heading: दीर्घकाळापासून हरवलेल्या प्रजाती पुन्हा शोधणे
+          #Body text for the moth rediscovery story; %{moth_common_name} = common name of the moth from JSON
+          moth_body: >
+            हे %{moth_common_name} मॉथ अनेक दशकांमध्ये दिसला नव्हता आणि एकदा नामशेष झाला होता - न्यूझीलंडमधील एका पर्यटकाने अपघाताने तो शोधला नाही.
+          #Heading for the story about a new-to-science mantis species
+          mantis_heading: नवीन-ते-विज्ञान प्रजातींचा शोध
+          #Body text for the mantis discovery story
+          mantis_body_html: >
+            <span class="italic">इनिमिया नॅट</span> — संक्षिप्त <span class="italic">I. नॅट</span> - ऑस्ट्रेलियातील एका महिलेला तिच्या शेजारी फिरताना सापडलेली एक नवीन-टू-सायन्स मेंटिस प्रजाती आहे.
+          #Heading for the story about volunteers protecting amphibians
+          amphibian_heading: स्थानिक परिसंस्थेचे संरक्षण
+          #Body text for the amphibian protection story
+          amphibian_body: >
+            कॅलिफोर्नियामधील स्थानिक स्वयंसेवकांचा एक गट व्यस्त रस्ता ओलांडणार् या स्थलांतरित उभयचरांचे संरक्षण करण्यासाठी iNaturalist द्वारे एकत्र आला.
+          #Link below the stories to read more community science stories
+          read_more: अधिक कथा वाचा
+        observation:
+          #Heading for the sample observation section
+          heading: प्रत्येक निरीक्षण एक कथा सांगते
+        stats:
+          #Description label for the observations statistic
+          #Prepended by count, e.g. "350M+ observations contributing to biodiversity science"
+          observations_label: जैवविविधता विज्ञानात योगदान देणारी निरीक्षणे
+          #Description label for the species statistic
+          #Prepended by count, e.g. "550,000+ species documented across the globe"
+          species_label: जगभरात दस्तऐवजीकरण केलेल्या प्रजाती
+          #Description label for the papers statistic
+          #Prepended by count, e.g. "7,000+ papers citing iNaturalist data"
+          papers_label: iNaturalist डेटाचा हवाला देणारी कागदपत्रे
+          #Description label for the discoveries statistic
+          #Prepended by count, e.g. "500+ species discovered or rediscovered by community scientists"
+          discoveries_label: समुदाय शास्त्रज्ञांनी शोधलेल्या किंवा पुन्हा शोधलेल्या प्रजाती
+        how:
+          #Step 1 description — instructing users to photograph any organism
+          step1_body: >
+            अ ॅप उघडा आणि आपल्या शेजारील किंवा जगात कोठेही कोणत्याही वन्य वनस्पती, प्राणी, बुरशी किंवा इतर जीवांचे छायाचित्र घ्या.
+          #Step 2 description — explaining AI and community identification
+          step2_body: >
+            अ ॅप त्वरित ओळख सुचवितो आणि निसर्गवाद्यांचा जागतिक समुदाय त्याची पुष्टी करतो किंवा परिष्कृत करतो.
+          #Step 3 description — explaining how observations become open scientific data
+          step3_body: >
+            आपले निरीक्षण मुक्त डेटा बनते - जगभरातील शास्त्रज्ञ, संवर्धनवादी आणि संशोधकांद्वारे वापरले जाते.
+          #Explanatory note below the three steps giving the "why" behind contributing
+          why_note_html: >
+            निसर्ग नेहमीपेक्षा वेगाने बदलत आहे, म्हणून आपल्याला गरज आहे <span class="underline">आपण</span> कुठे राहते हे नोंदवण्यात मदत करण्यासाठी.
+        testimonials:
+          #Quote from the testimonial author (last name Gube)
+          gube_quote: >
+            जगभरातील वेगवेगळ्या लोकांशी संवाद साधण्याची संधी देण्याव्यतिरिक्त, यामुळे मला प्रजाती ओळखण्यात खरोखर मदत झाली आहे.
+          #Job title and location of the testimonial author (last name Gube)
+          gube_title: सागरी संवर्धनवादी आणि पाण्याखालील छायाचित्रकार, केनिया
+          #Quote from the testimonial author (last name Kratzer)
+          kratzer_quote: >
+            iNaturalist अंडरस्टडेड टॅक्सावरील बर् याच नवीन आणि रोमांचक संशोधनाचे दार उघडते. माझ्या मते, हे व्यासपीठ पर्यावरणीय विज्ञानाची अत्याधुनिक धार आहे.
+          #Job title and location of the testimonial author (last name Kratzer)
+          kratzer_title: आऊलफ्लाय एलएलसी, यूएसए येथे फील्ड मार्गदर्शक लेखक
+          #Quote from the testimonial author (last name Sumanapala)
+          sumanapala_quote: >
+            iNaturalist आणि त्याच्या अभिज्ञापकांचा समर्पित समुदाय माझ्या अन्वेषणात एक अमूल्य स्त्रोत बनला. यामुळे माझ्या सध्याच्या कार्याचा पाया घालण्यास मदत झाली.
+          #Job title and location of the testimonial author (last name Sumanapala)
+          sumanapala_title: जैवविविधता संशोधक, श्रीलंका
+          #Quote from the testimonial author (last name Fachetti)
+          fachetti_quote: >
+            iNaturalist हे एक शक्तिशाली साधन आहे जे लोक, निसर्ग आणि ज्ञान यांना जोडते. मी एखाद्या दुर्मिळ प्रजातीचे छायाचित्र घेऊ शकतो, किंवा ज्याचे अद्याप वर्णन केले गेले नाही आणि त्याच वेळी, मी आपला नैसर्गिक वारसा जतन करण्यात योगदान देतो.
+          #Job title and location of the testimonial author (last name Fachetti)
+          fachetti_title: पर्यावरण तंत्रज्ञ आणि छंद छायाचित्रकार, ब्राझील
+          #Quote from the testimonial author (last name Velazco)
+          velazco_quote: >
+            आपण जगात कोठेही असलात तरीही, आपल्याकडे पीएचडी आहे किंवा फक्त घराबाहेर प्रेम आहे, आयनॅचरलिस्ट आपल्याला निसर्गाच्या आणि बर् याच सहकारी निसर्गवाद्यांच्या जवळ आणेल.
+          #Job title and location of the testimonial author (last name Velazco)
+          velazco_title: जीवविज्ञानी, मेक्सिको
+        everyone:
+          #Heading for the broad audience section
+          heading: प्रत्येक जण निसर्गवादी आहे
+          #Description inviting anyone who has been curious about a living thing
+          body: >
+            जर आपण कधीही एखाद्या जिवंत गोष्टीकडे बारकाईने पाहिले असेल आणि ते काय आहे याचा विचार केला असेल तर iNaturalist तुमच्यासाठी आहे.
+          #Heading for the impact sub-section
+          impact_heading: आपण प्रभाव टाकू शकता
+          #Description of how each photo contributes to the global scientific record
+          impact_body: >
+            आपण सामायिक केलेला प्रत्येक फोटो जागतिक वैज्ञानिक रेकॉर्डचा भाग बनतो ज्यावर जगभरातील संशोधक अवलंबून असतात.
+          #Heading for the community reputation sub-section
+          community_heading: '"ऑनलाइन सर्वात चांगली जागा"'
+          community_heading_2: ऑनलाइन सर्वात चांगले ठिकाण
+          #Description of the welcoming community aspect
+          community_body: >
+            ओळखीसाठी या, समुदायासाठी रहा आणि विज्ञानावर परिणाम करा.
+        download:
+          #Heading prompting users to download the mobile app
+          heading: iNaturalist अ ॅप डाउनलोड करा
+          #Subheading describing the two core benefits of the app
+          subheading: वास्तविक ओळख मिळवा आणि विज्ञानात योगदान द्या
+          #Social proof label showing total app downloads
+          #%{count} = formatted and rounded number of downloads. The plus (+) reflects there being more than that number.
+          count_label: "%{count}+ डाउनलोड"
+        explore:
+          #Heading for the explore species section; species cards generated from static JSON exported from iNat
+          heading: जगभरातील प्रजाती एक्सप्लोर करा
+          #Button / link to browse species without downloading
+          button: आता एक्सप्लोर करा
+        seek:
+          #Heading for the Seek app section, aimed at users under 13
+          heading: "13 वर्षांखालील? शोधा डाउनलोड करा!"
+          #Description of Seek's badge and challenge features
+          body: बॅज मिळवा आणि प्रजातींचे निरीक्षण करण्याच्या आव्हानांमध्ये भाग घ्या!
+          #Review count social proof label for the app
+          #%{count} = formatted and rounded number of 5-star reviews. The plus (+) reflects there being more than that number.
+          review_tagline: "%{count}+ 5-स्टार पुनरावलोकने"
+        newsletter:
+          #Heading inviting users to subscribe to the monthly newsletter
+          heading: आमचे मासिक वृत्तपत्र मिळवा!
+          #Description of the newsletter's content
+          body: iNaturalist समुदायाच्या कथा आणि शोधांशी जोडलेले रहा.
+        donate:
+          #Heading describing iNaturalist's nonprofit status
+          heading: iNaturalist ही एक ना-नफा संस्था आहे जी विज्ञान आणि संवर्धनास समर्थन देते.
+          #Supporting line connecting the user's donation to iNaturalist's mission of supporting science and conservation.
+          subheading: तुमच्या पाठिंब्यामुळे ते शक्य झाले.
+          #Call-to-action button for the donation section
+          cta: आता देणगी द्या
+        faq:
+          #Section heading for the Frequently Asked Questions block
+          heading: वारंवार विचारले जाणारे प्रश्न
+          #FAQ: uploading existing photos — question
+          upload_existing_question: मी माझ्याकडे आधीपासून असलेले फोटो अपलोड करू शकतो?
+          #FAQ: uploading existing photos — answer
+          upload_existing_answer: >
+            होय! जोपर्यंत आपल्याला फोटो कधी आणि कोठे घेतला गेला हे अंदाजे माहित आहे, तोपर्यंत जुन्या फोटोंचे स्वागत आहे.
+          #FAQ: who can use iNaturalist data — question
+          who_can_use_question: iNaturalist निरीक्षणांसह विज्ञान कोण करू शकते?
+          #FAQ: who can use iNaturalist data — answer
+          who_can_use_answer: >
+            कोणीही! सर्व iNaturalist निरीक्षणे खुली आणि मुक्तपणे उपलब्ध आहेत - संशोधक, संवर्धन अभ्यासक आणि जिज्ञासू व्यक्तींसाठी.
+          #FAQ: research grade definition — question
+          research_grade_question: '"रिसर्च ग्रेड" म्हणजे काय?'
+          #FAQ: research grade definition — answer
+          research_grade_answer: >
+            जेव्हा समुदाय एखाद्या ओळखीवर सहमत होतो, तेव्हा एक निरीक्षण "संशोधन ग्रेड" बनते आणि जागतिक वैज्ञानिक रेकॉर्डमध्ये प्रवेश करते. प्रत्येक ओळख तेथे पोहोचण्यास मदत करू शकते.
+          #FAQ: whether prior knowledge is needed — question
+          no_knowledge_question: मी काय पहात आहे हे मला माहित असणे आवश्यक आहे का?
+          #FAQ: whether prior knowledge is needed — answer
+          no_knowledge_answer: >
+            मुळीच नाही! एक फोटो सामायिक करा आणि निसर्गवाद्यांचा जागतिक समुदाय आपल्याला ते ओळखण्यास मदत करू शकेल.
+          #FAQ: whether the app is required — question
+          need_app_question: मला अ ॅप वापरण्याची आवश्यकता आहे का?
+          #FAQ: whether the app is required — answer; references both the website and mobile app
+          need_app_answer: >
+            डेस्कटॉपवर, iNaturalist.org उत्तम कार्य करते. मोबाइल डिव्हाइसवर, अॅप आपल्याला सर्वोत्तम अनुभव देते - विशेषत: जाता जाता प्रजाती ओळखण्यासाठी.
   datetime:
     countdown_x_days:
       one: दिवस
@@ -1347,6 +1758,45 @@ mr:
         #Preference for an announcement that is only shown to users who have
         #not confirmed their email address
         prefers_target_unconfirmed_users: असत्यापित वापरकर्त्यांना केंद्रित करा
+        #Start of a date range that the viewer must not have donated in to see the announcement
+        exclude_donor_start_date: दाता सुरू होण्याची तारीख वगळा
+        #End of a date range that the viewer must not have donated in to see the announcement
+        exclude_donor_end_date: दाता संपण्याची तारीख वगळा
+        excludes_non_site: साइट आयडी नसलेल्या या प्लेसमेंटमधील इतर घोषणा लपवा
+        #iNat client applications that the user must not have made an observation
+        #with to see the announcement
+        exclude_observation_oauth_application_ids: अ ॅप्समधून पर्यवेक्षकांना वगळा
+        #start of a date range that the viewer must have donated in to see the announcement
+        include_donor_start_date: दाता सुरू होण्याची तारीख समाविष्ट करा
+        #End of a date range that the viewer must have donated in to see the announcement
+        include_donor_end_date: दाता शेवटची तारीख समाविष्ट करा
+        #iNat client applications that the user must have made an observation
+        #with to see the announcement
+        include_observation_oauth_application_ids: अॅप्समधील पर्यवेक्षकांचा समावेश करा
+        #List of countries that the viewer's IP address can come from to see the announcement
+        ip_countries: आयपी देश
+        #Start of a date range that includes the viewer's most recent observation
+        last_observation_start_date: नवीनतम ओबीएस प्रारंभ तारीख
+        #end of a date range that includes the viewer's most recent observation
+        last_observation_end_date: नवीनतम ओबीएस समाप्ती तारीख
+        #Maximum number of identifications the viewer must have added for others to see the announcement
+        max_identifications: जास्तीत जास्त ओळख
+        #Minimum number of identifications the viewer must have added for others to see the announcement
+        min_identifications: min identifis
+        #Maximum number of observations the viewer must have added for others to see the announcement
+        max_observations: जास्तीत जास्त निरीक्षणे
+        #Minimum number of observations the viewer must have added for others to see the announcement
+        min_observations: मिनिट निरीक्षणे
+        #Place in iNat where this announcement will be shown, e.g. web dashboard, mobile home, etc
+        placement: प्लेसमेंट
+        #Preference for an announcement that is only shown to the user who created the announcement
+        target_creator: लक्ष्य निर्माता (चाचणीसाठी)
+        #Whether or not the announcement is shown to logged in users
+        target_logged_in: लक्ष्य लॉग इन केले
+        #Earliest date the viewer can have signed up to see the announcement
+        user_created_start_date: सर्वात लवकर वापरकर्ता साइनअप तारीख
+        #Latest date the viewer can have signed up to see the announcement
+        user_created_end_date: नवीनतम वापरकर्ता साइनअप तारीख
       flag:
         #The person who resolved the flag
         resolver_id: निराकरण करणारा
@@ -1372,11 +1822,14 @@ mr:
         #Controls whether the taxon link is visible for descendants of this
         #taxon
         show_for_descendent_taxa: वंशज टॅक्सासाठी दाखवा
+      user:
+        faved_project_ids: आवडते प्रकल्प
     errors:
       messages:
         equal_to:
           one: '%{count} च्या समान असणे आवश्यक आहे'
           other: '%{count} च्या समान असणे आवश्यक आहे'
+        must_look_like_an_email_address: ईमेल पत्त्यासारखा दिसायला हवा
         greater_than:
           one: '%{count} पेक्षा मोठा असणे आवश्यक आहे'
           other: '%{count} पेक्षा मोठा असणे आवश्यक आहे'
@@ -1389,6 +1842,7 @@ mr:
         less_than_or_equal_to:
           one: '%{count} पेक्षा कमी किंवा समान असणे आवश्यक आहे'
           other: '%{count} पेक्षा कमी किंवा समान असणे आवश्यक आहे'
+        requires_privilege_interaction: हे करण्यासाठी खात्रीशीर ईमेल पत्ता असणे आवश्यक आहे
       models:
         comment:
           attributes:
@@ -1412,7 +1866,22 @@ mr:
               cannot_be_blank: रिक्त असू शकत नाही
               invalid_point: एखादा अवैध निर्देशांक आहे, उदा. रेखांश १८० पेक्षा जास्त किंवा अक्षांश -९० पेक्षा कमी
               must_have_more_than_three_points: ३ पेक्षा जास्त बिंदू असणे आवश्यक आहे
-              polygon_with_fewer_than_four_points: ४ पेक्षा कमी बिंदूंसह बहुभुज आहे
+        project_fave:
+          attributes:
+            base:
+              only_seven_projects: तुम्ही फक्त 7 प्रोजेक्ट्स लावू शकता
+        user:
+          attributes:
+            faved_project_ids:
+              #Error when a user tries to add more than 7 favorite projects,
+              #e.g. "Faved projects cannot include more than 7 projects"
+              cannot_include_more_than_7_projects: 7 पेक्षा जास्त प्रकल्पांचा समावेश करू शकत नाही
+              #Error when a user tries to add a project that does not exist
+              #to their favorite projects, e.g. "Faved projects must all
+              #exist"
+              must_all_exist: सर्व अस्तित्वात असणे आवश्यक आहे
+            login:
+              domain_is_not_supported: डोमेन समर्थित नाही
         user_block:
           attributes:
             base:

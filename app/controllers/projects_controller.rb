@@ -1,7 +1,7 @@
 class ProjectsController < ApplicationController
   WIDGET_CACHE_EXPIRATION = 15.minutes
 
-  before_action :allow_external_iframes, only: [ :show ]
+  allow_external_iframes( only: [:show] )
 
   caches_action :observed_taxa_count, :contributors,
     expires_in: WIDGET_CACHE_EXPIRATION,
@@ -36,7 +36,7 @@ class ProjectsController < ApplicationController
   before_action :filter_params, only: [ :update, :create ]
   before_action :site_required, only: [ :feature, :unfeature ]
 
-  prepend_around_action :enable_replica, only: [:show]
+  prepend_around_action :enable_replica, only: [:index, :show, :by_login, :members]
 
   requires_privilege :organizer, only: [:new_traditional]
   

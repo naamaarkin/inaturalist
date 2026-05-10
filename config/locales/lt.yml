@@ -40,16 +40,6 @@ lt:
     few: '%{count} identifikacijos'
     many: '%{count} identifikacijos'
     other: '%{count} identifikacijos'
-  #Number of people who have added identifications
-  x_identifiers_html:
-    #Number of people who have added identifications
-    one: '<span class="count">%{count}</span> identifikuotojas'
-    #Number of people who have added identifications
-    few: '<span class="count">%{count}</span> identifikuotojai'
-    #Number of people who have added identifications
-    many: '<span class="count">%{count}</span> identifikuotojai'
-    #Number of people who have added identifications
-    other: '<span class="count">%{count}</span> identifikuotojai'
   x_languages:
     one: "%{count} kalba"
     few: "%{count} kalbos"
@@ -117,11 +107,6 @@ lt:
     few: "<span class='count'>%{count}</span> stebėjimai peržiūrėti"
     many: "<span class='count'>%{count}</span> stebėjimai peržiūrėti"
     other: "<span class='count'>%{count}</span> stebėjimai peržiūrėti"
-  x_observers_html:
-    one: '<span class="count">%{count}</span> Stebėtojas'
-    few: '<span class="count">%{count}</span> Stebėtojai'
-    many: '<span class="count">%{count}</span> Stebėtojai'
-    other: '<span class="count">%{count}</span> Stebėtojai'
   x_others:
     one: "%{count} kitas"
     few: "%{count} kiti"
@@ -241,29 +226,6 @@ lt:
   about_this_bioblitz: Apie šį bioblicą
   about_this_map: Apie šį žemėlapį
   about_this_project: Apie šį projektą
-  about_trips_html: |
-    <h4>
-    Kelionės leidžia rinkti stebėjimo duomenis, pridedant kontekstą prie
-    jūsų pastebėjimų.
-    </h4>
-    <p>
-    <strong>Todėl</strong> stebėjimo duomenys apima informaciją apie
-    mėginių ėmimo sąlygas, naudingas atliekant mokslinę analizę, pavyzdžiui, paskirstymo
-    modeliavimą (neapdoroti iNaturalistiniai stebėjimai yra „tik lokacijos" duomenys).
-    </p>
-    <p>
-    <strong>Kas</strong> saugoma kelionės duomenyse, norit sukurti kontekstinę stebėjimo informaciją:
-    </p>
-    <ul>
-    <li><strong>Ką</strong> jūs tikėjotės aptikti (stebėjimų sąrašas)</li>
-    <li><strong>Kur</strong> vykdėte stebėjimą (paieškos vieta)</li>
-    <li><strong>Kada</strong> vykdėte stebėjimą (stebėjimo intervalai)</li>
-    </ul>
-    <p>
-    Kelionės tikslų sąraše esančios rūšys, kurias aptikote planuotoje paieškos vietoje ir planuotu laiku, laikomos aptiktomis rūšimis. Tuo tarpu nepastebėtos, sąraše esančios rūšys yra laikomos neaptiktomis rūšimis. 
-    Spustelėkite „Pateikti aptikimo-neaptikimo duomenis lentelėje“, kad sukurtumėte
-    kelionių ir susijusių rūšių buvimo ir nebuvimo įrašų lentelę. <a href='%{url}'>Sužinokite daugiau</a>
-    </p>
   about_trusting_projects: Apie projekto duomenų prieinamumą
   about_trusting_projects_options_any: Visi jūsų stebėjimai šiame projekte
   about_trusting_projects_options_any_desc: |-
@@ -638,6 +600,8 @@ lt:
   any_license: Bet kokia
   #Label for an option to show content with photos, sounds, or neither
   any_media: Bet kokia
+  #Label for an option to show any place
+  any_place: Betkuris
   #Label for an option to show content from any project
   any_project: Bet kuris
   #Label for an option to show content with any quality grade
@@ -648,6 +612,14 @@ lt:
   #Label for an option to show/include content by any user
   any_user: Bet kuris
   anyone: Betkuris
+  app_owner_application_about_p2_html: |
+    Nuo 2022 m. vartotojams, norintiems sukurti API klientus, reikalingas rankinis patvirtinimas.
+    Norėdami sukurti trečiųjų šalių programas, pirmiausia turite pateikti paraišką, kad taptumėte
+    "Programėlės savininkas". Šioje programoje turėtų būti aprašytos siūlomos programos funkcijos
+    ir kaip planuojate jį naudoti. Norint pateikti paraišką, jūsų paskyra turi būti adresu
+    ne jaunesnis kaip 2 mėnesių amžiaus ir turi būti ne jaunesnis kaip 10 <a href="https://help.inaturalist.org/support/solutions/articles/151000170241"
+    target="_blank">identifikavimo gerinimas</a> per pastarąjį mėnesį. Galime paprašyti tolesnių veiksmų
+    klausimų apie jūsų planą ir mes pasiliekame teisę atmesti paraiškas dėl bet kokios priežasties.
   #An app or service the user has authorized to access their iNat account, e.g.
   #the iNaturalist Android app or Flickr
   application: Programėlė
@@ -721,6 +693,8 @@ lt:
   are_you_sure_you_want_to_delete_this_assessment?: Ar tikrai norite ištrinti šį vertinimą?
   are_you_sure_you_want_to_delete_this_photo?: Ar tikrai norite ištrinti šią nuotrauką?
   are_you_sure_you_want_to_delete_this_post: Ar tikrai norite ištrinti šį įrašą?
+  #A confirmation message after a user initially presses the delete button for a sound to ensure they want to proceed with deletion.
+  are_you_sure_you_want_to_delete_this_sound?: Ar tikrai norite panaikinti šį garsą?
   are_you_sure_you_want_to_delete_this_taxon_change: Ar tikrai norite ištrinti šio taksono pakeitimą?
   are_you_sure_you_want_to_remove_all_tags: Ar tikrai norite pašalinti visas žymes?
   are_you_sure_you_want_to_remove_curator: Ar tikrai norite pašalinti %{user} kaip kuratorių?
@@ -733,6 +707,8 @@ lt:
   are_you_sure_you_want_to_remove_this_observation_from_project: |
     Ar tikrai norite panaikinti šį stebėjimą iš projekto %{project}?
   are_you_sure_you_want_to_remove_this_taxon_from_checklist: "Ar tikrai norite ištrinti šį taksoną iš %{place} kontrolinio sąrašo?"
+  artificially_generated_content: Dirbtinai sukurtas turinys
+  artificially_generated_content_desc: Yra turinio, kuris daugiausia arba visiškai sugeneruotas naudojant dirbtinį intelektą.
   associated_observations: Susiję stebėjimai
   associated_taxa: Susiję taksonai
   attention: Dėmesio
@@ -775,7 +751,6 @@ lt:
   back_to_all_species: Atgal į visas rūšis
   back_to_editing_observation: Grįžti prie stebėjimo redagavimo
   back_to_friends: Grįžti prie draugų
-  back_to_flags_html: "&laquo; Atgal prie žymų"
   back_to_lists: "Atgal į %{name} sąrašus"
   back_to_observation: Atgal į stebėjimą
   back_to_observation_fields: Atgal į stebėjimo laukus
@@ -803,8 +778,6 @@ lt:
   back_to_your_observations: Atgal prie mano stebėjimų
   back_to_your_profile: Atgal į savo profilį
   badges: Ženkleliai
-  based_on_the_evidence_can_id_be_improved: |
-    Ar gali būti patvirtintas ar patobulintas bendruomenės taksonas, remiantis įrodymais?
   batch: Grupė
   batch_edit: Redaguoti grupę
   #Where x is the title of a list of taxa
@@ -990,6 +963,7 @@ lt:
   community_id_is_precise: Bendruomenės taksonas yra tikslus
   community_moderation_settings: Bendruomenės Moderavimo Nustatymai
   community_supported_id: Bendruomenės patvirtintas taksonas?
+  community_taxon_matches_observation_taxon: Bendrijos taksonas atitinka stebėjimo taksoną
   compare: Palyginti
   compare_with: Lyginti su
   comparing: lyginama
@@ -1025,8 +999,10 @@ lt:
   confirm_new_password: Patvirtinkite Naują Slaptažodį
   confirm_now: Patvirtinti dabar
   confirm_your_info: Patvirtinkite savo informaciją
-  confirming_ids: Identifikacijų patvirtinimai
-  confirming_ids_description: Jei išjungsite, daugiau nebegausite pranešimų apie jūsų identifikacijų patvirtinimus.
+  confirming_ids: Patvirtinantys ID
+  confirming_ids_description: |
+    Jei išjungsite šią parinktį, jums nebebus pranešama apie ID (ID), kurie sutinka
+    su jūsų, nebent jie turi papildomų pastabų.
   #Label for a button to connect your iNat account to another account, e.g.
   #connecting to Flickr
   connect: Sujungti
@@ -1048,6 +1024,12 @@ lt:
       Organizacija, kuri paskelbė šį statusą. Naudokite automatinio užbaigimo funkciją, kad pasirinktumėte egzistuojantį autoritetą, prieš pridedant naują. Galite praleisti, jeigu *jūs* norite būti laikomas autoritetu.
     place: Vietovė, kurioje galioja šis statusas.
     url: Puslapio, apibūdinančio šią būseną, URL.
+    iucn: |
+      Lygiavertis IUCN raudonosios knygos kodas. Tai nėra tikrasis IUCN vertinimas,
+      tik IUCN kodas, kuris geriausiai atitinka koordinačių atskleidimo grėsmę
+      numanoma šio statuso. Tai nepaisys geoprivatumo, jei jis yra "Mažiausiai
+      Susirūpinimas" arba žemiau, taigi, jei norite užgožti pastebėjimus apie tai
+      taksonas, nustatykite tai į "Near Threatened" arba aukščiau.
   conservation_status_geoprivacy_desc: |
     Numatytasis vietos privatumas taikomas visiems šio taksono stebėjimams šioje vietovėje
   contact_support: Susisiekti su pagalba
@@ -1057,6 +1039,7 @@ lt:
   content_and_display: Turinys ir rodymas
   content_author: Turinio autorius
   content_hidden: Turinys paslėptas
+  #message on hidden content displaying when and why the content was hidden, and by whom
   content_hidden_by_user_on_date_because_reason_html: |
     %{date} turinį paslėpė %{user}, nes: "%{reason}"
   content_type: Turinio tipas
@@ -1066,6 +1049,10 @@ lt:
     %{user} nebeslepia %{item}, nes „%{reason}“
   continue: Tęsti
   continue_to_site: Tęsti į %{site_name}
+  #e.g. "With iNaturalist, you can contribute to real science"
+  contribute: Prisidėti
+  #e.g. "Contribute to iNaturalist"
+  contribute_cta: Prisidėti
   contributor_cannot_be_found: Įnašai negali būti rasti
   contributors_to_project: "%{project} įnašai"
   controlled_term_labels:
@@ -1095,6 +1082,7 @@ lt:
     no_evidence_of_flowering: Nėra žydėjimo požymių
     nymph: Nimfa
     larva: Lerva
+    #Evidence of an egg of an organism
     egg: Kiaušinis
     juvenile: Jaunas
     alive_or_dead: Gyvas ar miręs
@@ -1226,9 +1214,19 @@ lt:
     Skaityti kitų žmonių žinučių.
   #Title of a page where people apply to become a curator
   curator_application_title: Kuratoriaus paraiška
+  #Label for a menu item linking to a help page aimed at curators
+  curator_guide: Kuratoriaus vadovas
   curators_changed_for_x_html: "Kuratoriai keičiami kas %{x}"
   curators: Kuratoriai
+  curator_coordinate_access: Kuratorius koordinuoja prieigą
+  curator_coordinate_access_desc: |
+    Kuratorius koordinuoja prieigą prie tradicinių projektų priklauso nuo to, kas pridėjo
+    projekto stebėjimas. Tai tik numatytasis nustatymas
+    pastebėjimai projektuose. Stebėtojai taip pat gali nuspręsti tai pakeisti
+    individualūs pastebėjimai.
   curator_identification: Kuratorius identifikavimas
+  #Text to inform the user what the current consensus is for a given specimen's identification (aka taxon)
+  current_community_id: "Dabartinis Bendrijos taksonas: %{taxon}"
   current_flags: Dabartinės žymės
   custom_project_fields: Sukurti projekto laukai
   customize_location: Pasirinkti vietą
@@ -1236,6 +1234,11 @@ lt:
   daily_users: Vartotojų kasdien
   danger_zone: Pavojinga zona
   dashboard: Valdymo skydas
+  dashboard_pilots:
+    #button asking to participate in a pilot
+    pilot_participate: "Taip! Norėčiau dalyvauti."
+    #title for a pilot asking users to help fill species gaps by identifiying needs_id observations of species not in the computer vision model
+    gaps_id_pilot_title: "Identifikavimo spragų bandomasis projektas: reikia ID Ieškomos rūšys"
   data_deficient: Trūksta duomenų
   data_quality: Duomenų kokybė
   data_quality_assessment: Duomenų kokybės įvertinimas
@@ -1318,6 +1321,8 @@ lt:
   delete_photo: Ištrinti nuotrauką
   delete_project: Ištrinti šį projektą
   delete_selected: Ištrinti Pasirinktus
+  #Label for a button to delete a sound file
+  delete_sound: Ištrinti garsą
   delete_taxon_and_merge_most_data_html: |
     Ištrinti <i>%{taxon}</i> ir perkelti daugumą informacijos į kitą taksoną. Naudokite šį įrankį <strong>naikinant pasikartojančius taksonus</strong>. Jeigu norite ištrinti pasenusį sinonimą, prašome naudoti taksono sukeitimo įrankį. <strong>BŪKITE ATSARGŪS!</strong> Taksonų naikinimas gali padaryti daug žalos. Skaitykite <a href="%{curator_url}">Kuratorių gidą</a>, kad sužinotumėte daugiau.
   delete_user: Ištrinti vartotoją
@@ -1353,6 +1358,8 @@ lt:
       invalid_token: 'Neteisingas autentifikavimo prieigos raktas.'
       user:
         suspended: Jūsų paskyra buvo laikinai sustabdyta
+      #Error message seen when using attempting to reset a password using an invalid reset token
+      reset_password_token_invalid: Slaptažodžio nustatymo iš naujo atpažinimo ženklas neteisingas. Naudokite nuorodą naujausiame išsiųstame slaptažodžio nustatymo iš naujo el. laiške arba <a href="%{url}">prašyti naujo</a>.
     sessions:
       signed_in: 'Prisijungta sėkmingai.'
       signed_out: 'Atsijungta sėkmingai.'
@@ -1375,6 +1382,10 @@ lt:
         subject: Patvirtinimo instrukcijos
       reset_password_instructions:
         subject: 'Atstatyti slaptažodžio instrukcijas'
+  #message informing the user the must confirm their email address to interact with other users
+  devise_confirmation_instructions_please_click2: |
+    Spustelėkite toliau pateiktą nuorodą, kad patvirtintumėte savo el. pašto adresą. Jei nepatvirtinsite savo el. pašto
+    adresą, negalėsite sąveikauti su kitų naudotojų turiniu.
   devise_reset_password_instructions_hello_email: Sveiki, %{email},
   devise_reset_password_instructions_if_you_didnt_request_this: |
     Jei jūs to neprašėte, prašome ignoruoti šį el. laišką.
@@ -1383,6 +1394,8 @@ lt:
   devise_reset_password_instructions_your_password_wont_change_until: |
     Jūsų slaptažodis nepasikeis tol, kol nesukursite naujo paspausite aukščiau esančią nuorodą.
   devise_unlock_instructions_unlock: Atblokuoti paskyrą
+  #e.g. "With iNaturalist, you can discover nature nearby"
+  discover: Atraskite
   discoveries: Atradimai
   did_you_mean: 'Ar turėjote omenyje'
   did_you_photos_flickr?: Ar įkėlėte nuotraukų į Flickr?
@@ -1390,6 +1403,11 @@ lt:
   disable_comments: Išjungti komentarus
   disable_comments_desc: Neleisk žmonėms pridėti daugiau komentarų
   disagree_: Nesutikti
+  #Checkbox controlling whether to show observations that have disagreeing
+  #identifications or not
+  disagreements: Nesutarimų
+  #Title / tooltip for the disagreements checkbox
+  disagreements_show_observations_that: Parodykite pastebėjimus, kurių identifikacijos nesutampa
   #Label for a button to disconnect your iNat account from another account,
   #e.g. disconnecting your Flickr account
   disconnect: Atsijungti
@@ -1412,6 +1430,8 @@ lt:
   #Button text to donate to iNaturalist. Please try to keep translations as
   #short as possible
   donate: PAREMTI
+  #Imperative verb; link to a page where a user can donate money to iNaturalist
+  donate_: Paaukoti
   donate_again_caps: PAREMTI VĖL
   donate_again_today_caps: PAREMTI VĖL ŠIANDIEN
   done: Baigta
@@ -1481,7 +1501,8 @@ lt:
   edited_by_name_some_rights_reserved_html: |
     Redagavo %{name}, kai kurios teisės saugomos (%{license})
   editing: Redaguojama
-  editing_announcement: Redagavimo skelbimas
+  #Title for a page to edit an announcement
+  editing_announcement_x: Skelbimo redagavimas %{id}
   editing_custom_project_fields_for: Redaguojama pritaikyti projekto laukai
   editing_observation_field: Redaguojamas stebėjimo laukas
   editing_observation_id: "Redaguojamas stebėjimas %{obs_id}"
@@ -1518,6 +1539,8 @@ lt:
   endemic_to_x: "Endeminis vietovėje: %{x}"
   eol_collection_url: "EOL kolekcijos URL"
   error_updating_photo: "Klaida atnaujinant nuotrauką: %{photo_errors}"
+  #The text response for when a sound file's data (i.e. creative commons licensing information) failed to update in our database.
+  error_updating_sound: "Klaida atnaujinant garsą: %{sound_errors}"
   establishment:
     endemic: Endeminis
     establishment: Įsikūrimas
@@ -1554,6 +1577,7 @@ lt:
   extinct: išnykę
   extinct_in_the_wild: išnykę laisvėje
   extra_properties: Papildomos Savybės
+  evidence_accurately_depicts_organism_or_scene: Įrodymai tiksliai vaizduoja organizmą ar sceną
   evidence_of_organism: Organizmo buvimo įrodymai
   facebook: Facebook
   failed_to_find_your_location: Nepavyko rasti jūsų vietos.
@@ -1584,7 +1608,11 @@ lt:
   fields_can_only_be_edited_by_the_people_who: Laukai gali būti redaguojami tik tų žmonių, kurie juos sukūrė arba puslapio kuratorių
   fields_merged: Laukai sujungti
   file: Failas
+  #Label for a computer file's content type. Example values: audio/mp3, image/gif
+  file_format: Failo formatas
   file_size: Failo dydis
+  #Label for the URL to a file (i.e. to a sound file, image file)
+  file_url: Failo URL
   file_should_be_in_the_following_format: "Failas turi būti tokio formato: taksono pavadinimas, aprašymas"
   fill_out_project_observation_fields: Užpildyti projekto stebėjimo laukus
   fill_out_your_profile: užbaigti savo profilį
@@ -1656,7 +1684,6 @@ lt:
   flag_marked_as_resolved_html: '<span class="meta">Žymė nustatyta kaip</span> <strong>išspręsta.</strong>'
   #Label for the object that was flagged, e.g. a table header
   flag_object: Objektas
-  flag_reason: "&ldquo;Aš tai žymiu %{record}, nes"
   flag_resolution: Sprendimas
   flag_saved: Žymė išsaugota
   flag_saved_thanks_html: Žymė išsaugota. Ačiū! <a href="%{url}" class="readmore">Rodyti žymę</a>
@@ -1733,6 +1760,8 @@ lt:
   geoprivacy_is_private: Vietos privatumas yra privatus
   geoprivacy_is_private_desc: Stebėtojas koordinates padarė privačiomis.
   get_started: Pradėti
+  #Label for a menu item linking to a help page about how to get started using iNaturalist
+  getting_started: Darbo pradžia
   getting_started_guide: Darbo Pradžios Vadovas
   #Prompt to donate money on a montly basis
   give_monthly_caps: AUKOTI KARTĄ PER MĖNESĮ
@@ -1783,6 +1812,8 @@ lt:
   header_your_profile: Jūsų profilis
   heads_up: Dėmesio
   heads_up_this_photo_has_been_flagged: "DĖMESIO: ši nuotrauka buvo pažymėta."
+  #A warning in a small header to a user that this sound is considered problematic to listen to by another user (i.e. it is spam, has offensive content)
+  heads_up_this_sound_has_been_flagged: "HEADS: šis garsas buvo pažymėtas."
   heads_up_this_photo_is_already_associated_with: "Dėmesio: ši nuotrauka jau yra susieta su <a target='_blank' href='%{url}'>kitu stebėjimu</a>"
   help: Pagalba
   help_confirm_observations!: Padėk identifikuoti stebėjimus!
@@ -1819,6 +1850,10 @@ lt:
   identify_observations: "Identifikuoti stebėjimus"
   identify_observations_by_these_users: Identifikuoti šių vartotojų stebėjimus
   identify_title: "Identifikuoti"
+  #e.g. "With iNaturalist, you can identify nature nearby"
+  identify_verb: Identifikuoti
+  #e.g. "Identify using iNaturalist"
+  identify_cta: Identifikuoti
   identification: identifikaciją
   identification_by_user: Identifikuota %{user}
   #Notification when an identification has been deleted
@@ -1833,7 +1868,6 @@ lt:
   computer_vision_suggestion: Kompiuterinio matymo pasiūlymas
   identifiers: Identifikuotojai
   ids: "ID"
-  ids_made_for_others: Identifikavimai atlikti kitiems
   if_for_some_reason_a_user_doesnt_agree: |
     Jeigu, dėl kokios nors priežasties, nesutinkate su bendruomenės taksonu, galite jį atmesti. Tai reiškia, kad jūsų ID bus siejama su kitais stebėjimas, naudojama jūsų gyvybės sąraše ir t. t. Tai taip pat reiškia, jog stebėjimas gali tapti identifikuotu tik tada, jeigu bendruomenė sutiks
     su jumis.
@@ -1890,6 +1924,10 @@ lt:
   inaturalist_applications: "iNaturalist programėlės"
   inaturalist_places: "%{site_name} vietos"
   info: Informacija
+  #Title for a preference to control whether you receive notifications about
+  #infraspecies IDs, i.e. identifications of taxa below the species level,
+  #like subspecies
+  infraspecies_ids: Infraspecies ID
   insects: vabzdžiai
   insect_life_stage: Vabzdžio gyvenimo ciklo stadija
   instagram: Instagram
@@ -1916,6 +1954,7 @@ lt:
   italic_text: pakreiptas tekstas
   item_flagged_notice_html: |
     Tai buvo pažymėta kaip šlamštas ir nebėra viešai matoma. Jūs tai galite matyti, nes sukūrėte tai, arba esate tinklalapio kuratorius. Jeigu manote, kai tai yra klaida, prašome <a href="mailto:%{help_email}" class="contact">susisiekite su mumis</a>. <a href="%{manage_flags_path}">Valdykite žymes</a>
+  jobs: Darbas
   join: Jungtis
   join_and_add_an_observation_to_project_html: Prisijuk ir pridėk stebėjimą į %{project}
   join_project: Prisijunkite prie šio projekto
@@ -1964,6 +2003,7 @@ lt:
   leaderboard_for_x: "%{x} pirmaujančiųjų sąrašas"
   leaderboards: Pirmaujančiųjų sąrašai
   leading: Vedantis
+  #e.g. "With iNaturalist, you can learn from a global community of naturalists"
   learn: Sužinoti
   learn_about_the_species_live_in: Sužinokite apie rūšis, kurios gyvena
   learn_more: Sužinokite daugiau
@@ -2048,7 +2088,6 @@ lt:
   linear_scale_label: Linijinis
   link: Nuoroda
   link_your_flickr_account: Susiekite savo Flickr paskyrą
-  link_your_google_account: Susiekite savo Google paskyrą
   linked_flickr: "Jūsų %{site_name} paskyra šiuo metu yra susieta su jūsų Flickr paskyra."
   linked_flickr_automatically: "Taip pat atminkite, kad jeigu prisijungsite prie %{site_name} per Flickr, mes automatiškai susiesime jūsų %{site_name} su Flickr paskyra. Racionalu manyti, jog jeigu naudojate Flickr, turbūt norėsite importuoti Flickr nuotraukas, tiesa?"
   linked_flickr_description: "Kai jūsų %{site_name} ir Flickr paskyros susietos, galite pridėti kelias nuotraukas prie stebėjimų. Žinoma, jeigu kada nors norėsite atsieti %{site_name} ir Flickr, mes jūsų nesustabdysime, tiesiog nebegalėsite pridėti nuotraukų. Kartais tai gali būti naudinga, pavyzdžiui, jeigu sukuriate naują Flickr paskyrą, kurią norite susieti su %{site_name}."
@@ -2150,6 +2189,10 @@ lt:
   log_out: Atsijungti
   log_out_caps: ATSIJUNGTI
   log_scale_label: Įrašas
+  #Adjectival phrase describing state of being logged in
+  logged_in: Prisijungęs
+  #Adjectival phrase describing state of being logged out
+  logged_out: Atsijungė
   #Status message shown while logging in
   logging_in: Prisijungiama...
   logo:
@@ -2301,6 +2344,8 @@ lt:
   more_info_title: Daugiau informacijos
   more_journal_posts: Daugiau žurnalo įrašų
   more_observations: Daugiau stebėjimų
+  #Label for a button or section that shows additional options
+  more_options: Daugiau parinkčių
   more_photos: Daugiau nuotraukų
   more_than_a_week_ago: Seniau nei prieš savaitę
   most_agree: dauguma sutinka
@@ -2484,7 +2529,11 @@ lt:
   no_users_found_with_those_filters: Vartotojų nerasta pagal tokius kriterijus
   no_wikipedia_page_for_taxon: Šis taksonas neturi Vikipedijos straipsnio.
   noble_curators: "%{site} geraširdžiai kuratoriai"
+  #A user who is not a curator
+  non_curator: Ne kuratorius
   non_human?: Ne žmogus?
+  #A user who does not admin any projects
+  non_project_admin: Ne projekto administratorius
   none: Nė vienas
   none_found: Nieko nerasta
   normal: normalus
@@ -2513,6 +2562,8 @@ lt:
   obs_id_d: Stb ID
   obscured: Paslėptas
   obscured_or_private: paslėptas arba privatus
+  #verb, call to action, e.g. "Observe nature nearby"
+  observe: Stebėti
   observation: Stebėjimas
   observation_: stebėjimas
   observation_added_to_the_project: "Stebėjimas pridėtas prie šio projekto \"%{project}\""
@@ -2546,6 +2597,7 @@ lt:
   observation_field_type_taxon: Taksonas
   observation_field_type_dna: DNR
   observation_fields: Stebėjimo laukai
+  observation_fields_for_projects: Projektų stebėjimo laukai
   observation_fields_are_additional: Stebėjimo laukai yra papildomų duomenų laukai, kurie gali būti pridėti prie stebėjimo.
   #Help text to show what kind of values you can enter for the date an observation was observed
   observation_observed_on_examples: |
@@ -2843,6 +2895,8 @@ lt:
       Zone: Zona
       zone: zona
   place_imported: Vieta importuota!
+  #message describing a delay between importing a place and observations appearing in it
+  place_imported_delay: Gali užtrukti iki dienos, kol stebėjimai bus susieti su šia vieta.
   place_must_have_a_boundary_defined: Vieta turi turėti apibrėžtą ribą.
   place_name: Vietos pavadinimas
   place_notes: Vietos užrašai
@@ -3116,6 +3170,20 @@ lt:
     zimbabwe: Zimbabvė
   places_of_interest: Lankytinos vietos
   places_merged_successfully: Vietos sujungtos sėkmingai!
+  #user-facing guidance that new places cannot be too large
+  places_warning_area: |
+    Vietos negali būti didesnės nei 700 000 kvadratinių kilometrų.
+  #user-facing guidance that new places cannot be too large, with a smaller max area
+  #when we have enable the "content-freeze" mode to reduce processing on the site
+  places_warning_area_during_content_freeze: |
+    Vietos negali būti didesnės nei 70 000 kvadratinių kilometrų.
+  #user-facing guidance that new places cannot contain too many observations
+  places_warning_observation_count: |
+    Vietose negali būti daugiau nei 200 000 stebėjimų.
+  #user-facing guidance that new places cannot contain too many observations, with a lower max
+  #observat count when we have enable the "content-freeze" mode to reduce processing on the site
+  places_warning_observation_count_during_content_freeze: |
+    Vietose negali būti daugiau nei 10 000 stebėjimų.
   plants: augalai
   please_add_a_citation_for_this_change: Prašome pridėti citatą prie šio pakeitimo.
   please_allow_a_few_weeks_for_external_sites: Prašome išoriniams tinklalapiams duoti kelias savaites sinchronizuoti šio stebėjimo pakeitimus #Request that a known child ask their parents for permission to use this service
@@ -3132,6 +3200,7 @@ lt:
   posted_by: Paskelbė
   posts: Įrašai
   potential_disagreement: Galimas nesutarimas
+  powered_by_inaturalist_open_source_software_html: 'Parengta pagal <a href="https://github.com/inaturalist/inaturalist" target="_new" >iNaturalist atvirojo kodo programinė įranga</a>'
   press: Spauda
   preview: Peržiūra
   preview_observations_with_these_observation_requirements: Peržiūrėti stebėjimus su šiais stebėjimų reikalavimais
@@ -3156,6 +3225,8 @@ lt:
   processing3p: "Apdorojama..."
   profile: Profilis
   project: Projektas
+  #A user who admin's a project
+  project_admin: Projekto administratorius
   project_admins:
     one: Projekto administratorius
     few: Projekto administratoriai
@@ -3214,6 +3285,16 @@ lt:
   range: Ribos
   #Taxonomic rank, e.g. "genus," "subfamily", "kingdom", etc.
   rank: Rangas
+  rank_levels:
+    #Label when displaying genus level, which is the same for genus and
+    #genushybrid
+    genus: Gentis / gentis
+    #Label when displaying species level, which is the same for species and
+    #hybrid
+    species: Rūšis / hibridas
+    #Label when displaying infraspecies level, which is the same for all the
+    #infraspecies ranks
+    subspecies: Porūšis / veislė / forma
   #A person's rank on an ordinal scale (e.g. "first place," "second place,"
   #etc.). Generally used as a column header in lists of observers and
   #identifiers
@@ -3445,7 +3526,6 @@ lt:
     must_be_in: turi būti taksone
     must_be_coordinates_shareable_by_project_curators: stebėtojas turi leisti projekto kuratoriams žiūrėti koordinates.
     must_be_wild: turi būti laukinis
-  said: pasakė
   satellite: palydovas
   save: Išsaugoti
   save_all: Saugoti viską
@@ -3554,6 +3634,7 @@ lt:
   sign_in_with_google: Prisijungti su Google paskyra
   sign_out: Atsijungti
   sign_up: Registruotis
+  sign_up_sentence_case: Užsiregistruoti, užsiregistruok
   similar_species: Panašios rūšys
   similar_taxa: Panašūs taksonai
   #Journal post formatting option
@@ -3611,7 +3692,15 @@ lt:
     select_one_or_more_sounds: Pasirinkite vieną ar daugiau garsų
     selected_sounds: Pasirinkti garsai
     sound: Garsas
+    #The title to an uploaded sound file. Id is typically a number, and Attribution is the name of the uploader plus creative licensing information i.e. "all rights reserved"
+    sound_by_id_attribution: Skambėti %{id}, %{attribution}
+    #Message that notifies a user that their sound was successfully deleted
+    sound_deleted: Garsas ištrintas
     sound_has_been_flagged: Šis garsas buvo pažymėtas.
+    #Notifies an admin/curator that they successfully censored a sound from the website
+    sound_hidden: Garsas paslėptas
+    #Notifies an admin/curator that they successfully UNcensored a sound -- the sound can now be listened to by everyone
+    sound_unhidden: Garsas nepaslėptas
     soundcloud_replied_with_an_error: SoundCloud atsakė su klaida. Prašome bandyti vėliau.
     sounds: Garsai
     your_soundcloud_account: jūsų SoundCloud paskyra
@@ -3658,7 +3747,6 @@ lt:
   start_a_new_project: Pradėti naują projektą
   start_a_project: Pradėti projektą
   start_date_time: Pradžios data / laikas
-  start_one: Pradėti
   start_one_now: Pradėti dabar!
   start_typing_field_name: Įveskite lauko pavadinimą...
   start_typing_place_name: Įveskite vietovės pavadinimą...
@@ -3684,7 +3772,6 @@ lt:
   studies_that_used_inaturalist_data_in_year: Tyrimai, kurie %{year} metais naudojo iNaturalist duomenis
   stuff_just_added: "Tai, ką ką tik pridėjote..."
   subject_resolved_noun_html: "%{subject} išsprendė %{noun}"
-  subject_affecting_stuff_html: "%{subject} paveikiantis %{stuff}"
   submission_model_description: Kas gali pridėti stebėjimų prie jūsų projekto?
   submit_observations:
     one: Pateikti 1 stebėjimą
@@ -3698,7 +3785,6 @@ lt:
   subscribe_to_comments_on_this_post_html: "%{tag_start}Užsiprenumeruokite%{tag_end} šio įrašo komentarus"
   subscribe_to_observations_in_a_taxon: 'Užsiprenumeruokite visus tam tikros rūšies ar organizmų grupės (pvz.: „skorpionai“) stebėjimus.'
   subscribe_to_observations_in_a_place: 'Užsiprenumeruokite visus stebėjimus, stebėtus šioje vietoje. Jūs taip pat galite pridėti papildomą filtrą (pvz.: „skorpionai Teksase“).'
-  subscribe_to_this: Prenumeruoti tai
   subscribe_to_x_from_this_y_html: |
     <a href="#" onclick="$(this).parents('form:first').submit(); return false;">Užsiprenumeruokite</a> %{x} iš šio %{y}.
   subscriptions: Prenumeratos
@@ -3851,6 +3937,8 @@ lt:
   teachers_guide: Mokytojo vadovas
   tell_the_world_a_little_about_yourself: Papasakokite apie save
   tell_us_why: Kodėl taip manote...
+  #As in Terms of Service, an explicit description of what iNat the extent
+  #and limitations of the service provided to users
   terms: Sąlygos
   terms_and_rules_html: "Sąlygos &amp; taisykles"
   terms_new_users: "Jeigu pridedate sąlygas, nauji vartotojai turi su jomis sutikti, kad galėtų prisijungti prie projekto."
@@ -3896,7 +3984,6 @@ lt:
     few: "Yra <span class='count'>%{count}</span> sinonimai</span>"
     many: "Yra <span class='count'>%{count}</span> sinonimai</span>"
     other: "Yra <span class='count'>%{count}</span> sinonimai</span>"
-  there_is_no_wikipedia_page_matching: Nėra tokio Vikipedijos straipsnio apie
   there_isnt_a_wikipedia_article_titled_x_html: |
     Vikipedijos straipsnio pavadinimu „%{x}“ nėra. Galbūt norėtumėte jį <a href='http://en.wikipedia.org/wiki/%{x}'>sukurti</a>?
   there_was_a_problem_creating_this_account: |
@@ -3978,6 +4065,8 @@ lt:
   total_observations_caps: IŠ VISO STEBĖJIMŲ
   total_species_observed_caps: IŠ VISO STEBĖTA RŪŠIŲ
   total_unique_observers: Iš viso skirtingų stebėtojų
+  #e.g. "With iNaturalist, you can track species you've seen worldwide"
+  track: Sekti
   translated_languages: Išverstos kalbos
   'true': 'Taip'
   trending: Populiariausia
@@ -4001,12 +4090,13 @@ lt:
   umbrella_projects: Skėtiniai projektai
   unblock: Atblokuoti
   unclassified: Neklasifikuotas
+  #Label for a menu item linking to a help page describing how iNaturalist Projects work
+  understanding_projects: Projektų supratimas
   unhide_content: Nebeslėpti turinio
   unique_observers: skirtingi stebėtojai
   unknown: Nežinoma
   unknown_error: Nežinoma klaida
   unknown_rank: '(Nežinomas rangas)'
-  unlink_your_google_account: Atsieti savo Google paskyrą
   unlink_your_flickr_account: "Atsieti savo Flickr paskyrą"
   unmute: Įjungti garsą
   updates_notification_email_subject: "%{prefix} Atnaujinimai %{date}"
@@ -4028,6 +4118,8 @@ lt:
   updated_by_user_on_date_html: Atnaujino %{user} %{date}
   updated_daily: Atnaujinama kasdien
   updated_photo: Atnaujinta nuotrauka
+  #Notifies a user that they were able to successfully change information about a sound file (i.e. creative licensing information)
+  updated_sound: Atnaujintas garsas
   upload: Įkelti
   upload_a_csv_file: Įkelti CSV failą
   upload_a_csv_file_with_observation: |
@@ -4039,7 +4131,6 @@ lt:
   uploader:
     errors:
       file_too_big: Failas turi būti mažesnis nei %{megabytes} MB
-      unsupported_file_type: Failo tipas nepalaikomas. Mes priimame JPG, PNG, GIF, WAV, AAC, MP3 ir MP4 (tik garsas)
     tooltips:
       add: Pridėti stebėjimą(-us)
       combine: Sujungti pasirinktus stebėjimus
@@ -4083,7 +4174,6 @@ lt:
   user_added_an_x_to_noun_by_user_html: "%{user} pridėjo %{x} prie %{by} %{noun}"
   #@gender operates on %{x}
   user_added_an_x_to_noun_by_you_html: "%{user} pridėjo %{x} prie jūsų %{noun}"
-  user_added_x_observations_html: "%{user} pridėjo %{x} stebėjimus(-ų)"
   user_already_authenticated: Vartotojas jau autentifikuotas
   user_autocomplete_placeholder: kueda, simon123 ir t. t.
   #Label for comprehensive check lists. @vow_or_con will work for the taxon but
@@ -4112,6 +4202,14 @@ lt:
   user_observed_on_on_date_in_place: |
     %{user} stebėjo vieną %{date} vietovėje: %{place}
   user_suggested_an_id: "%{user} pasiūlė ID"
+  user_trusts_this_project_when_added_by_any: |
+    Vartotojas pasitiki projekto kuratoriais su pridėtomis paslėptomis stebėjimų koordinatėmis
+    į projektą bet kas.
+  user_trusts_this_project_when_added_by_observer: |
+    Vartotojas pasitiki projekto kuratoriais su pridėtomis paslėptomis stebėjimų koordinatėmis
+    stebėtojo projektui.
+  user_trusts_this_project_when_added_by_none: |
+    Vartotojas nepasitiki projektų kuratoriais su paslėptomis koordinatėmis.
   user_trusts_you_with_their_private_coordinates: "%{user} patiki jums savo paslėptas koordinates"
   user_trusts_you_with_their_private_coordinates_desc: |
     Stebėtojas patiki jums visų savo stebėjimų paslėptas koordinates.
@@ -4131,6 +4229,7 @@ lt:
   values: Reikšmės
   verbing_x_of_y: "%{verb}%{x} iš %{y}..."
   verifiable_observations_by_observation_date: Identifikuotini stebėjimai pagal stebėjimo datą
+  video_tutorials: Video pamokos
   view: Rodyti
   view_all: Rodyti viską
   view_all_flags: Rodyti visus pažymėjimus
@@ -4190,7 +4289,6 @@ lt:
   view_your_observations: Žiūrėti jūsų stebėjimus
   view_yours: Rodyti jūsų
   view_all_of_your_observations_from_x: "Žiūrėti visus %{x} stebėjimus"
-  video_tutorials: Video pamokos
   visually_similar: Vizualiai panašus
   vulnerable: Pažeidžiamas
   w_photos_only: su nuotraukomis
@@ -4199,6 +4297,8 @@ lt:
   #Species that are "wanted," e.g. we know they exist but haven't been observed
   wanted: Ieškomas
   was_it_captive_cultivated?: "Ar tai buvo naminis / kultivuojamas?"
+  we_also_support3: |
+    Taip pat palaikome nuotraukų importavimą iš <a href="http://flickr.com">"Flickr"</a>.
   we_can_only_understand_csv_in: Mes galime suprasti CSV tik jeigu jo formatas toks
   we_couldnt_find_a_user: Mes neradome vartotojo su tokiu el. pašto adresu.
   we_couldnt_find_a_user_with_that_activation_code: "Mes neradome vartotojo su tokiu aktyvacijos kodu. Galbūt jūs jau aktyvavote savo paskyrą. Pabandykite prisijungti."
@@ -4221,21 +4321,26 @@ lt:
   #higher-level rank like family
   were_pretty_sure_this_is_in_the_rank: Mes įsitikinę, kad šis organizmas priklauso %{rank}
   were_sorry_but_your_bulk_import_of_filename_has_failed: "Atsiprašome, tačiau grupinis %{filename} importas nepavyko."
+  #e.g. "What was observed?"
   what: Kas
   what_did_you_see: Ką pamatėte?
   what_did_you_see?: <em>Ką</em> pamatėte?
   what_do_you_think: Ką manote?
   what_to_keep: Ką palikti
   whats_this?: Kas tai?
+  #e.g. "When was it observed?"
   when: Kada
   when_did_you_see_it?: Kada tai pamatėte?
   when_did_you_see_them?: <em>Kada</em> juos pamatėte?
+  #e.g. "Where was it observed?"
   where: Kur
   where_were_they?: Kur jie?
   where_were_you?: Kur buvote?
   #Prompt to explain why a user is changing a record, e.g. changing a taxon name or updating a taxon
   why_are_you_making_this_change_optional: Kodėl darote šį pakeitimą? (neprivaloma)
   why_you_can_see_the_coordinates: Kodėl galite matyti koordinates
+  #e.g. "Who observed it?"
+  who: Kas
   who_can_add_observations_to_this_project?: Kas gali pridėti stebėjimų prie šio projekto?
   who_can_see_the_coordinates: Kas gali matyti koordinates
   who_can_see_the_coordinates_observer: Žmogus, kuris sukūrė stebėjimą
@@ -4243,6 +4348,8 @@ lt:
   who_can_see_the_coordinates_trusted: Žmonės, kuriems stebėtojas patiki paslėptas koordinates
   who_helped_user_the_most: "Kas Daugiausiai Padėjo %{user}"
   who_user_helped_the_most: "Kam %{user} Daugiausiai Padėjo"
+  #Question mark added to the end of the word "Why" to make it a question. e.g. "Why should I use iNaturalist?"
+  why_question: Kodėl?
   why_the_coordinates_are_obscured: Kodėl koordinatės paslėptos
   with_annotation: Su papildoma informacija
   without_annotation: Su papildoma informacija
@@ -4328,6 +4435,7 @@ lt:
   you_dont_have_permission_to_edit_that_project: Jūs neturite leidimo redaguoti šį projektą.
   you_faved_this: Jūs tai pamėgote!
   you_have_left_x_project: "Jūs palikote %{project}"
+  you_havent_joined_any_projects: Jūs neprisijungėte prie jokių projektų
   you_joined_this_project: Prisijungėte prie šio projekto!
   you_need_to_select_some_observations_first: Pirma turite pasirinkti stebėjimus.
   you_sure_delete_check_list: "Ar tikrai norite tai ištrinti? Gali būti, jog žmonės į tai įdėjo daug darbo..."
@@ -4366,6 +4474,33 @@ lt:
   verifiable_observations: Identifikuotini stebėjimai
   views:
     views: 'Peržiūros'
+    announcements:
+      locales_desc: |
+        CMD- arba SHIFT-spustelėkite, kad pasirinktumėte kelis. Pasirinkimas "Visi" arba nedarymas
+        Pasirinkimas parodys pranešimą visiems vartotojams, neatsižvelgiant į
+        lokalė. Pasirinkus kalbą be regiono, *ne* bus siekiama
+        lokalės su regionais, pvz., jei pasirinkote anglų kalbą, ji nebus rodoma
+        žmonėms, pasirinkusiems anglų kalbą (JK).
+      clients_desc: |
+        CMD- arba SHIFT-spustelėkite, kad pasirinktumėte kelis. Pasirinkimas "Visi" arba nedarymas
+        Pasirinkimas parodys pranešimą visiems vartotojams, neatsižvelgiant į
+        klientas.
+      end_desc: |
+        Paskyros laiko juostos laikas, per kurį šis pranešimas bus sustabdytas
+        pasirodo. Taikoma visose laiko juostose, todėl visi nebematys
+        tai tuo pačiu metu, o ne jų vietos laiko atžvilgiu.
+      excludes_non_site_desc: |
+        Jei skelbimas taikomas pagal svetainę (tai yra numatytasis nustatymas, jei esate
+        Site Admin), tai neįtrauks pranešimų, kurie taikomi pagal visas svetaines
+        ši vieta.
+      exclude_ip_countries_desc: |
+        CMD arba SHIFT spustelėkite, kad pasirinktumėte kelis. Pasirinktos šalys nebus rodomos
+        pranešimas. Jei pasirinktos IP šalys, pasirinkite Išskirti IP šalis
+        bus atimta iš pirmosios.
+      observation_oauth_application_ids_desc: |
+        CMD- arba SHIFT-spustelėkite, kad pasirinktumėte kelis. Pasirinkimas "Visi" arba nedarymas
+        Pasirinkimas parodys pranešimą visiems vartotojams, neatsižvelgiant į
+        programėlė.
     content_freeze:
       content_freeze: Turinio užšaldymas
       during_this_time: |
@@ -4379,14 +4514,38 @@ lt:
       post_donate_social_media_text: Aš remiu iNaturalist nes...
       monthly_supporters:
         become_a_monthly_supporter_of_inaturalist: Tapkite mėnesiniu iNaturalist remėju
-    flags:
-      show:
-        flags_that_should_not_be_resolved_desc_html: |
-          Prašome išspręsti <code>šlamšto</code> ir <code>autorinių teisių pažeidimo</code> žymes tik tada, jeigu tai nėra šlamštas ar autorinių teisių pažeidimas.
+    email_confirmation:
+      click_here_to_resend_a_confirmation_email: Spustelėkite čia, kad iš naujo išsiųstumėte patvirtinimo el. laišką
+      #message displayed after users trigger sending a email to confirm their email address
+      confirmation_email_sent: Išsiųstas patvirtinimo el. laiškas
+      #text displayed before showing a user the email address that we will
+      #resend a confirmation email to
+      here_is_the_email_colon: |
+        Štai el. pašto adresas, kuriuo išsiųsime patvirtinimą:
+      #statement introducing suggestions for users that do no receive confirmation emails
+      if_you_do_not_receive_the_email_here_are_tips_colon: |
+        Jei negaunate el. laiško, pateikiame keletą patarimų:
+      #statement telling users to contact us if they are not receiving confirmation emails
+      if_you_are_still_not_receiving_email_contact_us_html: Jei vis tiek negaunate patvirtinimo el. laiško, susisiekite su mumis adresu <a href="mailto:help+confirmation@inaturalist.org">help@inaturalist.org</a> kad galėtume jums padėti.
+      please_add_an_email_and_password: Pridėkite el. pašto adresą ir slaptažodį, kad neprarastumėte prieigos prie savo paskyros
+      please_click_the_link_sent_to_email_to_confirm_html: Spustelėkite nuorodą, išsiųstą <span class="email">%{email}</span> , kad patvirtintumėte savo el. pašto adresą.
+      please_confirm_that_email_is_the_best_contact_html: Patvirtinkite, kad <span class="email">%{email}</span> yra geriausias būdas su jumis susisiekti. #message requesting users confirm their email address to be able to engage with other users
+      please_confirm_to_interact_and_access: Patvirtinkite savo el. pašto adresą, kad galėtumėte sąveikauti su kitų naudotojų turiniu ir pasiekti tam tikrus puslapius. #message requesting that a user confirm their email address, displaying the email to confirm
+      please_confirm_your_email_address_html: Patvirtinkite savo el. pašto adresą <span class="email">%{email}</span>. #statement used in areas that might contain a form allowing users to add comments, etc. This # informs users they must confirm their email address if they want to be able to interact
+      please_confirm_to_interact: Patvirtinkite savo el. pašto adresą, kad galėtumėte sąveikauti su kitų naudotojų turiniu
+      #statement used on pages that are not functional unless a user has confirmed their email address
+      please_confirm_to_use_this_page: Norėdami naudotis šiuo puslapiu, patvirtinkite savo el. pašto adresą
+      #tip for users who do not receive confirmation emails to check if their email view is filtered
+      tips_check_email_filters: Patikrinkite, ar nėra jūsų sukurtų filtrų, kurie galėtų pašalinti mūsų el. laiškus iš gautųjų #tip for users who do not receive confirmation emails to check their email spam folder
+      tips_check_your_spam_folder: Patikrinkite šlamšto aplanką
+      your_site_account_has_no_email: Jūsų %{site_name} paskyroje nėra su ja susieto el. pašto adreso.
     guides:
       index:
         deprecated_banner: |
           Prašome atkreipti dėmesį, kad nuo 2019 metų sausio mėnesio Vadovų funkcija nebeplėtojama; mes jos neištrinsime, bet ir nebetobulinsime.
+        funding2_html: |
+          Finansavimą gidų rengimui skyrė
+          <a href="http://eol.org"><img alt="Encyclopedia of Life" src="%{image_url}"></a>
       edit:
         import_tags_from_csv_help_html: |
           <p>
@@ -4442,6 +4601,17 @@ lt:
       index:
         show_messages_from_user: Rodyti žinutes nuo %{user}
         show_messages_to_user: Rodyti žinutes vartotojui %{user}
+        #Users cannot create messages if they lack the criteria for
+        #earning interaction privilege
+        interaction_privilege_notice: |
+          Galėsite siųsti naujus pranešimus, kai patvirtinsite el. paštą
+          adresas. Kol kas galite skaityti ir atsakyti į žinutes, kurias jums siunčia kiti žmonės.
+        #Users cannot create messages if they lack the criteria for
+        #earning interaction or speech privilege
+        privilege_notice: |
+          Galėsite siųsti naujus pranešimus, kai patvirtinsite el. paštą
+          adresą ir pridėjo tris patikrinamus pastebėjimus arba tris identifikacijas
+          kitiems. Kol kas galite skaityti ir atsakyti į žinutes, kurias jums siunčia kiti žmonės.
     oauth:
       authorizations:
         new:
@@ -4471,10 +4641,7 @@ lt:
         well_email_you: "Gerai, mes atsiųsime jums el. laiška, kai bus paruošta."
         taking_a_while: "Tai trunka per ilgai. Prašome pasirinkti vieną iš žemiau pateiktų variantų."
       field_descriptions:
-        latitude: Viešai matoma platuma
-        longitude: Viešai matoma ilguma
         out_of_range: Ar šis stebėjimas yra žinomose taksono arealo ribose
-        user_login: Stebėtojo vartotojo vardas
         tag_list: Kableliais atskirtų žymių sąrašas
         positioning_method: Kaip buvo nustatytos koordinatės
         positioning_device: Įrenginys, su kuriuo nustatytos koordinatės
@@ -4482,6 +4649,17 @@ lt:
         geoprivacy_must_be_in_english: |
           Vietos privatumo stulpelis turi būti anglų kalba, o langeliai turi būti su vertėmis „paslėptas“, „privatus“ arba palikti tušti
       show:
+        #One of a list of requirements an observation must meet to be in the Research Grade category
+        dqa_help_research_grade_community_observation_html: |
+          Programa <strong>Bendrijos taksono ir stebėjimo taksono atitiktis</strong>
+          (tais retais atvejais, kai stebėjimo taksonas gali būti
+          specifinis nei Bendrijos taksonas)
+        #One of a list of reasons for an observation to revert to Casual
+        dqa_help_casual_not_accurate_evidence_html: |
+          Stebėjimas <strong>nepateikia tikslių organizmo įrodymų arba
+          Scena</strong> (pvz., dirbtinis intelektas buvo naudojamas pridėti, pašalinti arba pakeisti
+          vaizdo ar garso elementai. Triukšmo mažinimas, fokusavimo kaupimas arba kūrimas
+          nedideli pataisymai, tokie kaip jutiklio dulkių pašalinimas, paprastai yra gerai).
         flagged_photos_desc_html: |
           Kai kurios nuotraukos buvo pažymėtos kaip nepriimtinas turinys arba
           autorinių teisių pažeidimas. Daugiau informacijos %{links}
@@ -4581,8 +4759,6 @@ lt:
           Galite pasirinkti rūšis (arba taksonus), vietas, datas ir kitus kriterijus, pagal kuriuos stebėjimai bus automatiškai įtraukti.
         start_and_end_times_for_bioblitzes: Pradžios ir pabaigos datos/laikai (skirta bioblico tipo renginiams)
         welcome_to_projects: Sveiki atvykę į projektus!
-        you_can_learn_more_html: |
-          Apie projektų valdymą daugiau sužinoti galite <a href="https://www.inaturalist.org/pages/managing-projects">čia</a> arba galite paskaityti apie mūsų projektų istoriją <a href="https://www.inaturalist.org/blog/15450-announcing-changes-to-projects-on-inaturalist">mūsų tinklaraštyje</a>.
         errors:
           name_is_required: Projekto pavadinimas yra būtinas
           name_less_than_100_characters: Projekto pavadinimas negali viršyti 100 simbolių
@@ -4606,6 +4782,14 @@ lt:
       not_found:
         sorry_that_doesnt_exist: Atsiprašome, tai neegzistuoja!
         even_our_dedicated_search_mole_couldnt: Net ir mūsų geriausias kurmis nesugebėjo nieko surasti!
+    sounds:
+      show:
+        #The user has been warned that an uploaded sound file has been noted as being problematic.
+        #To bypass the warning, this additional text provides a link to the sound and guidance.
+        view_original_html: |
+          Originalą galite peržiūrėti adresu <a href="%{url}">%{url}</a>. Prašau
+          Autorių teisių pažeidimo vėliavėlės paliekamos neišspręstos, jei šis garsas
+          pažeidžia autorių teises.
     stats:
       index:
         new_users_desc: Užsiregistravo šią dieną
@@ -4641,6 +4825,14 @@ lt:
         translators_prompt: |
           Jeigu norite padėti versti, %{link_tag}sužinokite, kaip tą galite padaryti%{link_tag_end}.
     taxa:
+      edit:
+        #a message when you try to save major changes to a taoxn name
+        you_can_only_make_minor_changes_to_the_species_epithet_directly_html: |
+          Galite atlikti tik nedidelius rūšies epiteto pakeitimus tiesiogiai (pvz., lyties pakeitimai, rašybos klaidos). Pridėti <a target="_blank" href="%{url}">Taksonų apsikeitimas</a> jei reikia kitų pavadinimo pakeitimų.
+        #message when you try to save edits to a taxon that is a descendant of a locked taxon
+        heads_up_locked: "Įspėjimas: ką tik pridėjote užrakinto taksono palikuonį (<a href='/taxa/%{locked_ancestor_id}'>%{locked_ancestor_name}</a>). Prašome apsvarstyti galimybę sujungti tai į esamą taksoną." #message when you try to save edits to a taxon that has inactive parents
+        heads_up_inactive_parent: " Įspėjimas: šio aktyvaus taksono tėvas yra neaktyvus, bet tai yra šio rezultatas <a href='/taxon_changes/%{taxon_change_id}'> Taksono pakeitimo projektas</a> kad mes manome, kad netrukus įsipareigosite." #a message when you try to save an edit to a taxon covered by a taxon framework
+        covered_by_taxon_framework: Šis aktyvus taksonas turi daugiau nei %{count} Tolesni stebėjimai arba yra įtraukti į taksonų sistemą, todėl kai kuriuos taksonominius požymius gali redaguoti tik darbuotojai arba taksonų kuratoriai, susiję su ta taksono sistema.
       show:
         about_establishment_desc: |
           „Įsikūrimo būdas“ nusako, kaip rūšis pateko ten, kur ji dabar sutinkama. Introdukuotos rūšys atkeliavo dėl žmonių kaltės, tuo tarpu vietinės rūšys atkeliavo be žmonių pagalbos. Endeminės rūšys aptinkamos tik specifinėje vietoje ir niekur kitur.
@@ -4653,36 +4845,65 @@ lt:
           "Plant Phenology=Flower Budding": Su sprogstančiais žiedais
           "Plant Phenology=Flowering": Žydi
           "Plant Phenology=Fruiting": Dera
-          "Life Stage=Adult": Suaugęs
           "Life Stage=Egg": Kiaušinis
           "Life Stage=Larva": Lerva
           "Life Stage=Juvenile": Jauniklis
           "Life Stage=Nymph": Nimfa
           "Life Stage=Pupa": Lėliukė
           unannotated: Be papildomos informacijos
+      #an error when someone tried to edit the name of a taxon too radically
+      name_must_be_similar: Pavadinimai turi būti panašūs redaguojant tiesiogiai, pakeiskite taksoną radikaliais pavadinimų pakeitimais
+      #error message when Flicker permissions preventing Flickr tagger feature
+      cant_tag_photos_html: |
+        %{site} negali pridėti žymių prie nuotraukų, kol "Flickr" nežino, kad davėte mums leidimą.
+        <a href='%{url}'>Suteikti Flickr teises</a>.
+      #error message when the Flickr tagger feature fails
+      something_went_wrong_tags: |
+        Kažkas nuėjo ne taip bando rašyti šias žymes: %{message}
+    taxon_changes:
+      #state of a pending taxon change
+      pending: Laukiama
+      #state of a approved taxon change
+      approved: Patvirtintas
+      #for taxon changes requiring approval votes, a message indicating to the user that they voted
+      vote_added: Balsas pridėtas
+      #for taxon changes requiring approval votes, a message indicating to the user that they removed their vote
+      vote_removed: Balsavimas pašalintas
+      #a tooltip that replaces the names of curators who have voted in approval of a taxon change when there are no votes
+      no_votes_yet: Dar nėra balsų
+      #message when taxon change is committed
+      taxon_change_committed: Taksono pakeitimas įvykdytas! Įrašai, kuriuos galima atnaujinti automatiškai, netrukus bus pakeisti.
+      #message when taxon change is moved into the pending state, count is a number (e.g. 5)
+      taxon_change_pending:
+        one: "Šis taksono pakeitimas dabar laukiamas. Norint įsipareigoti, reikia 1 kuratoriaus patvirtinimo."
+        few: "Šis taksono pakeitimas dabar laukiamas. Tam turi pritarti %{count} kuratoriai galėtų įsipareigoti."
+        many: "Šis taksono pakeitimas dabar laukiamas. Tam turi pritarti %{count} kuratoriai galėtų įsipareigoti."
+        other: "Šis taksono pakeitimas dabar laukiamas. Tam turi pritarti %{count} kuratoriai galėtų įsipareigoti."
+      #message when someone tries to commit a taxon change with active children
+      input_taxon_cannot_have_active_children: |
+        Įvesties taksonas negali turėti aktyvių vaikų, pirmiausia juos perkelti arba pasirinkti parinktį "Perkelti vaikus į išvestį?"
+      output_taxon_rank_level_not_coarser_html: >
+        Išvesties taksono rango lygis ne šiurkštesnis už įvesties taksono aktyvių vaikų rango lygį %{taxon_link}.
+      #a message when someone tries to commit a taxon change that was already committed
+      taxon_change_already_committed: Šis taksonominis pakeitimas jau buvo įvykdytas!
+      #an error message when trying to delete a taxon change, param is the integer id of the taxon change
+      something_whent_wrong: "Kažkas nutiko ištrinant taksono pakeitimą \"%{id}'!"
+      #a message when a taxon change was deleted
+      taxon_change_deleted: Taksono keitimas buvo panaikintas.
+      #a message when a taxon change was successfully updated
+      taxon_change_successfully_update: Taksono keitimas sėkmingai atnaujintas.
+      #an error message when trying to modify/create a taxon change that can be found
+      no_changes_specified: Nenurodyta jokių pakeitimų
+      #a message when a taxon change was successfully created
+      taxon_change_successfully_created: Taksono keitimas sėkmingai sukurtas.
+      #message indicating the taxon change requires approval by count number of other curators to go from pending to approved
+      requires_approval:
+        one: "Norint įsipareigoti, reikalingas 1 kito kuratoriaus patvirtinimas"
+        few: "Reikalingas patvirtinimas %{count} kiti kuratoriai įsipareigoti"
+        many: "Reikalingas patvirtinimas %{count} kiti kuratoriai įsipareigoti"
+        other: "Reikalingas patvirtinimas %{count} kiti kuratoriai įsipareigoti"
     taxon_names:
       form:
-        new_name_guidelines_html: |
-          <ul>
-          <li><p>Prašome pridėti tik pavadinimus, kurie iš tiesų yra kažkur naudojami. Prašome neišgalvoti pavadinimų patiems.</p></li>
-          <li><p>Nepridėkite dublikatų.</p></li>
-          <li>
-          <p>
-          Nepridėkite informacijos, kuri nėra pavadinimas, pvz.: papildoma informacija, kur ir kaip pavadinimas turi būti naudojamas.
-          </p>
-          </li>
-          <li>
-          <p>
-          Nauji leksikonai turi būti anglų kalba. Nepridėkite išverstų kalbų pavadinimų (pvz.: Français).
-          </p>
-          </li>
-          <li>
-          <p>
-          Tam tikros kalbos pavadinimai bus rodomi tinklalapyje, jeigu nustatymuose bus pasirinkta tinklalapio kalba arba vieta, kurioje kalbama ta kalba.
-          <a class="readmore" href="/pages/translate">Sužinokite daugiau apie vertimą</a>
-          </p>
-          </li>
-          </ul>
         places_help_html: |
           Pridėkite vietoves, kad vartotojai iš šių vietovių pirmiausiai matytų šį pavadinimą. Jeigu vietovėje yra vartojami keli skirtingi pavadinimai, pirmenybę galite keisti <a href="%{url}">čia</a>. Prašome <strong>nepridėti</strong> visų vietovių, kur pavadinimas yra naudojamas. Pridėkite tik tas vietoves, kuriose naudojamas pavadinimas yra kitoks, nei kitur.
     users:
@@ -4698,6 +4919,32 @@ lt:
           Ištrindami savo paskyrą jūs panaikinsite
       edit:
         about_third_party_tracking: Apie trečiųjų šalių sekimą
+        block_desc_blocking_someone_prevents: |
+          Užblokavus asmenį, jis negalės jums siųsti žinučių, komentuoti jūsų
+          stebėjimus, atpažinti savo pastebėjimus ir kitaip sąveikauti
+          su jumis %{site_name}. Tai taip pat pašalina jų pastebėjimus iš jūsų
+          paieškos rezultatus ir pašalina jūsų pastebėjimus iš jų
+          Rezultatai. Tačiau tai nepadaro tavęs jiems nematomu. Jie gali
+          vis dar rasti savo pastebėjimus ir peržiūrėti savo profilį, jie tiesiog negali
+          bendrauti su jumis.
+        block_desc_blocking_is_for_situations: |
+          Blokavimas skirtas situacijoms, kai tiesiog negalite susitvarkyti su
+          ir jie nepaliks jūsų ramybėje, nepaisant jūsų visų pastangų
+          spręsti ginčus civilizuotai. Tai nėra būdas pasislėpti nuo
+          žmonių, kad būtų išvengta žmonių, kurių nuomonę
+          nepasitiki arba atsisako bendruomenės ID (yra dar vienas
+          nustatymas). Taigi blokavimas veikia abiem kryptimis: jei blokuojate
+          kažkas, jie negali bendrauti su jumis, bet jūs taip pat negalite bendrauti
+          su jais. Jei piktnaudžiaujate juo, kad kas nors negalėtų identifikuoti jūsų
+          pastebėjimus, taip pat neleidžiate sau nustatyti jų
+          Pastabas.
+        block_desc_you_can_only_block_html: |
+          Galite blokuoti tik tris žmones. Manome, kad tai yra pagrįsta
+          numerį, kuris talpina žmones, kuriuos reikia blokuoti, o
+          užkirsti kelią piktnaudžiavimui blokavimu. Jei manote, kad reikia blokuoti daugiau
+          Žmonės, prašau <a href="mailto:%{help_email}">Susisiekite su mumis</a>.
+        block_desc_there_are_two_exceptions: |
+          Yra dvi situacijos, kai blokavimas netrukdo sąveikai:
         if_you_change_your_mind_you_can_always_edit_your_settings_html: |
           Jei apsigalvosite visada galite
           <a href='/users/edit'>keisti savo nustatymus</a>.
@@ -4752,8 +4999,6 @@ lt:
           Įrenginio detalės, pavyzdžiui, mobiliojo telefono modelis
         prefers_no_tracking_label_desc_value_html: |
           <strong>Trečiųjų šalių paslaugos mūsų mažam personalui teikia didelę vertę</strong>, be jų negalėtumėme palaikyti iNaturalist stabilumo ir pritaikomumo. Mes nieko negalėtumėme žinoti apie problemas mobiliuosiuose įrenginiuose, nes mes nekontroliuojame jų operacinių sistemų. Kartais mes net nežinome problemų, kol nepamatome jų duomenyse, kuriuos mums pateikia trečiųjų šalių paslaugos. <strong>Besidalindami šia informacija jūs padedate mums tarnauti jums ir visai iNaturalist bendruomenei.</strong>
-        this_only_applies_to_traditional_projects: |
-          Tai galioja tik tradiciniams projektams. Jūs negalite išmesti stebėjimų iš grupinių ar skėtinių projektų, nes jie iš esmės yra išsaugoti paieškos rezultatai. <a href="/blog/15450-announcing-changes-to-projects-on-inaturalist">Čia</a> galite paskaityti daugiau.
       recent:
         about_recent_users: Apie
       show:
@@ -4795,6 +5040,191 @@ lt:
         who_uses_site_name: "Kas naudoja %{site_name}?"
         what_are_you_waiting_for: Ko dar lauki?
         join_today: Prisijunk šiandien
+    welcome_v2:
+      index:
+        hero:
+          #Main hero headline on the home page
+          headline: Kur jūsų smalsumas prisideda prie mokslo.
+          #Hero subheadline describing the core value proposition
+          subheadline: >
+            Atpažinkite augalus, gyvūnus, grybus ir dar daugiau, papildydami gyvą gyvybės Žemėje atlasą.
+          #Primary call-to-action button in the hero section
+          cta_join: Prisijunkite prie bendruomenės
+          #Tagline displayed beneath the hero CTA, emphasising the app's accessibility
+          tagline: Nemokama, ne pelno siekianti, bendruomenės valdoma.
+        features:
+          #Section label introducing the three core user actions
+          intro: "Naudodami \"iNaturalist\" galite:"
+          #Description of what users can Identify
+          #Read as "{Identify} plants, animals, fungi, & more"
+          identify_desc: augalai, gyvūnai, grybai ir kt.
+          #Description of what users can Track
+          #Read as "{Track} species you've seen worldwide"
+          track_desc: Rūšys, kurias matėte visame pasaulyje
+          #Description of where users can Contribute
+          #Read as "{Contribute} to real science"
+          contribute_desc: į tikrąjį mokslą
+          #Description of what users can Discover
+          #Read as "{Discover} nature nearby"
+          discover_desc: gamta netoliese
+          #Description of what users can Learn
+          #Read as "{Learn} from a global community of naturalists"
+          learn_desc: iš pasaulinės gamtininkų bendruomenės
+        stories:
+          #Section heading for real-world stories powered by community science
+          heading: Bendruomenės mokslo galia
+          #Photo credit for each community-science story card; %{user} = observer login, %{place} = display place name
+          observation_credit: Žiūrėjo %{user} Į %{place}
+          #Heading for the story about rediscovering an extinct moth species
+          moth_heading: Seniai prarastų rūšių atradimas iš naujo
+          #Body text for the moth rediscovery story; %{moth_common_name} = common name of the moth from JSON
+          moth_body: >
+            Į %{moth_common_name} kandis nebuvo pastebėtas dešimtmečius ir kadaise buvo laikomas išnykusiu, kol turistas Naujojoje Zelandijoje jį pastebėjo atsitiktinai.
+          #Heading for the story about a new-to-science mantis species
+          mantis_heading: Naujų mokslo rūšių atradimas
+          #Body text for the mantis discovery story
+          mantis_body_html: >
+            <span class="italic">Inimia nat</span> — sutrumpintai <span class="italic">I. nat</span> – tai nauja mokslo mantijos rūšis, kurią rado moteris Australijoje, vaikščiodama savo kaimynystėje.
+          #Heading for the story about volunteers protecting amphibians
+          amphibian_heading: Vietos ekosistemų apsauga
+          #Body text for the amphibian protection story
+          amphibian_body: >
+            Vietinių savanorių grupė Kalifornijoje susibūrė per "iNaturalist", kad apsaugotų migruojančius varliagyvius, kertančius judrų kelią.
+          #Link below the stories to read more community science stories
+          read_more: Skaityti daugiau istorijų
+        observation:
+          #Heading for the sample observation section
+          heading: Kiekvienas stebėjimas pasakoja istoriją
+        stats:
+          #Description label for the observations statistic
+          #Prepended by count, e.g. "350M+ observations contributing to biodiversity science"
+          observations_label: stebėjimai, prisidedantys prie biologinės įvairovės mokslo
+          #Description label for the species statistic
+          #Prepended by count, e.g. "550,000+ species documented across the globe"
+          species_label: Rūšys, dokumentuotos visame pasaulyje
+          #Description label for the papers statistic
+          #Prepended by count, e.g. "7,000+ papers citing iNaturalist data"
+          papers_label: dokumentai, kuriuose cituojami "iNaturalist" duomenys
+          #Description label for the discoveries statistic
+          #Prepended by count, e.g. "500+ species discovered or rediscovered by community scientists"
+          discoveries_label: Bendruomenės mokslininkų atrastos arba iš naujo atrastos rūšys
+        how:
+          #Step 1 description — instructing users to photograph any organism
+          step1_body: >
+            Atidarykite programą ir nufotografuokite bet kokį laukinį augalą, gyvūną, grybus ar kitą organizmą – iš savo kaimynystės ar bet kurios pasaulio vietos.
+          #Step 2 description — explaining AI and community identification
+          step2_body: >
+            Programėlė akimirksniu pasiūlo identifikaciją, o pasaulinė gamtininkų bendruomenė ją patvirtina arba patobulina.
+          #Step 3 description — explaining how observations become open scientific data
+          step3_body: >
+            Jūsų stebėjimas tampa atvirais duomenimis, kuriuos naudoja mokslininkai, gamtosaugininkai ir tyrėjai visame pasaulyje.
+          #Explanatory note below the three steps giving the "why" behind contributing
+          why_note_html: >
+            Gamta keičiasi greičiau nei bet kada, todėl mums reikia <span class="underline">jūs</span> padėti užfiksuoti, kas kur gyvena.
+        testimonials:
+          #Quote from the testimonial author (last name Gube)
+          gube_quote: >
+            Tai tikrai padėjo man identifikuoti rūšis, be to, suteikė man galimybę bendrauti su skirtingais žmonėmis visame pasaulyje.
+          #Job title and location of the testimonial author (last name Gube)
+          gube_title: Jūrų apsaugos specialistas ir povandeninis fotografas, Kenija
+          #Quote from the testimonial author (last name Kratzer)
+          kratzer_quote: >
+            "iNaturalist" atveria duris daugybei naujų ir įdomių tyrimų apie nepakankamai ištirtus taksonus. Mano nuomone, ši platforma yra pažangiausia ekologijos mokslas.
+          #Job title and location of the testimonial author (last name Kratzer)
+          kratzer_title: Lauko vadovo autorius Owlfly LLC, JAV
+          #Quote from the testimonial author (last name Sumanapala)
+          sumanapala_quote: >
+            "iNaturalist" ir jos atsidavusi identifikatorių bendruomenė tapo neįkainojamu mano tyrinėjimų šaltiniu. Tai padėjo pamatus mano dabartiniam darbui.
+          #Job title and location of the testimonial author (last name Sumanapala)
+          sumanapala_title: Biologinės įvairovės tyrėjas, Šri Lanka
+          #Quote from the testimonial author (last name Fachetti)
+          fachetti_quote: >
+            "iNaturalist" yra galingas įrankis, jungiantis žmones, gamtą ir žinias. Galiu fotografuoti retą ar net dar neaprašytą rūšį ir tuo pačiu prisidedu prie mūsų gamtos paveldo išsaugojimo.
+          #Job title and location of the testimonial author (last name Fachetti)
+          fachetti_title: Aplinkosaugos technikas ir fotografas mėgėjas, Brazilija
+          #Quote from the testimonial author (last name Velazco)
+          velazco_quote: >
+            Nesvarbu, kurioje pasaulio vietoje esate, ar turite daktaro laipsnį, ar tiesiog mėgstate gamtą, "iNaturalist" priartins jus prie gamtos ir daugelio kolegų gamtininkų.
+          #Job title and location of the testimonial author (last name Velazco)
+          velazco_title: Biologas, Meksika
+        everyone:
+          #Heading for the broad audience section
+          heading: Visi yra gamtininkai
+          #Description inviting anyone who has been curious about a living thing
+          body: >
+            Jei kada nors atidžiai pažvelgėte į ką nors gyvo ir susimąstėte, kas tai yra, "iNaturalist" kaip tik jums.
+          #Heading for the impact sub-section
+          impact_heading: Galite padaryti poveikį
+          #Description of how each photo contributes to the global scientific record
+          impact_body: >
+            Kiekviena jūsų bendrinama nuotrauka tampa pasaulinio mokslo įrašo dalimi, nuo kurios priklauso mokslininkai visame pasaulyje.
+          #Heading for the community reputation sub-section
+          community_heading: '"Gražiausia vieta internete"'
+          community_heading_2: Gražiausia vieta internete
+          #Description of the welcoming community aspect
+          community_body: >
+            Ateikite dėl identifikacijų, pasilikti dėl bendruomenės ir poveikio mokslui.
+        download:
+          #Heading prompting users to download the mobile app
+          heading: Atsisiųskite "iNaturalist" programėlę
+          #Subheading describing the two core benefits of the app
+          subheading: Gaukite identifikavimą realiuoju laiku ir prisidėkite prie mokslo
+          #Social proof label showing total app downloads
+          #%{count} = formatted and rounded number of downloads. The plus (+) reflects there being more than that number.
+          count_label: "%{count}+ Atsisiuntimai"
+        explore:
+          #Heading for the explore species section; species cards generated from static JSON exported from iNat
+          heading: Tyrinėkite rūšis visame pasaulyje
+          #Button / link to browse species without downloading
+          button: Naršykite dabar
+        seek:
+          #Heading for the Seek app section, aimed at users under 13
+          heading: "Iki 13 metų? Parsisiųsti Ieškoti!"
+          #Description of Seek's badge and challenge features
+          body: Uždirbkite ženkliukus ir dalyvaukite rūšių stebėjimo iššūkiuose!
+          #Review count social proof label for the app
+          #%{count} = formatted and rounded number of 5-star reviews. The plus (+) reflects there being more than that number.
+          review_tagline: "%{count}+ 5 žvaigždučių atsiliepimai"
+        newsletter:
+          #Heading inviting users to subscribe to the monthly newsletter
+          heading: Gaukite mūsų mėnesinį naujienlaiškį!
+          #Description of the newsletter's content
+          body: Palaikykite ryšį su iNaturalist bendruomenės istorijomis ir atradimais.
+        donate:
+          #Heading describing iNaturalist's nonprofit status
+          heading: '"iNaturalist" yra ne pelno siekianti organizacija, remianti mokslą ir gamtosaugą.'
+          #Supporting line connecting the user's donation to iNaturalist's mission of supporting science and conservation.
+          subheading: Jūsų parama leidžia tai padaryti.
+          #Call-to-action button for the donation section
+          cta: Paaukokite dabar
+        faq:
+          #Section heading for the Frequently Asked Questions block
+          heading: DUK
+          #FAQ: uploading existing photos — question
+          upload_existing_question: Ar galiu įkelti jau turimas nuotraukas?
+          #FAQ: uploading existing photos — answer
+          upload_existing_answer: >
+            Taip! Jei apytiksliai žinote, kada ir kur buvo padaryta nuotrauka, laukiamos senesnės nuotraukos.
+          #FAQ: who can use iNaturalist data — question
+          who_can_use_question: Kas gali daryti mokslą su "iNaturalist" stebėjimais?
+          #FAQ: who can use iNaturalist data — answer
+          who_can_use_answer: >
+            Bet kas! Visi "iNaturalist" stebėjimai yra atviri ir laisvai prieinami tyrėjams, gamtosaugos specialistams ir smalsiems asmenims.
+          #FAQ: research grade definition — question
+          research_grade_question: Ką reiškia "mokslinis įvertinimas"?
+          #FAQ: research grade definition — answer
+          research_grade_answer: >
+            Kai bendruomenė susitaria dėl identifikavimo, stebėjimas tampa "mokslinių tyrimų laipsniu" ir patenka į pasaulinį mokslinį įrašą. Kiekvienas identifikavimas gali padėti jį pasiekti.
+          #FAQ: whether prior knowledge is needed — question
+          no_knowledge_question: Ar turiu žinoti, į ką žiūriu?
+          #FAQ: whether prior knowledge is needed — answer
+          no_knowledge_answer: >
+            Visiškai ne! Pasidalinkite nuotrauka ir pasaulinė gamtininkų bendruomenė gali padėti ją atpažinti.
+          #FAQ: whether the app is required — question
+          need_app_question: Ar man reikia naudotis programėle?
+          #FAQ: whether the app is required — answer; references both the website and mobile app
+          need_app_answer: >
+            Staliniame kompiuteryje iNaturalist.org veikia puikiai. Mobiliajame įrenginyje programėlė suteikia geriausią patirtį, ypač atpažįstant rūšis keliaujant.
     wiki_pages:
       form:
         save_and_edit_to_add_attachments: Išsaugokite ir redaguokite, kad pridėtumėte priedų
@@ -4978,6 +5408,16 @@ lt:
       Flag: Žymė
       TaxonLink: Taksono nuoroda
     attributes:
+      announcement:
+        excludes_non_site: Kitų pranešimų slėpimas šioje paskirties vietoje, neturintis svetainės ID
+        #iNat client applications that the user must not have made an observation
+        #with to see the announcement
+        exclude_observation_oauth_application_ids: Stebėtojų išskyrimas iš programų
+        #iNat client applications that the user must have made an observation
+        #with to see the announcement
+        include_observation_oauth_application_ids: Stebėtojų įtraukimas iš programų
+        #Preference for an announcement that is only shown to the user who created the announcement
+        target_creator: Tikslinis kūrėjas (testavimui)
       assessment:
         description: Aprašymas
       assessment_section:
@@ -5051,7 +5491,6 @@ lt:
         url: URL
         citation: Citata
       taxon:
-        auto_description: Automatinis aprašymas
         auto_photos: Automatinės nuotraukos
         locked: Užrakintas
         name: Pavadinimas
@@ -5075,6 +5514,7 @@ lt:
         place: Vieta
       user:
         email: El. paštas
+        faved_project_ids: Mėgstamiausi projektai
         login: Vartotojo vardas
         name: Pavadinimas
         locale: Lokalė
@@ -5089,6 +5529,7 @@ lt:
         blank: negali būti tuščia
         confirmation: nesutapo su slaptažodžiu
         empty: negali būti tuščia
+        must_look_like_an_email_address: turi atrodyti kaip el. pašto adresas
         even: turi būti lyginis
         exclusion: yra užimta
         inclusion: neįtraukta į sąrašą
@@ -5099,6 +5540,7 @@ lt:
         odd: turi būti nelyginis
         only_project_owner_can_change_project_owner: Tik projekto savininkas gali pakeisti projekto savininką
         record_invalid: 'Patvirtinimas nepavyko: %{errors}'
+        requires_privilege_interaction: Norėdami tai padaryti, turite turėti patvirtintą el. pašto adresą
         taken: jau užimtas
       models:
         application:
@@ -5144,6 +5586,10 @@ lt:
               #post that does not allow comments. Theoretically an end user
               #should never see this, though an API client might.
               prefers_no_comments: neleidžia pridėti naujų komentarų
+        project_fave:
+          attributes:
+            base:
+              only_seven_projects: Galite sukurti tik 7 projektus
         project_observation:
           attributes:
             user_id:
@@ -5164,6 +5610,31 @@ lt:
             complete_rank:
               can_only_be_changed_by_a_curator_of_this_taxon: |
                 gali būti pakeistas tik šio taksono kuratoriaus
+            name:
+              #Error message trying to change name for a taxon other than animal/plant/fungi
+              microbe_or_ungrafted: "Virusų, bakterijų ar neskiepytų kladų pavadinimų keisti neleidžiama"
+              #Error message trying to change name for a taxon coarser than species
+              coarser_than_species: "Pavadinimo keitimas neleidžiamas šiurkštesniems už rūšis rangams"
+              #Error message trying to change name like this Taricha torosa x granulosa
+              hybrid_formulas: "Hibridinių formulių pavadinimų keisti neleidžiama"
+              #Error message trying to add an x as a hybrid sign
+              add_ascii_x_disallowed: "negalima pridėti \"x\" kaip hibridinio žymens tarp genties ir rūšies"
+              #Error message trying to change a specie or ssp name to something with no genus or species parts
+              must_be_binomial: "turi būti dvinaris (genties rūšis), kad būtų galima patikrinti"
+              #Error message trying to change the genus part of a ssp or sp
+              genus_cannot_change: "Gentis negali keistis"
+              #Error message trying make major changes to a species name other than minor changes or 'x'/'×' removal or '×' addition
+              nonstandard_species_marker_only: "nestandartinis rūšies pavadinimas: leidžiama išbraukti tik \"x\" / \"×\" arba pridėti \"×\""
+              #Error message trying make major changes to sp epithet
+              specific_epithet_similar: "konkretus epitetas turi būti panašus (tik nedidelė rašybos klaida / lytis)"
+              #Error message trying eliminate the ssp epithet part for a ssp
+              infra_required: "šiam rangui reikalingas infraspecifinis epitetas"
+              #Error message trying make major changes to a species part of ssp
+              only_infra_may_change: "Infraspecifiniams rangams gali keistis tik infraspecifinis epitetas"
+              #Error message trying make major changes to the ssp epithet
+              infra_epithet_similar: "infraspecifinis epitetas turi būti panašus (tik nedidelė rašybos klaida / lytis)"
+              #Error message trying make major changes to the ssp epithet
+              first_letter_of_epithet_cannot_change: "bet kokio epiteto pirmoji raidė negali keistis."
         taxon_name:
           attributes:
             lexicon:
@@ -5179,8 +5650,16 @@ lt:
                 negalima turėti daugiau nei %{max} nuotraukų
         user:
           attributes:
-            email:
-              must_look_like_an_email_address: turi atrodyti kaip el. pašto adresas
+            faved_project_ids:
+              #Error when a user tries to add more than 7 favorite projects,
+              #e.g. "Faved projects cannot include more than 7 projects"
+              cannot_include_more_than_7_projects: negali apimti daugiau kaip 7 projektų
+              #Error when a user tries to add a project that does not exist
+              #to their favorite projects, e.g. "Faved projects must all
+              #exist"
+              must_all_exist: visi turi egzistuoti
+            login:
+              domain_is_not_supported: Domenas nepalaikomas
         user_block:
           attributes:
             base:

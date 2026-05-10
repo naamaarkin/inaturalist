@@ -20,12 +20,6 @@ es-CO:
   x_identifications_:
     one: '%{count} Identificación'
     other: '%{count} identificaciones'
-  #Number of people who have added identifications
-  x_identifiers_html:
-    #Number of people who have added identifications
-    one: '<span class="count">%{count}</span> Identificador'
-    #Number of people who have added identifications
-    other: '<span class="count">%{count}</span> Identificadores'
   x_languages:
     one: "%{count} idioma"
     other: "%{count} idiomas"
@@ -70,9 +64,6 @@ es-CO:
   x_observations_reviewed_html:
     one: "<span class='count'>%{count}</span> observación revisada"
     other: "<span class='count'>%{count}</span> observaciones revisadas"
-  x_observers_html:
-    one: '<span class="count">%{count}</span> Observador'
-    other: '<span class="count">%{count}</span> Observadores'
   x_others:
     one: "%{count} otro"
     other: "%{count} otros"
@@ -181,23 +172,6 @@ es-CO:
   about_this_bioblitz: Acerca de este maratón naturalista
   about_this_map: Sobre este mapa
   about_this_project: Acerca del proyecto
-  about_trips_html: |
-    <h4>Los viajes permiten recopilar datos de presencia-ausencia añadiendo un contexto a tus observaciones
-    </h4>
-    <p>
-    <strong>¿Por qué?</strong> Los datos de ausencia-presencia incluyen información sobre el esfuerzo de muestreo que es útil para análisis científicos como modelos de distribución (las observaciones en bruto de iNaturalist son datos de 'sólo presencia').
-    </p>
-     <p>
-    <strong>¿Cómo?</strong> Un viaje añade contexto a tus observaciones registrando:
-    </p>
-    <ul>
-    <li><strong>¿Qué</strong> buscaste (lista objetivo)?</li>
-    <li><strong>¿Dónde</strong> buscaste (área de búsqueda)?</li>
-    <li><strong>¿Cuándo?</strong> buscaste (intervalo de búsqueda)?</li>
-    </ul>
-    <p>
-    Las especies en tu lista objetivo que pudiste observar dentro del área y el intervalo de búsqueda se interpretan como presencias. Mientras que las especies en tu lista objetivo que no lograste observar se interpretan como ausencias. Haga clic en 'Tabular Datos de Presencia-Ausencia de Viajes' para generar una tabla de registros de presencia-ausencia de las especies de los viajes y las observaciones asociadas. <a href='%{url}'>Más información</a>
-    </p>
   about_trusting_projects: Acerca de confiar en proyectos
   about_trusting_projects_options_any: Todas tus observaciones en este proyecto
   about_trusting_projects_options_any_desc: |-
@@ -561,9 +535,6 @@ es-CO:
     Debes proporcionar una explicación más detallada de lo que quieres construir.
   app_owner_application_about_p1a_html: |
     Las aplicaciones de iNaturalist permiten el uso autenticado de la API de iNaturalist. Esto te permite hacer llamadas a la API que hacen cosas como crear observaciones o identificaciones. Los casos comunes son aplicaciones como las del escritorio o del móvil que incluyen la funcionalidad de crear observaciones en iNaturalist para el usuario. Este contenido debe generarse con la participación o supervisión humana. Por favor, para más detalles lee nuestras <a href="/pages/community+guidelines" target="_blank">Directrices de la comunidad</a> que prohíben observaciones, identificaciones y comentarios generados por computadora.
-  app_owner_application_about_p2_html: |
-    A partir del 2022 se requiere de la aprobación manual para los usuarios que quieran hacer clientes de la API. Para crear aplicaciones de terceros, primero debes enviar una solicitud para convertite en "propietario de aplicación". Esta solicitud debe describir la funcionalidad de la aplicaación que propones y cómo planeas usarla. Para enviar una solicitud, tu cuenta debe tener al menos dos meses de creación y haber obtenido al menos 10 <a href="/pages/help#identification"
-    target="_blank">mejora de identificación</a> en el último mes. Es posible que hagamos preguntas adicionales sobre tu plan y nos reservamos el derecho de rechazar aplicaciones por cualquier motivo.
   app_owner_application_inelligible: |
     Para enviar una solicitud, tu cuenta debe tener al menos dos meses de creación y haber obtenido al menos 10 mejora de identificación en el último mes.
   app_owner_application_fields_explanation_html: Describe la funcionalidad que tendría tu aplicación y cómo planeas usarla.
@@ -719,7 +690,6 @@ es-CO:
   back_to_all_species: Regresar a todas las especies
   back_to_editing_observation: Regresa a editar la observación
   back_to_friends: Volver a amigos
-  back_to_flags_html: "&laquo; Volver a las marcas"
   back_to_lists: "Regresa a las listas de %{name}&"
   back_to_observation: Regresar a la observación
   back_to_observation_fields: Regresar a los campos de observación
@@ -755,8 +725,6 @@ es-CO:
     other: |
       Basado en una muestra del %{percent}% de estas Identificaciones, estimamos que esto
       dará como resultado <strong>%{count} de desacuerdos no deseados</strong> con la identificación de %{child}.
-  based_on_the_evidence_can_id_be_improved: |
-    Basándose en la evidencia, ¿se puede confirmar o mejorar el taxón comunitario?
   batch: Grupo
   batch_edit: Edición en grupo
   #Where x is the title of a list of taxa
@@ -1013,7 +981,6 @@ es-CO:
   confirm_now: Confirmar ahora
   confirm_your_info: Confirma tu información
   confirming_ids: Identificaciones de confirmación
-  confirming_ids_description: Si desactivas esto, ya no serás notificado sobre las identificaciones que coincidan con la tuya.
   #Label for a button to connect your iNat account to another account, e.g.
   #connecting to Flickr
   connect: Conectar
@@ -1035,9 +1002,6 @@ es-CO:
     url: URL de una página que describe este estado.
     geoprivacy: |
       Geoprivacidad predeterminada para las observaciones de este taxón. Ten en cuenta que la geoprivacidad de un estatus asociado a un continente, país, o lugar con nivel de estado puede reemplazar un estatus que es global o que está asociado con un lugar de nivel superior.
-    iucn: |
-      Código de la lista roja UICN equivalente. Esta no es la evaluación real del UICN,
-      únicamente el código UICN que mejor se ajusta a la amenaza que supone la divulgación de las coordenadas indicada por el estatus. Esto reemplazara la geoprivacidad si es de "Preocupación Menor" o inferior, así que si quieres ocultar las observaciones de este taxón, establece esto en "Casi Amenazado" o superior.
   conservation_status_geoprivacy_desc: |
     La geoprivacidad predeterminada se aplica a todas las observaciones de este taxón en este lugar
   contact_support: Contactar el servicio técnico
@@ -1047,6 +1011,7 @@ es-CO:
   content_and_display: Contenido y Visualización
   content_author: Autor del contenido
   content_hidden: Contenido oculto
+  #message on hidden content displaying when and why the content was hidden, and by whom
   content_hidden_by_user_on_date_because_reason_html: |
     Contenido oculto por %{user} el %{date} porque: "%{reason}"
   content_type: Tipo de contenido
@@ -1056,6 +1021,8 @@ es-CO:
     %{user} desocultó este %{item} porque "%{reason}"
   continue: Continuar
   continue_to_site: Continuar a %{site_name}
+  #e.g. "With iNaturalist, you can contribute to real science"
+  contribute: Contribuye
   contributor_cannot_be_found: No se pudo encontrar el contribuidor
   contributors_to_project: "Contribuidores de %{project}"
   controlled_term_labels:
@@ -1085,6 +1052,7 @@ es-CO:
     no_evidence_of_flowering: Sin evidencia de floración
     nymph: Ninfa
     larva: Larva
+    #Evidence of an egg of an organism
     egg: Huevo
     juvenile: Juvenil
     alive_or_dead: Vivo o Muerto
@@ -1592,7 +1560,6 @@ es-CO:
   edited_by_name_some_rights_reserved_html: |
     Editado por %{name}, algunos derechos reservados (%{license})
   editing: Editando
-  editing_announcement: Editando anuncio
   editing_custom_project_fields_for: Editando los campos de proyecto personalizados para
   editing_observation_field: Editando el campo de observación
   editing_observation_id: "Editando la observación %{obs_id}"
@@ -1797,7 +1764,6 @@ es-CO:
   flag_marked_as_resolved_html: '<span class="meta">Marca señalada como</span><strong>resuelta.</strong>'
   #Label for the object that was flagged, e.g. a table header
   flag_object: Objeto
-  flag_reason: "&ldquo;Estoy marcando este %{record} porque"
   flag_resolution: Resolución
   flag_saved: Marca Guardada.
   flag_saved_thanks_html: Marca guardada. ¡Gracias! <a href="%{url}" class="readmore">Ver marca</a>
@@ -2033,6 +1999,8 @@ es-CO:
   identify_observations: "Identificar observaciones"
   identify_observations_by_these_users: Identificar observaciones de estos usuarios
   identify_title: "Identificar"
+  #e.g. "With iNaturalist, you can identify nature nearby"
+  identify_verb: Identificar
   identification: identificación
   identification_by_user: Identificación por %{user}
   #Notification when an identification has been deleted
@@ -2060,7 +2028,6 @@ es-CO:
   identotron_for: Identificatrón para
   identotron_help: Ayuda del identificatrón
   ids: "Identificaciones"
-  ids_made_for_others: Identificaciones hechas para otros
   if_for_some_reason_a_user_doesnt_agree: |
     Si por alguna razón no estás de acuerdo con el taxón de la comunidad, lo puedes rechazar, lo que significará que tu identificación será usada para enlazar a otras observaciones, actualizando listas de vida, etc. También significa que tu observación únicamente podrá ser de grado de investigación cuando la comunidad está de acuerdo con la tuya.
   #disagreements are identifications that disagree with other identifications on the same observation
@@ -2182,6 +2149,7 @@ es-CO:
     identifications_in_month_year: La mayoría de identificaciones en %{month_year}
     identifications_in_year: La mayoría de identificaciones en %{year}
   leading: Principal
+  #e.g. "With iNaturalist, you can learn from a global community of naturalists"
   learn: Aprende
   learn_about_the_species_live_in: Aprende sobre las especies que viven en
   learn_more: Aprende más
@@ -2288,7 +2256,6 @@ es-CO:
   #a noun.
   link_to_authorization_code: Enlace al código de autorización
   link_your_flickr_account: Vincula tu cuenta de Flickr
-  link_your_google_account: Vincula tu cuenta de Google
   linked_flickr: "Tu cuenta de %{site_name} está actualmente vinculada a tu cuenta de Flickr."
   linked_flickr_automatically: "Además, ten en cuenta que si inicias sesión en %{site_name} a través de Flickr, re-vincularemos automáticamente tus cuentas de %{site_name} y Flickr. Parece razonable que si usas Flickr querrás poder importar fotos de Flickr, ¿verdad?"
   linked_flickr_description: "Mantener tu cuenta de %{site_name} vinculada a tu cuenta de Flickr te permite añadir varias fotos a tus observaciones. Por supuesto, si alguna vez quieres que %{site_name} y Flickr se separen, no te detendremos, simplemente no podrás añadir fotos. A veces esto puede ser lo mejor, como cuando creas una nueva cuenta de Flickr a la que quieres vincular %{site_name}."
@@ -2531,8 +2498,6 @@ es-CO:
     para esa persona.
   #Action a moderator can take to hide content; verb
   moderator_actions_hide: Ocultar
-  #Action a moderator can take to unsuspend a user; verb
-  moderator_actions_unhide: Levantar suspensión
   moderator_note_desc: |
     Las notas de moderador son registros de las respuestas de moderación o preocupaciones
     basadas en evidencias acerca de un usuario, tales como si son una posible cuenta falsa. Por favor, no incluya opiniones personales ni comentarios sobre el usuario.
@@ -3641,13 +3606,26 @@ es-CO:
     must_be_verifiable: debe ser verificable
     must_be_wild: debe ser silvestre
   running_total: Total acumulado
-  said: dijo
   satellite: satélite
   save: Guardar
   save_all: Guardar todo
   save_and_add_another: Guardar y agregar otra
   save_and_continue: "Guardar &amp; continuar..."
   save_and_add_taxa: "Guardar y comenzar a agregar las especies"
+  #e.g. "With iNaturalist, you can track species you've seen worldwide"
+  track: Huellas
+  views:
+    stats:
+      year:
+        translators_desc: |
+          ¿Sabías que iNaturalist ha sido traducido a %{x_languages},
+          casi por completo por %{x_people}, algunos de los cuales ni siquiera usan iNat? Aquí están todos los increíbles traductores que han aportado traducciones este año, junto con el número de palabras que han traducido para el %{website_link_tag}sitio web%{link_tag_end}, nuestras aplicaciones para %{iphone_link_tag}iPhone%{link_tag_end} y %{android_link_tag}Android%{link_tag_end} y %{seek_link_tag} Seek%{link_tag_end}. Puedes ver todas las personas que han contribuido con las traducciones, incluidas las de los años anteriores y personas de Translatewiki, en nuestros repositorios de código para
+          %{view_all_web_link_tag}web%{link_tag_end} y
+          %{view_all_mobile_link_tag}para móviles%{link_tag_end}.
+        translators_desc_for_site: |
+          ¿Sabías que %{site_name} ha sido traducido casi por completo por %{x_people}? Aquí están todos los increíbles traductores que han aportado traducciones este año, junto con el número de palabras que han traducido para el %{website_link_tag}sitio web%{link_tag_end}, nuestras aplicaciones para %{iphone_link_tag}iPhone%{link_tag_end} y %{android_link_tag}Android%{link_tag_end} y %{seek_link_tag} Seek%{link_tag_end}. Puedes ver todas las personas que han contribuido con las traducciones, incluidas las de los años anteriores y personas de Translatewiki, en nuestros repositorios de código para
+          %{view_all_web_link_tag}web%{link_tag_end} y
+          %{view_all_mobile_link_tag}para móviles%{link_tag_end}.
   number:
     format:
       significant: false

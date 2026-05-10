@@ -70,7 +70,7 @@ describe ObservationsController do
 
     it "should work with a custom coordinate system" do
       nztm_proj4 = "+proj=tmerc +lat_0=0 +lon_0=173 +k=0.9996 +x_0=1600000 " \
-        "+y_0=10000000 +ellps=GRS80 +towgs84=0,0,0,0,0,0,0 +units=m +no_defs"
+        "+y_0=10000000 +ellps=GRS80 +towgs84=0,0,0,0,0,0,0 +units=m +no_defs +type=crs"
       post :create, params: { observation: {
         geo_x: 1_889_191,
         geo_y: 5_635_569,
@@ -225,6 +225,48 @@ describe ObservationsController do
       expect( response.body ).to have_tag(
         "link[rel=canonical][href='#{observation_url( observation, host: Site.default.url )}']"
       )
+    end
+
+    describe "missing observations" do
+      it "renders a 404 for missing observations" do
+        get :show, params: { id: 99 }
+        expect( response.status ).to eq 404
+      end
+
+      it "renders a 410 for deleted observations" do
+        o = Observation.make!
+        o.destroy
+        get :show, params: { id: o.id }
+        expect( response.status ).to eq 410
+      end
+
+      it "removes deleted observations from elasticsearch when fetching by ID" do
+        o = Observation.make!
+        DeletedObservation.create(
+          user_id: o.user_id,
+          observation_id: o.id,
+          observation_uuid: o.uuid
+        )
+        o.delete
+        expect( Observation.elastic_get( o.id ) ).not_to be_nil
+        get :show, params: { id: o.id }
+        expect( Observation.elastic_get( o.id ) ).to be_nil
+        expect( response.status ).to eq 410
+      end
+
+      it "removes deleted observations from elasticsearch when fetching by uuid" do
+        o = Observation.make!
+        DeletedObservation.create(
+          user_id: o.user_id,
+          observation_id: o.id,
+          observation_uuid: o.uuid
+        )
+        o.delete
+        expect( Observation.elastic_get( o.id ) ).not_to be_nil
+        get :show, params: { id: o.uuid }
+        expect( Observation.elastic_get( o.id ) ).to be_nil
+        expect( response.status ).to eq 410
+      end
     end
 
     describe "opengraph description" do
@@ -435,6 +477,7 @@ describe ObservationsController do
     render_views
     before :each do
       @curator = make_curator
+      UserPrivilege.make!( privilege: UserPrivilege::INTERACTION, user: @curator )
       sign_in( @curator )
     end
 
@@ -509,7 +552,7 @@ describe ObservationsController do
     end
     it "creates an observation review if one does not exist" do
       obs_to_review.observation_reviews.destroy_all
-      reviewer = User.make!
+      reviewer = make_user_with_privilege( UserPrivilege::INTERACTION )
       expect( obs_to_review.observation_reviews.where( user_id: reviewer.id ).size ).to eq 0
       sign_in reviewer
       post :review, params: { id: obs_to_review }
@@ -520,7 +563,7 @@ describe ObservationsController do
     end
     it "updates an existing observation review" do
       obs_to_review.observation_reviews.destroy_all
-      reviewer = User.make!
+      reviewer = make_user_with_privilege( UserPrivilege::INTERACTION )
       expect( obs_to_review.observation_reviews.where( user_id: reviewer.id ).size ).to eq 0
       sign_in reviewer
       post :review, params: { id: obs_to_review }
@@ -572,6 +615,29 @@ describe ObservationsController, "spam" do
   it "should render 403 when content is flagged as spam" do
     get :show, params: { id: spammer_content.id }
     expect( response.response_code ).to eq 403
+  end
+end
+
+describe ObservationsController, "new" do
+  render_views
+  describe "logged-in" do
+    before do
+      sign_in User.make!
+    end
+    it "should render for logged-in users" do
+      get :new
+      expect( response.response_code ).to eq 200
+    end
+  end
+
+  describe "logged-out" do
+    it "should redirect logged-out users to log in" do
+      controller.request.host = URI.parse( Site.default.url ).host
+      get :new
+      expect( response.response_code ).to eq 302
+      expect( response ).to be_redirect
+      expect( response ).to redirect_to( new_user_session_url )
+    end
   end
 end
 
@@ -660,11 +726,11 @@ describe ObservationsController, "new_bulk_csv" do
     Site.default.update( coordinate_systems_json: '{
       "nztm2000": {
         "label": "NZTM2000 (NZ Transverse Mercator), EPSG:2193",
-        "proj4": "+proj=tmerc +lat_0=0 +lon_0=173 +k=0.9996 +x_0=1600000 +y_0=10000000 +ellps=GRS80 +towgs84=0,0,0,0,0,0,0 +units=m +no_defs"
+        "proj4": "+proj=tmerc +lat_0=0 +lon_0=173 +k=0.9996 +x_0=1600000 +y_0=10000000 +ellps=GRS80 +towgs84=0,0,0,0,0,0,0 +units=m +no_defs +type=crs"
       },
       "nzmg": {
         "label": "NZMG (New Zealand Map Grid), EPSG:27200",
-        "proj4": "+proj=nzmg +lat_0=-41 +lon_0=173 +x_0=2510000 +y_0=6023150 +ellps=intl +datum=nzgd49 +units=m +no_defs"
+        "proj4": "+proj=nzmg +lat_0=-41 +lon_0=173 +x_0=2510000 +y_0=6023150 +ellps=intl +datum=nzgd49 +units=m +no_defs +type=crs"
       }
     }' )
     # rubocop:enable Layout/LineLength
@@ -693,5 +759,29 @@ describe ObservationsController, "new_bulk_csv" do
     } }
     Delayed::Worker.new.work_off
     expect( Observation.by( user ).count ).to eq 1
+  end
+end
+
+describe ObservationsController, "identify" do
+  describe "check_interaction_privilege" do
+    let( :user ) { User.make! }
+    before do
+      sign_in user
+    end
+
+    it "grants users interaction privilege if they earned it but have not yet been granted" do
+      expect( user.privileged_with?( UserPrivilege::INTERACTION ) ).to be false
+      get :identify
+      expect( user.privileged_with?( UserPrivilege::INTERACTION ) ).to be true
+    end
+
+    it "sets user hide webinar banner preference if they have 100 or more improving IDs" do
+      expect( Identification ).to receive( :elastic_search ).
+        and_return( WillPaginate::Collection.new( 1, 30, 100 ) )
+      expect( user.prefers_hide_identify_webinar_banner ).to be_nil
+      get :identify
+      user.reload
+      expect( user.prefers_hide_identify_webinar_banner ).to be true
+    end
   end
 end

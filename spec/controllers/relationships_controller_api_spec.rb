@@ -28,6 +28,13 @@ shared_examples_for "a RelationshipsController" do
       user.reload
       expect( user.friendships.count ).to eq( friendships_count + 1 )
     end
+    it "should upsert" do
+      friendship = user.friendships.create( friend_id: friend.id, trust: false )
+      post :create, format: :json, params: { relationship: { friend_id: friend.id, trust: true } }
+      expect( response ).to be_successful
+      friendship.reload
+      expect( friendship ).to be_trust
+    end
   end
   describe "update" do
     let( :relationship ) { Friendship.make!( user: user ) }
@@ -51,7 +58,7 @@ shared_examples_for "a RelationshipsController" do
 end
 
 describe RelationshipsController, "jwt authentication" do
-  let( :user ) { User.make! }
+  let( :user ) { make_user_with_privilege( UserPrivilege::INTERACTION ) }
   before do
     request.env["HTTP_AUTHORIZATION"] = JsonWebToken.encode( user_id: user.id )
   end

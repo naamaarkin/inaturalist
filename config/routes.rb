@@ -1,6 +1,7 @@
 # frozen_string_literal: true
 
 Rails.application.routes.draw do
+  resources :redirect_links
   resources :moderator_notes
   resources :data_partners
   resources :saved_locations
@@ -28,13 +29,25 @@ Rails.application.routes.draw do
   get "/terms", to: redirect( "/pages/terms" ), as: :terms_of_service
   get "/privacy", to: redirect( "/pages/privacy" ), as: :privacy_policy
   get "/users/new.mobile", to: redirect( "/signup" )
+
+  # Shortcuts
   get "/donate", to: "donate#index"
+  get "/donate/fundraiseup", to: "donate#fundraiseup"
   get "/monthly-supporters", to: "donate#monthly_supporters", as: :monthly_supporters
-
   get "/donate-seek", to: redirect( "https://donorbox.org/support-seek-by-inaturalist", status: 302 )
-
-  get "/independence", to: redirect( "/blog/82010-spreading-our-wings-inaturalist-is-now-an-independent-nonprofit", status: 302 )
+  get "/independence",
+    to: redirect( "/blog/82010-spreading-our-wings-inaturalist-is-now-an-independent-nonprofit", status: 302 )
   get "/giving", to: redirect( "/pages/giving", status: 302 )
+  get "/ted", to: redirect( "/pages/ted", status: 302 )
+  get "/gifts", to: redirect( "https://giving.inaturalist.org/page/FUNATVAYGEH", status: 302 )
+  get "/supportersurvey", to: redirect( "https://docs.google.com/forms/d/12mSK_93McY60oWaCaWpjBib495PaMSByRpVl1ichCIY/", status: 302 )
+
+  get "/id_summaries_dashboard", to: "id_summaries_dashboard#index", as: :id_summaries_dashboard
+  get "/id_summaries_feedback_dashboard", to: "id_summaries_feedback_dashboard#index", as: :id_summaries_feedback_dashboard
+  post "/id_summaries_feedback_dashboard/delete_voter_votes",
+    to: "id_summaries_feedback_dashboard#delete_voter_votes",
+    as: :delete_id_summaries_dashboard_voter_votes
+  get "/id_summaries_demo", to: "id_summaries_demo#index"
 
   resources :controlled_terms
   resources :controlled_term_labels, only: [:create, :update, :destroy]
@@ -130,6 +143,13 @@ Rails.application.routes.draw do
       put :merge, to: "observation_fields#merge_field"
     end
   end
+  resources :observation_accuracy_experiments, only: [:show] do
+    member do
+      get "get_more_validators"
+      get "get_methods_data"
+      get "get_results_data"
+    end
+  end
   get "/" => "welcome#index"
   get "/home" => "users#dashboard", :as => :home
   get "/home.:format" => "users#dashboard", :as => :formatted_home
@@ -177,8 +197,12 @@ Rails.application.routes.draw do
   end
 
   resources :announcements do
+    collection do
+      get :active
+    end
     member do
       put :dismiss
+      get :duplicate
     end
   end
   get "/users/dashboard" => "users#dashboard", :as => :dashboard
@@ -195,6 +219,7 @@ Rails.application.routes.draw do
       get :delete
       post :parental_consent
       post :resend_confirmation
+      get :email_available
     end
     member do
       put :join_test
@@ -248,10 +273,13 @@ Rails.application.routes.draw do
   resources :observation_photos, only: [:show, :create, :update, :destroy]
   resources :observation_sounds, only: [:show, :create, :update, :destroy]
   resources :soundcloud_sounds, only: [:index]
-  resources :sounds, only: [:show, :local_sound_fields, :create] do
+  resources :sounds, only: [:show, :create, :update, :destroy, :local_sound_fields] do
     resources :flags
     collection do
       get :local_sound_fields
+    end
+    member do
+      get :hide
     end
   end
   resources :observations, constraints: { id: id_param_pattern } do
@@ -533,6 +561,10 @@ Rails.application.routes.draw do
 
   resources :identifications, constraints: { id: id_param_pattern } do
     resources :flags
+    member do
+      post :nominate
+      delete :unnominate
+    end
   end
   get "identifications/bold" => "identifications#bold"
   post "identifications/agree" => "identifications#agree"
@@ -567,8 +599,12 @@ Rails.application.routes.draw do
   resource :admin, only: :index, controller: :admin do
     collection do
       get :index
-      get :queries
       get :users
+      get :build_test_users
+      post :build_test_user
+      get :build_test_user_progress
+      get :build_test_user_progress_log
+      post :build_test_user_updates
       get "users/:id" => "admin#user_detail", as: :user_detail
       get "login_as/:id" => "admin#login_as", as: :login_as
       get :deleted_users
@@ -576,6 +612,13 @@ Rails.application.routes.draw do
       put :revoke_user_privilege
       put :restore_user_privilege
       put :reset_user_privilege
+    end
+    resources :queries, only: :index, controller: "admin/queries" do
+      collection do
+        get :index
+        get :primary
+        get :replica
+      end
     end
     resources :delayed_jobs, only: :index, controller: "admin/delayed_jobs" do
       member do
@@ -588,6 +631,12 @@ Rails.application.routes.draw do
         get :pending
       end
     end
+    resources :blocked_ips, only: [:index, :create, :destroy], controller: "admin/blocked_ips" do
+      collection do
+        get :index
+      end
+    end
+    resources :username_reserved_words, controller: "admin/username_reserved_words", only: [:index, :create, :destroy]
   end
   get "admin/user_content/:id/(:type)", to: "admin#user_content", as: "admin_user_content"
   delete "admin/destroy_user_content/:id/:type", to: "admin#destroy_user_content", as: "destroy_user_content"
@@ -599,6 +648,9 @@ Rails.application.routes.draw do
     end
   end
 
+  get "build_info", to: "build_info#index"
+  get "admin/app_build_info", to: "build_info#app_build_info", as: "admin_app_build_info"
+
   resource :stats do
     collection do
       get :index
@@ -609,6 +661,12 @@ Rails.application.routes.draw do
       get :cnc2017_stats
       get :canada_150
       get :parks_canada_2017
+      get :user_segments
+      get :segmentation_dau_mau
+      get :daily_active_user_model
+      get :acquisition_cohort_statistics
+      get :behavior_cohort_statistics
+      get :segment_active_users_statistics
       get ":year", as: "year", to: "stats#year", constraints: { year: /\d+/ }
       get ":year/you", as: "your_year", to: "stats#your_year", constraints: { year: /\d+/ }
       get ":year/:login", as: "user_year", to: "stats#year", constraints: { year: /\d+/ }
@@ -658,6 +716,9 @@ Rails.application.routes.draw do
     end
     put :commit
     get :commit_for_user
+    put :withdraw, on: :member
+    put :restore,  on: :member
+    post :like, on: :member
     put "commit_record/:type/:record_id/to/:taxon_id" => "taxon_changes#commit_records", as: :commit_record
     put "commit_records/:type/(to/:taxon_id)" => "taxon_changes#commit_records", as: :commit_records
     post :analyze_ids
@@ -688,6 +749,19 @@ Rails.application.routes.draw do
     end
   end
 
+  resource :computer_vision_eval, only: :index, controller: :computer_vision_eval do
+    collection do
+      get :index
+    end
+  end
+
+  resource :vision_language_demo, only: :index, controller: :language_demo do
+    collection do
+      get :index
+      post :record_votes
+    end
+  end
+
   resources :computer_vision_demo_uploads do
     member do
       post :score
@@ -698,9 +772,9 @@ Rails.application.routes.draw do
       get :confirm
     end
   end
-  resources :moderator_actions, only: [:create] do
+  resources :moderator_actions, only: [:create, :edit, :update] do
     member do
-      get :resource_url, constraints: lambda {|req| req.format == :json }
+      get :resource_url, constraints: ->( req ) { req.format == :json }
     end
   end
 
@@ -741,6 +815,12 @@ Rails.application.routes.draw do
   resources :email_suppressions, only: [:index, :destroy]
 
   get "apple-app-site-association" => "apple_app_site_association#index", as: :apple_app_site_association
+  get "terminology" => "terminology#index", as: :terminology
+  get "terminology/:term" => "terminology#show", as: :terminology_term
+  get "/schema/terms/captive", to: redirect( "/terminology/captive_cultivated", status: 301 )
+  get "/terms/numIdentificationAgreements", to: redirect( "/terminology/num_identification_agreements", status: 301 )
+  get "/terms/numIdentificationDisagreements",
+    to: redirect( "/terminology/num_identification_disagreements", status: 301 )
 
   # Hack to enable mail previews. You could also remove get
   # '/:controller(/:action(/:id))' but that breaks a bunch of other stuff. You

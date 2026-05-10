@@ -175,13 +175,31 @@ describe "Observation Index" do
 
   it "should not count needs_id votes toward faves_count" do
     o = Observation.make!
-    o.vote_by voter: User.make!, vote: true, vote_scope: "needs_id"
+    o.vote_by voter: make_user_with_privilege( UserPrivilege::INTERACTION ), vote: true, vote_scope: "needs_id"
     expect( o.cached_votes_total ).to eq 1
     expect( o.faves_count ).to eq 0
     o.reload
-    o.vote_by voter: User.make!, vote: true
+    o.vote_by voter: make_user_with_privilege( UserPrivilege::INTERACTION ), vote: true
     expect( o.cached_votes_total ).to eq 2
     expect( o.faves_count ).to eq 1
+  end
+
+  it "indexes comments with moderator actions when their users have been deleted" do
+    observation = Observation.make!
+    comment = Comment.make!( parent: observation )
+    moderator_action = ModeratorAction.make!(
+      action: ModeratorAction::HIDE,
+      resource: comment
+    )
+    moderator_action.user.destroy
+    observation.reload
+    indexed_json = observation.as_indexed_json
+    expect( indexed_json[:comments].length ).to eq 1
+    expect( indexed_json[:comments].first[:id] ).to eq comment.id
+    moderator_actions = indexed_json[:comments].first[:moderator_actions]
+    expect( moderator_actions.length ).to eq 1
+    expect( moderator_actions.first[:id] ).to eq moderator_action.id
+    expect( moderator_actions.first[:user] ).to be_nil
   end
 
   describe "photos_count" do
@@ -226,6 +244,91 @@ describe "Observation Index" do
       )
       o = Observation.make!( latitude: place.bounding_box[2], longitude: place.bounding_box[3] )
       expect( o.as_indexed_json[:place_ids] ).to include place.id
+    end
+  end
+
+  describe "identification_disagreements_count" do
+    let( :kingdom ) { create :taxon, :as_kingdom, name: "Animalia", is_iconic: true }
+    let( :genus ) { create :taxon, :as_genus, parent: kingdom }
+    let( :sp1 ) { create :taxon, :as_species, parent: genus }
+    let( :sp2 ) { create :taxon, :as_species, parent: genus }
+
+    it "equals 1 when two idents disagree" do
+      expect( sp2 ).to be_grafted
+      o = create :observation, taxon: nil
+      ident1 = create :identification, observation: o, taxon: sp1
+      o.reload
+      expect( o.taxon ).to eq sp1
+      expect( o.taxon ).to be_grafted
+      ident2 = create :identification, observation: o, taxon: sp2
+      expect( ident2 ).to be_disagreement
+      expect( ident1 ).not_to be_in_agreement_with ident2
+      expect( ident2 ).not_to be_in_agreement_with ident1
+      o.reload
+      expect( o.as_indexed_json[:identification_disagreements_count] ).to eq 1
+    end
+
+    it "equals 1 with one explicit disagreement" do
+      o = create :observation, taxon: sp1
+      create :identification, observation: o, taxon: genus, disagreement: true
+      o.reload
+      expect( o.as_indexed_json[:identification_disagreements_count] ).to eq 1
+    end
+
+    it "equals 1 with 1 explicit disagreement and one non-disagreeing followup" do
+      o = create :observation, taxon: sp1
+      create :identification, observation: o, disagreement: true, taxon: genus
+      create :identification, observation: o, taxon: genus
+      o.reload
+      expect( o.as_indexed_json[:identification_disagreements_count] ).to eq 1
+    end
+
+    it "equals 0 when ID of disagreed with taxon is withdrawn" do
+      o = create :observation, taxon: nil
+      ident1 = create :identification, observation: o, taxon: sp1
+      ident2 = create :identification, observation: o, taxon: sp2
+      expect( ident2 ).to be_disagreement
+      ident1.update( current: false )
+      o.reload
+      expect( o.as_indexed_json[:identification_disagreements_count] ).to eq 0
+    end
+  end
+
+  describe "dqa_stats" do
+    let( :observation ) do
+      Observation.make!( latitude: 3.0, longitude: 4.0, observed_on_string: 1.week.ago )
+    end
+
+    it "adds dqa_stats" do
+      QualityMetric::METRICS.each do | metric |
+        2.times { QualityMetric.make!( metric: metric, observation: observation, agree: true ) }
+        observation.reload
+        expect( observation.as_indexed_json[:dqa_stats] ).to eq [{
+          metric: metric,
+          pass: true,
+          fail: false,
+          vote_score: 2
+        }]
+
+        2.times { QualityMetric.make!( metric: metric, observation: observation, agree: false ) }
+        observation.reload
+        expect( observation.as_indexed_json[:dqa_stats] ).to eq [{
+          metric: metric,
+          pass: false,
+          fail: false,
+          vote_score: 0
+        }]
+
+        2.times { QualityMetric.make!( metric: metric, observation: observation, agree: false ) }
+        observation.reload
+        expect( observation.as_indexed_json[:dqa_stats] ).to eq [{
+          metric: metric,
+          pass: false,
+          fail: true,
+          vote_score: -2
+        }]
+        observation.quality_metrics.delete_all
+      end
     end
   end
 
@@ -337,8 +440,6 @@ describe "Observation Index" do
         { http_param: :threatened, es_field: "taxon.threatened" },
         { http_param: :native, es_field: "taxon.native" },
         { http_param: :endemic, es_field: "taxon.endemic" },
-        { http_param: :id_please, es_field: "id_please" },
-        { http_param: :out_of_range, es_field: "out_of_range" },
         { http_param: :mappable, es_field: "mappable" },
         { http_param: :captive, es_field: "captive" }
       ].each do |filter|
@@ -756,6 +857,23 @@ describe "Observation Index" do
         filters: [ { range: { id: { gte: 99 } } } ])
     end
 
+    it "filters by single not_id integer" do
+      expect(
+        Observation.params_to_elastic_query( { not_id: 123 } )
+      ).to include( inverse_filters: [{ terms: { id: [123] } }] )
+    end
+
+    it "filters by single not_id array" do
+      expect(
+        Observation.params_to_elastic_query( { not_id: [123, 456] } )
+      ).to include( inverse_filters: [{ terms: { id: [123, 456] } }] )
+    end
+
+    it "filters by single not_id csv" do
+      expect(
+        Observation.params_to_elastic_query( { not_id: "123,456" } )
+      ).to include( inverse_filters: [{ terms: { id: [123, 456] } }] )
+    end
   end
 
   describe "prepare_batch_for_index" do

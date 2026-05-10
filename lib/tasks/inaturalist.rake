@@ -1,10 +1,12 @@
+# frozen_string_literal: true
+
 namespace :inaturalist do
   desc "Copy example config files."
   task :setup do
     Dir.glob("#{Rails.root}/config/*.example").each do |file|
       example = File.basename(file)
       file = File.basename(example, '.example')
-      if File.exists?(Rails.root.join('config', file))
+      if File.exist?(Rails.root.join('config', file))
         puts "#{file} already exists."
       else
         cp Rails.root.join('config', example), Rails.root.join('config', file)
@@ -31,6 +33,29 @@ namespace :inaturalist do
     end
   end
 
+  desc "Unsuspend users whose timed suspension has expired"
+  task :auto_unsuspend, [:log_task_name] => :environment do | _, args |
+    log_task_name = args[:log_task_name]
+    if log_task_name
+      task_logger = TaskLogger.new( log_task_name, nil, "cleanup" )
+    end
+    task_logger&.start
+    User.suspension_expired.each do | user |
+      action = ModeratorAction.new(
+        action: ModeratorAction::UNSUSPEND,
+        resource: user,
+        user: nil,
+        reason: "Timed suspension expired automatically"
+      )
+      next if action.save
+
+      Rails.logger.error(
+        "[ERROR] inaturalist:auto_unsuspend: failed for user #{user.id}: #{action.errors.full_messages.join( ', ' )}"
+      )
+    end
+    task_logger&.end
+  end
+
   desc "Delete content from spmmer accounts."
   task :delete_spam_content => :environment do
     spammer_ids = User.where(spammer: true).
@@ -47,55 +72,75 @@ namespace :inaturalist do
   end
 
   desc "Delete expired updates"
-  task :delete_expired_updates => :environment do
-    min_id = UpdateAction.minimum( :id )
-    return unless min_id
-    # using an ID clause to limit the number of rows in the query
-    last_id_to_delete = UpdateAction.where( ["created_at < ?", 3.months.ago] ).
-      where( "id < #{ min_id + 1000000 }" ).maximum( :id )
-    return unless last_id_to_delete
-    UpdateAction.delete_and_purge( "id <= #{ last_id_to_delete }" )
-    # delete anything that may be left in Elasticsearch
-    try_and_try_again( Elasticsearch::Transport::Transport::Errors::Conflict, sleep: 1, tries: 10 ) do
-      Elasticsearch::Model.client.delete_by_query(index: UpdateAction.index_name,
-        body: { query: { range: { id: { lte: last_id_to_delete } } } })
+  task :delete_expired_updates, [:log_task_name] => :environment do | _, args |
+    log_task_name = args[:log_task_name]
+    if log_task_name
+      task_logger = TaskLogger.new( log_task_name, nil, "cleanup" )
     end
+    task_logger&.start
+    earliest_id = CONFIG.update_action_rollover_id || 1
+    min_id = UpdateAction.where( "id >= ?", earliest_id ).minimum( :id )
+    # using an ID clause to limit the number of rows in the query
+    last_id_to_delete = UpdateAction.where( ["created_at < ?", 90.days.ago] ).
+      where( "id >= #{min_id} AND id < #{min_id + 1_000_000}" ).maximum( :id )
+    next unless last_id_to_delete
 
-    # # suspend subscriptions of users with no viewed updates
-    # Update.select(:subscriber_id).group(:subscriber_id).having("max(viewed_at) IS NULL").
-    #   order(:subscriber_id).pluck(:subscriber_id).each_slice(500) do |batch|
-    #   # get this batch's users
-    #   users_to_suspend = User.where(id: batch.compact).where(subscriptions_suspended_at: nil)
-    #   # send them emails that we're suspending their subscriptions
-    #   users_to_suspend.each do |u|
-    #     Emailer.user_updates_suspended(u).deliver_now
-    #   end
-    #   # suspend their subscriptions
-    #   User.where(id: users_to_suspend.pluck(:id)).update_all(subscriptions_suspended_at: Time.now)
-    # end
+    UpdateAction.delete_and_purge( "id >= #{min_id} AND id <= #{last_id_to_delete}" )
+    # delete anything that may be left in Elasticsearch
+    try_and_try_again( Elastic::Transport::Transport::Errors::Conflict, sleep: 1, tries: 10 ) do
+      Elasticsearch::Model.client.delete_by_query( index: UpdateAction.index_name,
+        body: {
+          query: {
+            range: {
+              id: {
+                gte: min_id,
+                lte: last_id_to_delete
+              }
+            }
+          }
+        } )
+    end
+    task_logger&.end
   end
 
   desc "Delete expired S3 photos"
-  task :delete_expired_photos => :environment do
+  task delete_expired_photos: :environment do
     client = LocalPhoto.new.s3_client
     fails = 0
     DeletedPhoto.still_in_s3.
-      joins("LEFT JOIN photos ON (deleted_photos.photo_id = photos.id)").
-      where("photos.id IS NULL").
-      where("(orphan=false AND deleted_photos.created_at <= ?)
+      joins( "LEFT JOIN photos ON (deleted_photos.photo_id = photos.id)" ).
+      where( "photos.id IS NULL" ).
+      where( "(orphan=false AND deleted_photos.created_at <= ?)
         OR (orphan=true AND deleted_photos.created_at <= ?)",
-        6.months.ago, 1.month.ago).includes( :photo ).find_each do |dp|
+        180.days.ago, 30.days.ago ).includes( :photo ).find_each do | deleted_photo |
       begin
-        dp.remove_from_s3( s3_client: client )
+        deleted_photo.remove_from_s3( s3_client: client )
       rescue
         fails += 1
         break if fails >= 5
       end
     end
-    # Delete user profile pics for users that were deleted over a month ago
-    DeletedUser.where( "created_at < ?", 1.month.ago ).each do |du|
+    # Delete user profile pics for users that were deleted over 30 days ago
+    DeletedUser.where( "created_at < ?", 30.days.ago ).each do | deleted_user |
       begin
-        User.remove_icon_from_s3( du.user_id )
+        User.remove_icon_from_s3( deleted_user.user_id )
+      rescue
+        fails += 1
+        break if fails >= 5
+      end
+    end
+
+    # Delete files associated with deleted private photos
+    ModeratorAction.current_private_actions.each do | moderator_action |
+      # the resource must have been deleted
+      next unless moderator_action.resource
+      next unless moderator_action.resource_type == "Photo"
+
+      deleted_photo = DeletedPhoto.where( photo_id: moderator_action.resource_id ).first
+      next unless deleted_photo&.eligible_for_removal?
+
+      begin
+        deleted_photo.remove_from_s3( s3_client: client )
       rescue
         fails += 1
         break if fails >= 5
@@ -104,14 +149,15 @@ namespace :inaturalist do
   end
 
   desc "Delete expired local photos"
-  task :delete_expired_local_photos => :environment do
+  task delete_expired_local_photos: :environment do
     return unless Rails.env.development?
+
     deleted = []
-    DeletedPhoto.find_each do |dp|
+    DeletedPhoto.find_each do | dp |
       path = File.join( Rails.root, "public", "attachments", "local_photos", "files", dp.photo_id.to_s )
-      if File.exists?( path )
+      if File.exist?( path )
         deleted_paths = FileUtils.rm_rf( path )
-        if deleted_paths.size > 0
+        if deleted_paths.positive?
           deleted << dp.photo_id
         end
       end
@@ -120,53 +166,63 @@ namespace :inaturalist do
   end
 
   desc "Delete expired S3 sounds"
-  task :delete_expired_sounds => :environment do
-    S3_CONFIG = YAML.load_file(File.join(Rails.root, "config", "s3.yml"))
-    client = ::Aws::S3::Client.new(
-      access_key_id: S3_CONFIG["access_key_id"],
-      secret_access_key: S3_CONFIG["secret_access_key"],
-      region: CONFIG.s3_region
-    )
+  task delete_expired_sounds: :environment do
+    client = LocalPhoto.new.s3_client
 
     fails = 0
     DeletedSound.still_in_s3.
-      joins("LEFT JOIN sounds ON (deleted_sounds.sound_id = sounds.id)").
-      where("sounds.id IS NULL").
-      where("(orphan=false AND deleted_sounds.created_at <= ?)
+      joins( "LEFT JOIN sounds ON (deleted_sounds.sound_id = sounds.id)" ).
+      where( "sounds.id IS NULL" ).
+      where( "(orphan=false AND deleted_sounds.created_at <= ?)
         OR (orphan=true AND deleted_sounds.created_at <= ?)",
-        6.months.ago, 1.month.ago).select(:id, :sound_id).find_each do |s|
-      sounds = client.list_objects( bucket: CONFIG.s3_bucket, prefix: "sounds/#{ s.sound_id }." ).contents
-      if sounds.any?
-        pp sounds
-        begin
-          client.delete_objects( bucket: CONFIG.s3_bucket, delete: { objects: sounds.map{|s| { key: s.key } } } )
-          s.update(removed_from_s3: true)
-        rescue
-          fails += 1
-          break if fails >= 5
-        end
+        180.days.ago, 30.days.ago ).find_each do | deleted_sound |
+      begin
+        deleted_sound.remove_from_s3( s3_client: client )
+      rescue
+        fails += 1
+        break if fails >= 5
+      end
+    end
+
+    # Delete files associated with deleted private sounds
+    ModeratorAction.current_private_actions.each do | moderator_action |
+      # the resource must have been deleted
+      next unless moderator_action.resource
+      next unless moderator_action.resource_type == "Sound"
+
+      deleted_sound = DeletedSound.where( sound_id: moderator_action.resource_id )
+      next unless deleted_sound.eligible_for_removal?
+
+      sounds = client.list_objects( bucket: CONFIG.s3_bucket, prefix: "sounds/#{deleted_sound.sound_id}." ).contents
+      next unless sounds.any?
+
+      begin
+        deleted_sound.remove_from_s3( s3_client: client )
+      rescue
+        fails += 1
+        break if fails >= 5
       end
     end
   end
 
   desc "Delete orphaned photos"
-  task :delete_orphaned_photos => :environment do
-    first_id = Photo.minimum(:id)
-    last_id = Photo.maximum(:id) - 10000
+  task delete_orphaned_photos: :environment do
+    first_id = Photo.minimum( :id )
+    last_id = Photo.maximum( :id ) - 10_000
     index = first_id
-    batch_size = 10000
+    batch_size = 10_000
     # using `where id BETWEEN` instead of .find_each or similar, which use
     # LIMIT and create fewer, but longer-running queries
     orphans_count = 0
     last_orphan_id = 0
     while index <= last_id
-      photos = Photo.joins("left join observation_photos op on (photos.id=op.photo_id)").
-        joins("left join taxon_photos tp on (photos.id=tp.photo_id)").
-        joins("left join guide_photos gp on (photos.id=gp.photo_id)").
-        where("op.id IS NULL and tp.id IS NULL and gp.id IS NULL").
-        where("photos.id BETWEEN ? AND ?", index, index + batch_size).
-        where("photos.created_at <= ?", 1.week.ago)
-      photos.each do |p|
+      photos = Photo.joins( "left join observation_photos op on (photos.id=op.photo_id)" ).
+        joins( "left join taxon_photos tp on (photos.id=tp.photo_id)" ).
+        joins( "left join guide_photos gp on (photos.id=gp.photo_id)" ).
+        where( "op.id IS NULL and tp.id IS NULL and gp.id IS NULL" ).
+        where( "photos.id BETWEEN ? AND ?", index, index + batch_size ).
+        where( "photos.created_at <= ?", 1.week.ago )
+      photos.each do | p |
         # set the orphan attribute on Photo, which will set the same on DeletedPhoto
         begin
           p.orphan = true
@@ -183,25 +239,25 @@ namespace :inaturalist do
   end
 
   desc "Delete orphaned sounds"
-  task :delete_orphaned_sounds => :environment do
-    first_id = Sound.minimum(:id)
-    last_id = Sound.maximum(:id) - 10000
-    index = 0
-    batch_size = 10000
+  task delete_orphaned_sounds: :environment do
+    first_id = Sound.minimum( :id )
+    last_id = Sound.maximum( :id ) - 10_000
+    index = first_id
+    batch_size = 10_000
     orphans_count = 0
     last_orphan_id = 0
     # using `where id BETWEEN` instead of .find_each or similar, which use
     # LIMIT and create fewer, but longer-running queries
     while index <= last_id
-      sounds = Sound.joins("left join observation_sounds os on (sounds.id=os.sound_id)").
-        where("os.id IS NULL").
-        where("sounds.id BETWEEN ? AND ?", index, index + batch_size).
-        where("sounds.created_at <= ?", 1.week.ago)
-      sounds.each do |s|
+      sounds = Sound.joins( "left join observation_sounds os on (sounds.id=os.sound_id)" ).
+        where( "os.id IS NULL" ).
+        where( "sounds.id BETWEEN ? AND ?", index, index + batch_size ).
+        where( "sounds.created_at <= ?", 1.week.ago )
+      sounds.each do | s |
         # set the orphan attribute on sound, which will set the same on Deletedsound
         s.orphan = true
         s.destroy
-        last_orphan_id = p.id
+        last_orphan_id = s.id
         orphans_count += 1
       end
       index += batch_size
@@ -209,17 +265,28 @@ namespace :inaturalist do
     end
   end
 
-
   desc "Delete orphaned and expired photos"
-  task :delete_orphaned_and_expired_photos => :environment do
+  task :delete_orphaned_and_expired_photos, [:log_task_name] => :environment do | _, args |
+    log_task_name = args[:log_task_name]
+    if log_task_name
+      task_logger = TaskLogger.new( log_task_name, nil, "cleanup" )
+    end
+    task_logger&.start
     Rake::Task["inaturalist:delete_orphaned_photos"].invoke
     Rake::Task["inaturalist:delete_expired_photos"].invoke
+    task_logger&.end
   end
 
   desc "Delete orphaned and expired sounds"
-  task :delete_orphaned_and_expired_sounds => :environment do
+  task :delete_orphaned_and_expired_sounds, [:log_task_name] => :environment do | _, args |
+    log_task_name = args[:log_task_name]
+    if log_task_name
+      task_logger = TaskLogger.new( log_task_name, nil, "cleanup" )
+    end
+    task_logger&.start
     Rake::Task["inaturalist:delete_orphaned_sounds"].invoke
     Rake::Task["inaturalist:delete_expired_sounds"].invoke
+    task_logger&.end
   end
 
   def get_i18n_keys_in_rb
@@ -282,6 +349,7 @@ namespace :inaturalist do
       "flowering_phenology",
       "frequency",
       "fungi",
+      "geo_score",
       "green",
       "grey",
       "imperiled",
@@ -332,9 +400,11 @@ namespace :inaturalist do
       "places_name",
       "plants",
       "preview",
+      "profile_picture_file_type",
       "protozoans",
       "purple",
       "random",
+      "rank_levels",
       "ranks",
       "ranks_lowercase_stateofmatter",
       "ranks_lowercase_kingdom",
@@ -591,12 +661,18 @@ namespace :inaturalist do
   end
 
   desc "Remove expired sessions"
-  task :remove_expired_sessions => :environment do
+  task :remove_expired_sessions, [:log_task_name] => :environment do | _, args |
+    log_task_name = args[:log_task_name]
+    if log_task_name
+      task_logger = TaskLogger.new( log_task_name, nil, "cleanup" )
+    end
+    task_logger&.start
     expiration_date = 7.days.ago
     ActiveRecord::SessionStore::Session.select(:session_id, :updated_at).find_in_batches(batch_size: 1000) do |batch|
       expired_ids = batch.select{ |s| s.updated_at < expiration_date }.map(&:id)
       ActiveRecord::SessionStore::Session.where(session_id: expired_ids).delete_all
     end
+    task_logger&.end
   end
 
   desc "Unlock unfailed delayed jobs"
@@ -604,5 +680,44 @@ namespace :inaturalist do
     Delayed::Job.where( "locked_at IS NOT NULL OR locked_by IS NOT NULL" ).
       where( "failed_at IS NULL" ).
       update( locked_by: nil, locked_at: nil )
+  end
+
+  desc "Prune ApiEndpointCaches"
+  task prune_api_endpoint_caches: :environment do
+    ApiEndpointCache.includes( :api_endpoint ).
+      select( :id, :api_endpoint_id, :request_began_at, :request_completed_at ).
+      find_in_batches( batch_size: 10_000 ) do | batch |
+      puts "Processing batching starting at ID: #{batch.first.id}"
+      ids_to_delete = []
+
+      batch.each do | api_endpoint_cache |
+        next unless api_endpoint_cache.request_began_at
+        next if api_endpoint_cache.request_began_at > 7.days.ago
+
+        if api_endpoint_cache.request_completed_at.nil?
+          next unless api_endpoint_cache.request_began_at < 12.hours.ago
+
+          # remove anything that appears to be stuck or experienced some uncaught
+          # failure, at least 12 hours after the request started
+          ids_to_delete << api_endpoint_cache.id
+        elsif api_endpoint_cache&.api_endpoint&.cache_hours
+          if api_endpoint_cache.request_completed_at < (
+            Time.now - api_endpoint_cache.api_endpoint.cache_hours.hours - 60.days
+          )
+            # remove anything more than 60 days older than its cache time.
+            # Caches older than their cache time are not inherently bad, it just
+            # indicates we have not attempted to request them recently, therefore
+            # they may not be needed anymore and can be cleaned up
+            ids_to_delete << api_endpoint_cache.id
+          end
+        end
+      end
+
+      next if ids_to_delete.empty?
+
+      puts "Deleting #{ids_to_delete.size} ApiEndpointCaches"
+      ApiEndpointCache.where( id: ids_to_delete ).delete_all
+    end
+    nil
   end
 end

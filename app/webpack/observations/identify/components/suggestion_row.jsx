@@ -1,4 +1,3 @@
-
 import React from "react";
 import PropTypes from "prop-types";
 import _ from "lodash";
@@ -18,11 +17,17 @@ const SuggestionRow = ( {
   setDetailTaxon,
   source,
   config,
-  updateCurrentUser
+  updateCurrentUser,
+  performOrOpenConfirmationModal
 } ) => {
-  const taxonPhotos = _
+  let taxonPhotos = _
     .uniq( taxon.taxonPhotos, tp => `${tp.photo.id}-${tp.taxon.id}` )
     .slice( 0, 2 );
+  if ( taxon.representativePhoto ) {
+    taxonPhotos = _.filter( taxonPhotos, tp => tp.photo.id !== taxon.representativePhoto.id );
+    taxonPhotos.unshift( { taxon, photo: taxon.representativePhoto } );
+    taxonPhotos = taxonPhotos.slice( 0, 2 );
+  }
   let backgroundSize = "cover";
   if (
     taxonPhotos.length === 1
@@ -40,7 +45,8 @@ const SuggestionRow = ( {
     taxon,
     gbif: { disabled: true, legendColor: "#F7005A" },
     places: true,
-    ranges: true
+    ranges: true,
+    geomodel_thresholded: true
   };
   if ( source === "rg_observations" ) {
     taxonLayer.observationLayers = [
@@ -111,9 +117,11 @@ const SuggestionRow = ( {
             bsSize="xs"
             bsStyle="primary"
             onClick={( ) => {
-              chooseTaxon( taxon, {
-                observation,
-                vision: source === "visual"
+              performOrOpenConfirmationModal( ( ) => {
+                chooseTaxon( taxon, {
+                  observation,
+                  vision: source === "visual"
+                } );
               } );
             }}
           >
@@ -177,7 +185,8 @@ SuggestionRow.propTypes = {
   setDetailTaxon: PropTypes.func.isRequired,
   source: PropTypes.string,
   config: PropTypes.object,
-  updateCurrentUser: PropTypes.func
+  updateCurrentUser: PropTypes.func,
+  performOrOpenConfirmationModal: PropTypes.func
 };
 
 SuggestionRow.defaultProps = {

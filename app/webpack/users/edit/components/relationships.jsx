@@ -25,10 +25,10 @@ const Relationships = ( {
 
     return (
       <tr key={friendUser.login}>
-        <td className="col-xs-4">
+        <td className="">
           <UserFollowing user={friendUser} />
         </td>
-        <td className="table-row col-xs-4">
+        <td className="table-row ">
           <RelationshipsCheckboxContainer
             name="following"
             label={I18n.t( "following" )}
@@ -47,7 +47,7 @@ const Relationships = ( {
             </em>
           </div>
         </td>
-        <td className="table-row col-xs-4">
+        <td className="table-row ">
           <em className="stacked">
             {I18n.t( "added_on_datetime", { datetime: moment( user.created_at ).format( "LL" ) } ) }
           </em>
@@ -57,7 +57,7 @@ const Relationships = ( {
               className="btn btn-default btn-remove-relationship"
               onClick={( ) => showModal( user.id, friendUser.login )}
             >
-              {I18n.t( "remove_relationship" )}
+              {I18n.t( "remove" )}
             </button>
           </div>
         </td>
@@ -131,7 +131,7 @@ const Relationships = ( {
   );
 
   return (
-    <div>
+    <div className="Relationships">
       <h4>{I18n.t( "relationships_user_settings" )}</h4>
       {showFilters( )}
       {relationships.length === 0 && showEmptyState( )}
@@ -162,21 +162,70 @@ const Relationships = ( {
         id="muted_users"
         placeholder={I18n.t( "add_muted_users" )}
         buttonText={I18n.t( "unmute" )}
-        htmlDescription={{
-          __html: I18n.t( "views.users.edit.muting_desc_html" )
-        }}
+        description={I18n.t( "views.users.edit.muting_desc_html" )}
       />
       <BlockedMutedUsersContainer
         headerText={I18n.t( "blocked_users" )}
         id="blocked_users"
         placeholder={I18n.t( "add_blocked_users" )}
         buttonText={I18n.t( "unblock" )}
-        htmlDescription={{
-          __html: I18n.t( "views.users.edit.blocking_desc_html", {
-            site_name: SITE.name,
-            help_email: SITE.help_email
-          } )
-        }}
+        description={(
+          <>
+            <p>
+              {I18n.t( "views.users.edit.block_desc_blocking_someone_prevents", {
+                site_name: SITE.name
+              } )}
+            </p>
+            <p>{I18n.t( "views.users.edit.block_desc_blocking_is_for_situations" )}</p>
+            <p
+              // eslint-disable-next-line react/no-danger
+              dangerouslySetInnerHTML={{
+                __html: I18n.t( "views.users.edit.block_desc_you_can_only_block_html", {
+                  help_email: SITE.help_email
+                } )
+              }}
+            />
+            <p
+              // eslint-disable-next-line react/no-danger
+              dangerouslySetInnerHTML={{
+                __html: I18n.t( "views.users.edit.block_desc_there_are_two_exceptions" )
+              }}
+            />
+            <ol>
+              <li>
+                <p
+                  // eslint-disable-next-line react/no-danger
+                  dangerouslySetInnerHTML={{
+                    __html: I18n.t( "views.users.edit.block_desc_comments_on_taxon_flags" )
+                  }}
+                />
+              </li>
+              <li>
+                <p
+                  // eslint-disable-next-line react/no-danger
+                  dangerouslySetInnerHTML={{
+                    __html: I18n.t( "views.users.edit.block_desc_comments_on_taxon_changes" )
+                  }}
+                />
+              </li>
+            </ol>
+            <p
+              // eslint-disable-next-line react/no-danger
+              dangerouslySetInnerHTML={{
+                __html: I18n.t( "views.users.edit.block_desc_unlike_more_personal" )
+              }}
+            />
+            <p
+              // eslint-disable-next-line react/no-danger
+              dangerouslySetInnerHTML={{
+                __html: I18n.t( "views.users.edit.block_desc_if_harassing_html", {
+                  site_name: SITE.name,
+                  help_email: SITE.help_email
+                } )
+              }}
+            />
+          </>
+        )}
       />
     </div>
   );

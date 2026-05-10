@@ -21,19 +21,22 @@ class AdminController < ApplicationController
     @q_name = params[:q_name].try( :strip )
     @q_email = params[:q_email].try( :strip )
     @q_ip = params[:q_ip].try( :strip )
-    must = []     
-    must << { wildcard: { login_exact: { value: @q_login.downcase+"*" } } } unless @q_login.blank?
-    must << { wildcard: { email: { value: @q_email.downcase+"*" } } } unless @q_email.blank?
-    must << { wildcard: { last_ip: { value: @q_ip.downcase+"*" } } } unless @q_ip.blank?
+    must = []
+    must << { wildcard: { login_exact: { value: "#{@q_login.downcase}*" } } } unless @q_login.blank?
+    must << { wildcard: { email: { value: "#{@q_email.downcase}*" } } } unless @q_email.blank?
+    must << { wildcard: { last_ip: { value: "#{@q_ip.downcase}*" } } } unless @q_ip.blank?
     must << { match: { name_autocomplete: { query: @q_name.downcase, operator: "and" } } } unless @q_name.blank?
-    search_result = User.elastic_search( 
+    search_result = User.elastic_search(
       filters: [
         bool: {
           must: must
         }
-      ] 
+      ],
+      sort: {
+        created_at: :desc
+      }
     ).page( params[:page] )
-    @users = User.result_to_will_paginate_collection(search_result)
+    @users = User.result_to_will_paginate_collection( search_result )
     @comment_counts_by_user_id = Comment.where( user_id: @users ).group( :user_id ).count
     respond_to do | format |
       format.html { render layout: "admin" }
@@ -43,7 +46,7 @@ class AdminController < ApplicationController
   def user_detail
     @display_user = User.find_by_id( params[:id].to_i )
     @display_user ||= User.find_by_login( params[:id] )
-    @display_user ||= User.find_by_email( params[:id] ) unless params[:id].blank?
+    @display_user ||= User.find_by_email( params[:id].downcase ) unless params[:id].blank?
     if @display_user
       @observations = Observation.page_of_results( user_id: @display_user.id )
       geoip_response = INatAPIService.geoip_lookup( { ip: @display_user.last_ip } )
@@ -82,6 +85,84 @@ class AdminController < ApplicationController
     respond_to do | format |
       format.html { render layout: "admin" }
     end
+  end
+
+  def build_test_users
+    @build_test_user_enabled = build_test_user_enabled?
+    @test_group_name = BuildTestUser::TEST_GROUP_NAME
+    @test_group_users = User.
+      where( "test_groups LIKE ?", "%#{@test_group_name}%" ).
+      order( "id desc" ).
+      limit( 200 )
+    @form_defaults = {
+      login: params[:login],
+      observations_count: params[:observations_count],
+      identifications_for_others_count: params[:identifications_for_others_count]
+    }
+    render layout: "admin"
+  end
+
+  def build_test_user
+    unless build_test_user_enabled?
+      flash[:error] = "Test user creation is disabled by configuration"
+      return redirect_back_or_default( build_test_users_admin_path )
+    end
+
+    login = params[:build_test_login].to_s.strip
+    password = params[:build_test_password].to_s
+    observations_count = [params[:observations_count].to_i, 0].max
+    identifications_for_others_count = [params[:identifications_for_others_count].to_i, 0].max
+
+    if login.blank? || password.blank?
+      flash[:error] = "Login and password are required"
+      return redirect_back_or_default( build_test_users_admin_path )
+    end
+
+    BuildTestUser.update_progress( login, status: "queued", progress: 0 )
+    BuildTestUser.delay(
+      priority: INTEGRITY_PRIORITY,
+      queue: "slow"
+    ).build_user(
+      {
+        login: login,
+        password: password,
+        observations_count: observations_count,
+        identifications_for_others_count: identifications_for_others_count
+      }
+    )
+    flash[:notice] = "Build test user job queued for #{login}"
+    redirect_to build_test_users_admin_path
+  end
+
+  def build_test_user_progress
+    login = params[:login].to_s.strip
+    progress = login.present? ? BuildTestUser.progress( login ) : nil
+    progress ||= { status: "not_found" }
+    render json: progress
+  end
+
+  def build_test_user_progress_log
+    @progress_log = BuildTestUser.progress_log
+    render layout: "admin"
+  end
+
+  def build_test_user_updates
+    unless build_test_user_enabled?
+      flash[:error] = "Test user updates are disabled by configuration"
+      return redirect_back_or_default( build_test_users_admin_path )
+    end
+
+    target_user_login = params[:target_user_login].to_s.strip
+    target_user = User.where( "lower(login) = ?", target_user_login.downcase ).first unless target_user_login.blank?
+    update_action = params[:update_action].to_s
+    count = [params[:count].to_i, 0].max
+    result = BuildTestUser.apply_updates(
+      target_user_id: target_user&.id,
+      update_action: update_action,
+      count: count
+    )
+    flash[result.success ? :notice : :error] = result.message
+    redirect_to build_test_users_admin_path
   end
 
   def user_content
@@ -141,6 +222,19 @@ class AdminController < ApplicationController
     unless ( user = User.find_by_id( params[:id] ) )
       flash[:error] = "User doesn't exist"
       redirect_back_or_default( curate_users_path )
+    end
+    if params[:reset_name]
+      @moderator_action = ModeratorAction.new(
+        user: current_user,
+        resource: user,
+        action: ModeratorAction::RENAME,
+        reason: "Inappropriate username: #{user.login} was renamed"
+      )
+      if @moderator_action.save
+        flash[:notice] = "Username successfully renamed"
+      else
+        flash[:error] = "Failed to rename username: #{@moderator_action.errors.full_messages.to_sentence}"
+      end
     end
     if params[:icon_delete]
       user.icon = nil
@@ -233,34 +327,17 @@ class AdminController < ApplicationController
     redirect_to root_path
   end
 
-  def queries
-    replica_pool = ActiveRecord::Base.connection.instance_variable_get( "@replica_pool" )
-    if replica_pool
-      # if configured to use replica DBs with Makara, fetch queries from all primaries and replicas
-      primary_pool = ActiveRecord::Base.connection.instance_variable_get( "@primary_pool" )
-      @queries = []
-      ( primary_pool.connections + replica_pool.connections ).flatten.each do | connection |
-        instance_queries = connection.active_queries.map do | q |
-          { db_host: connection.config[:host] }.merge( q )
-        end
-        @queries += instance_queries
-      end
-    else
-      @queries = ActiveRecord::Base.connection.active_queries.map do | q |
-        { db_host: ActiveRecord::Base.connection_db_config.host }.merge( q )
-      end
-    end
-    @queries.delete_if {| q | q["query"] =~ /pg_stat_activity/ }
-    render layout: "admin"
-  end
-
   private
+
+  def build_test_user_enabled?
+    BuildTestUser.enabled?
+  end
 
   def load_user_content_info
     user_id = params[:id] || params[:user_id]
     @display_user = User.find_by_id( user_id )
     @display_user ||= User.find_by_login( user_id )
-    @display_user ||= User.find_by_email( user_id ) unless user_id.blank?
+    @display_user ||= User.find_by_email( user_id.downcase ) unless user_id.blank?
     unless @display_user
       flash[:error] = "User #{user_id} doesn't exist"
       redirect_back_or_default( action: "index" )
@@ -281,15 +358,40 @@ class AdminController < ApplicationController
       return false
     end
 
-    @reflection_names = []
+    @user_facing_reflections = [
+      "annotations",
+      "atlases",
+      "comments",
+      "created_guide_sections",
+      "flags_as_flagger",
+      "guides",
+      "identifications",
+      "identifications_for_others",
+      "journal_posts",
+      "listed_taxa",
+      "lists",
+      "obsevation_field_values",
+      "obsevation_fields",
+      "observations",
+      "photos",
+      "places",
+      "posts",
+      "projects",
+      "quality_metrics",
+      "taxa",
+      "taxon_names",
+      "trips",
+      "votes"
+    ]
+
+    @all_reflections = {}
     has_many_reflections = User.reflections.select {| _k, v | v.macro == :has_many }
     has_many_reflections.each do | k, reflection |
       # Avoid those pesky :through relats
       next unless reflection.klass.column_names.include?( reflection.foreign_key )
 
-      @reflection_names << k.to_s
+      @all_reflections[k.to_s] = @display_user.send( k ).any?
     end
-    @reflection_names.uniq!
     true
   end
 end

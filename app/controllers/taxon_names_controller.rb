@@ -8,6 +8,11 @@ class TaxonNamesController < ApplicationController
   before_action :curator_or_creator_required, only: [:edit, :update, :destroy]
   before_action :curator_required, only: [:taxon, :destroy_synonyms]
   before_action :load_lexicons, only: [:new, :create, :edit, :update]
+  before_action :cannot_have_content_creation_restrictions, only: [
+    :new, :create, :edit, :update, :destroy, :destroy_synonyms
+  ]
+
+  prepend_around_action :enable_replica, only: [:index]
 
   cache_sweeper :taxon_name_sweeper, only: [:create, :update, :destroy]
 

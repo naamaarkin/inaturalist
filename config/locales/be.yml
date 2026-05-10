@@ -40,16 +40,6 @@ be:
     few: '%{count} Вызначэнні'
     many: '%{count} Вызначэнняў'
     other: '%{count} Вызначэння'
-  #Number of people who have added identifications
-  x_identifiers_html:
-    #Number of people who have added identifications
-    one: '<span class="count">%{count}</span> Вызначальнік'
-    #Number of people who have added identifications
-    few: '<span class="count">%{count}</span> Вызначальніка'
-    #Number of people who have added identifications
-    many: '<span class="count">%{count}</span> Вызначальнікаў'
-    #Number of people who have added identifications
-    other: '<span class="count">%{count}</span> Вызначальніка'
   x_languages:
     one: "%{count} мова"
     few: "%{count} мовы"
@@ -122,11 +112,6 @@ be:
     few: "<span class='count'>%{count}</span> назіранні прагледжана"
     many: "<span class='count'>%{count}</span> назіранняў прагледжана"
     other: "<span class='count'>%{count}</span> назірання прагледжана"
-  x_observers_html:
-    one: '<span class="count">%{count}</span> Назіральнік'
-    few: '<span class="count">%{count}</span> Назіральнікі'
-    many: '<span class="count">%{count}</span> Назіральнікаў'
-    other: '<span class="count">%{count}</span> Назіральніка'
   x_others:
     one: "%{count} іншы"
     few: "%{count} іншыя"
@@ -269,30 +254,6 @@ be:
   about_this_bioblitz: Пра гэты біябліц
   about_this_map: Пра гэтую мапу
   about_this_project: Пра гэты праект
-  about_trips_html: |
-    <h4>
-    Падарожжы дазваляюць збіраць дадзеныя аб адсутнасці/прысутнасці, дадаючы кантэкст
-    да вашых назіранняў
-    </h4>
-    <p>
-    <strong>Чаму</strong> Дадзеныя аб прысутнасці і адсутнасці ўключаюць інфармацыю пра
-    адбор проб, што можа быць карысным для навуковых аналізаў, такіх як мадэляванне размеркавання
-     (неапрацаваныя назіранні iNaturalist - гэта "толькі прысутнасць").
-    </p>
-    <p>
-    <strong>Як</strong> Падарожжа дадае кантэкст вашым назіранням, запісваючы:
-    </p>
-    <ul>
-    <li><strong>Што</strong> вы шукалі (спіс мэтаў)</li>
-    <li><strong>Дзе</strong> вы шукалі (абшар пошукаў)</li>
-    <li><strong>Калі</strong> вы шукалі (інтэрвал пошуку)</li>
-    </ul>
-    <p>
-    Віды ў вашым спісе мэтаў, якія вы змаглі назіраць у межах
-    абшару пошуку і інтэрвал інтэрпрэтуюцца як прысутнасць. Калі вы не здолелі назіраць від з вашага спісу мэтаў, гэта інтэрпрэтуецца як адсутнасць. Націсніце "Стварыць табліцу дадзеных аб адсутнасці/прысутнасці з падарожжаў", каб стварыць
-    табліцу запісаў пра наяўнасць і адсутнасць відаў з падарожжаў і звязаных з імі
-    назіранняў. <a href='%{url}'>Даведацца больш</a>
-    </p>
   about_trusting_projects: Пра давер праектам
   about_trusting_projects_options_any: Усе вашыя назіранні ў гэтым праекце
   about_trusting_projects_options_any_desc: |-
@@ -694,8 +655,6 @@ be:
   anyone: Кожны
   app_owner_application_about_p1a_html: |
     Прыкладанні iNaturalist даюць магчымасць аўтэнтыфікаванага выкарыстання API iNaturalist. Гэта дазваляе вам выклікаць API для выканання такіх рэчаў, як стварэнне назіранняў або ідэнтыфікацыі. Звычайнымі варыянтамі выкарыстання з'яўляюцца настольныя або мабільныя прыкладанні, якія змяшчаюць у сябе функцыі стварэння назіранняў iNaturalist для сваіх карыстальнікаў. Гэты кантэнт павінен стварацца з рэальным удзелам чалавека або пад наглядам. Калі ласка, каб атрымаць больш падрабязную інфармацыю, азнаёмцеся з нашымі <a href="/pages/community+guidelines" target="_blank">Правіламі суполкі</a>, якія забараняюць генераваныя машынамі назіранні, ідэнтыфікацыі і каментарыі.
-  app_owner_application_about_p2_html: |
-    Пачынаючы з 2022 года, мы патрабуем ручнога адабрэння для карыстальнікаў, якія жадаюць стварыць кліентаў API. Каб ствараць староннія дадаткі, вы спачатку павінны падаць заяўку, каб стаць «ўладальнікам прыкладання». Гэты дадатак павінен апісваць функцыянальныя магчымасці прапанаванага вамі прыкладання і тое, як вы плануеце яго выкарыстоўваць. Каб падаць заяўку, вашаму ўліковаму запісу павінна быць не менш за 2 месяцы і мець не менш за 10 <a href="/pages/help#identification" target="_blank">паляпшэнняў ідэнтыфікацыі</a> за апошні месяц. Мы можам задаваць дадатковыя пытанні пра вашыя планы і пакідаем за сабой права адхіляць заяўкі па любой прычыне.
   app_owner_application_inelligible: |
     Для таго, каб падаць заяўку, вашаму ўліковаму запісу павінна быць не менш за 2 месяцы, а за апошні месяц ён павінен мець не менш за 10 паляпшаючых вызначэнняў.
   app_owner_application_fields_explanation_html: Апішыце функцыянальнасць вашага прыкладання і тое, як вы плануеце яго выкарыстоўваць.
@@ -840,7 +799,6 @@ be:
   back_to_all_species: Вярнуцца да ўсіх відаў
   back_to_editing_observation: Вярнуцца да рэдактавання назіранняў
   back_to_friends: Вярнуцца да сяброў
-  back_to_flags_html: "&laquo; Вярнуцца да сцяжкоў"
   back_to_lists: "Вярнуцца да спісаў %{name}"
   back_to_observation: Вярнуцца да назірання
   back_to_observation_fields: Вярнуцца да палёў назірання
@@ -868,8 +826,6 @@ be:
   back_to_your_observations: Вярнуцца да вашых назіранняў
   back_to_your_profile: Вярнуцца да вашага профілю
   badges: Значкі
-  based_on_the_evidence_can_id_be_improved: |
-    Зыходзячы з доказаў, ці можна таксон супольнасці быць пацверджаны або палепшаны?
   batch: Пакетная запампоўка
   batch_edit: Пакетнае рэдактаванне
   #Where x is the title of a list of taxa
@@ -1112,8 +1068,6 @@ be:
   confirm_new_password: Пацвердзіць новы пароль
   confirm_now: Пацвердзіць цяпер
   confirm_your_info: Пацвердзіць вашую інфармацыю
-  confirming_ids: Пацвярджэнне вызначэнняў
-  confirming_ids_description: Калі вы выключыце гэта, вы больш не будзеце атрымліваць абвесткі аб вызначэннях, якія пацвярджаюць вашыя.
   #Label for a button to connect your iNat account to another account, e.g.
   #connecting to Flickr
   connect: Падлучыць
@@ -1140,9 +1094,6 @@ be:
       геапрыватыўнасць статусу, звязанага з кантынентам, краінай ці
       месца на дзяржаўным узроўні можа адмяняць статус, які з'яўляецца глабальным або звязаным
       з месцам больш высокага ўзроўню.
-    iucn: |
-      Эквівалентны код Чырвонага спісу IUCN. Гэта не фактычная ацэнка IUCN,
-      а толькі код IUCN, які найлепшым чынам адпавядае пагрозе раскрыцця каардынат, што маецца на ўвазе гэтым статусам. Гэта адменіць геапрыватнасць, калі статус "знаходзіцца пад найменшай пагрозай" (LC) або ніжэй, таму, калі вы хочаце прыхаваць назіранні для гэтага таксона, усталюйце значэнне "Блізкае да ўразлівага становішча" (NT) або вышэй.
   conservation_status_geoprivacy_desc: |
     Геапрыватнасць па змаўчанні прымяняецца да ўсіх назіранняў гэтага таксона ў гэтым месцы
   contact_support: Звярнуцца да службы падтрымкі
@@ -1152,6 +1103,7 @@ be:
   content_and_display: Зместы ды адлюстраванне
   content_author: Аўтар зместа
   content_hidden: Змесіт схаваны
+  #message on hidden content displaying when and why the content was hidden, and by whom
   content_hidden_by_user_on_date_because_reason_html: |
     Змест схаваны %{user} %{date} па прычыне: "%{reason}"
   content_type: Тып змесціва
@@ -1161,6 +1113,8 @@ be:
     %{user} выкрыў %{item}, таму што "%{reason}"
   continue: Працягнуць
   continue_to_site: Перайсці да %{site_name}
+  #e.g. "With iNaturalist, you can contribute to real science"
+  contribute: Дапамагчы
   contributor_cannot_be_found: Не атрымалася знайсці ўдзельніка
   contributors_to_project: "Удзельнікі %{project}"
   controlled_term_labels:
@@ -1190,6 +1144,7 @@ be:
     no_evidence_of_flowering: Няма доказу квітнення
     nymph: Німфа
     larva: Лічынка
+    #Evidence of an egg of an organism
     egg: Яйка
     juvenile: Ювенільнае
     alive_or_dead: Жывы ці мёртвы
@@ -1698,7 +1653,6 @@ be:
   edited_by_name_some_rights_reserved_html: |
     Адрэдагавана %{name}, некаторыя правы абаронены (%{license})
   editing: Рэдагаванне
-  editing_announcement: Рэдагаванне абвестак
   editing_custom_project_fields_for: Рэдагаванне карыстальніцкіх палёў праекта
   editing_observation_field: Рэдагаванне поля назірання
   editing_observation_id: "Рэдагаванне назірання %{obs_id}"
@@ -1895,7 +1849,6 @@ be:
   flag_marked_as_resolved_html: '<span class="meta">Пазнака адзначана як </span> <strong>вырашанае.</strong>'
   #Label for the object that was flagged, e.g. a table header
   flag_object: Аб’ект
-  flag_reason: "&ldquo;Я пазначаю гэтае %{record}, таму што"
   flag_resolution: Вырашэнне
   flag_saved: Пазнака захована
   flag_saved_thanks_html: Пазнака захована. Дзякуй! <a href="%{url}" class="readmore">Праглядзець пазнаку</a>
@@ -2098,6 +2051,8 @@ be:
   identify_observations: "Вызначыць назіранні"
   identify_observations_by_these_users: Вызначэнне назіранняў гэтых карыстальнікаў
   identify_title: "Вызначыць"
+  #e.g. "With iNaturalist, you can identify nature nearby"
+  identify_verb: Вызначайце
   identification: вызначэнне
   identification_by_user: Вызначэнне карыстальніка %{user}
   #Notification when an identification has been deleted
@@ -2117,7 +2072,6 @@ be:
   identotron_for: Ідэнтатрон для
   identotron_help: Дапамога па ідэнтатрону
   ids: "Вызначэнні"
-  ids_made_for_others: Вызначэнні, зробленыя для іншых
   if_for_some_reason_a_user_doesnt_agree: |
     Калі па нейкай прычыне вы не згодныя з таксонам супольніцтва, вы можаце адхіліць яго, што азначае, што вашае вызначэнне выкарыстоўваецца для спасылкі на іншыя назіранні, абнаўлення спісаў жыцця і г.д. Гэта таксама азначае, што ваша назіранне можа атрымаць ўзровень даследвання толькі тады, калі супольніцтва пагадзіцца з вамі.
   if_matches_come_from_a_comprehensive_list: Калі супадзенні паходзяць з поўнага спісу, тут з'явіцца зялёная паласа.
@@ -2275,6 +2229,7 @@ be:
     identifications_in_month_year: Больш за ўсё вызначэнняў у %{month_year}
     identifications_in_year: Больш за ўсё вызначэнняў у %{year}
   leading: Вядучы
+  #e.g. "With iNaturalist, you can learn from a global community of naturalists"
   learn: Вывучайце
   learn_about_the_species_live_in: Даведайцеся пра віды, якія жывуць у
   learn_more: Даведацца больш
@@ -2383,7 +2338,6 @@ be:
   #a noun.
   link_to_authorization_code: Спасылка на код аўтарызацыі
   link_your_flickr_account: Звязаць свой уліковы запіс Flickr
-  link_your_google_account: Звязаць свой уліковы запіс Google
   linked_flickr: "Ваш уліковы запіс на сайце %{site_name} зараз звязаны з вашым уліковым запісам Flickr."
   linked_flickr_automatically: "Акрамя таго, майце на ўвазе, што калі вы ўвойдзеце на сайт %{site_name} праз Flickr, то мы аўтаматычна паўторна звяжам ваш ўліковы запіс %{site_name} і Flickr. Здаецца абгрунтаваным, што калі вы выкарыстоўваеце Flickr, то захочаце мець магчымасць імпартаваць адтуль фатаграфіі, так?"
   linked_flickr_description: "Звязванне вашага ўліковага запісу %{site_name} з уліковым запісам Flickr дазваляе вам дадаваць некалькі фатаграфій да сваіх назіранняў. Вядома, калі вы захочаце, каб сайт %{site_name} і Flickr не былі звязаны, то мы не спынім вас, вы проста не зможаце дадаваць фатаграфіі. Часам гэта можа быць зручней, напрыклад, калі вы створыце новы ўліковы запіс Flickr, з якім захочаце звязаць %{site_name}."
@@ -4085,7 +4039,6 @@ be:
   the_observation_was_already_added_to_that_project: Назіранне ўжо было дададзена ў гэты праект.
   the_world_is_full_of_interesting_places: |
     Свет поўны цікавых месцаў, кожнае з якіх напоўнена дзіўнымі і выдатнымі формамі жыцця. Некаторыя знаходзяцца на другім канцы свету, а іншыя можна знайсці, калі проста выйсці на вуліцу! %{site_name} Месцы дазваляюць праглядаць жыццё з усёй планеты. Пачніце даследаваць!
-  there_is_no_wikipedia_page_matching: Няма адпаведнай старонцы ў Вікіпедыі
   there_isnt_a_wikipedia_article_titled_x_html: |
     У Вікіпедыі няма артыкула або перанакіравання пад назвай "%{x}". Магчыма, вы жадаеце <a href='http://en.wikipedia.org/wiki/%{x}'>зрабіць яго</a>?
   there_merge_problems_with_the_merge: "Узніклі праблемы з аб'яднаннем: %{merged_errors}"
@@ -4107,6 +4060,8 @@ be:
   top_identifiers_of_taxon: Лепшыя вызначальнікі таксону %{taxon}
   top_observer_caps: ЛЕПШЫ НАЗІРАЛЬНІК
   top_observers: Лепшыя назіральнікі
+  #e.g. "With iNaturalist, you can track species you've seen worldwide"
+  track: Сляды
   twitter: Twitter
   unreview_all: Удмяніць прагляд усяго
   update_observations: Абнавіць назіранні
@@ -4153,13 +4108,13 @@ be:
   user_added_an_x_to_noun_by_you_html: "%{user} дадаў %{x} да вашага %{noun}"
   #@gender operates on %{x}
   user_added_an_x_to_noun_html: "%{user} дадаў %{x} да %{noun}"
-  user_added_x_observations_html: "%{user} дадаў %{x} назіранняў"
   user_suggested_an_id: "%{user} прапанаваў вызначэнне"
   username: Імя карыстальніка
   username_or_email: Імя карыстальніка або email
   users: Карыстальнікі
   value: Значэнне
   values: Значэнні
+  video_tutorials: Відэа-інструкцыі
   view_all: Праглядзець усё
   view_all_flags: Праглядзець усе пазнакі
   view_all_members: Праглядзець усіх удзельнікаў
@@ -4168,7 +4123,6 @@ be:
   view_leaderboard_from_last_month: Глядзець табліцу лідараў з мінулага месяцу
   view_leaderboard_from_last_year: Глядзець табліцу лідараў з мінулага году
   view_all_of_your_observations_from_x: "Праглядзець усе назіранні ад %{x}"
-  video_tutorials: Відэа-інструкцыі
   weather: Надвор'е
   website: Веб-сайт
   #Label for the most probable taxon in the automated suggestions when that taxon is a genus
@@ -4491,9 +4445,6 @@ be:
             login:
               must_begin_with_a_letter: |
                 павінна пачынацца з літары, не ўтрымліваць прабелаў і выкарыстоўваць толькі літары, лічбы, рыскі і падкрэсліванне
-            email:
-              must_look_like_an_email_address: павінна выглядаць як адрас электроннай пошты
-              domain_is_not_supported: дамен не падтрымліваецца
   doorkeeper:
     errors:
       messages:

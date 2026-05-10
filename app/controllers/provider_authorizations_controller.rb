@@ -72,11 +72,16 @@ class ProviderAuthorizationsController < ApplicationController
       end
     end
 
-    if ( @provider_authorization = ProviderAuthorization.find_from_omniauth( auth_info ) )
-      update_existing_provider_authorization( auth_info )
+    if ( existing_authorization = ProviderAuthorization.find_from_omniauth( auth_info ) )
+      if logged_in? && existing_authorization.user != current_user
+        flash[:alert] = t( :that_account_is_already_connected )
+      else
+        @provider_authorization = existing_authorization
+        update_existing_provider_authorization( auth_info )
+      end
     else
       create_provider_authorization( auth_info )
-      return redirect_back_or_default @landing_path || home_url
+      sign_in( @provider_authorization.user ) if @provider_authorization
     end
 
     if @provider_authorization&.valid? && ( scope = get_session_omniauth_scope )
@@ -88,17 +93,6 @@ class ProviderAuthorizationsController < ApplicationController
       @landing_path ||= session[:return_to]
     end
 
-    # registering via an invite link in a flickr comment. see /flickr/invite
-    if session[:invite_params]
-      invite_params = session[:invite_params]
-      session[:invite_params] = nil
-      if @provider_authorization&.valid? && @provider_authorization.created_at > 15.minutes.ago
-        flash[:notice] = "Welcome to #{@site.name}! If these options look good, " \
-          "click \"Save observation\" below and you'll be good to go!"
-        invite_params.merge!( welcome: true )
-      end
-      @landing_path = new_observation_url( invite_params )
-    end
     redirect_to @landing_path || home_url
   end
 
@@ -112,7 +106,18 @@ class ProviderAuthorizationsController < ApplicationController
   end
 
   def get_session_omniauth_scope
+    return unless request.env["omniauth.strategy"]
+
     session["omniauth_#{request.env['omniauth.strategy'].name}_scope"]
+  end
+
+  def get_session_oauth_application
+    return unless session[:return_to]
+
+    return_to_query_params = Rack::Utils.parse_query( URI.parse( session["return_to"] ).query )
+    return unless return_to_query_params && return_to_query_params["client_id"]
+
+    OauthApplication.where( uid: return_to_query_params["client_id"] ).first
   end
 
   def create_provider_authorization( auth_info )
@@ -143,7 +148,7 @@ class ProviderAuthorizationsController < ApplicationController
     # create a new inat user and link provider to that user
     else
       sign_out( current_user ) if current_user
-      user = User.create_from_omniauth( auth_info )
+      user = User.create_from_omniauth( auth_info, get_session_oauth_application )
       unless user.valid?
         flash[:error] = if user.email.blank?
           case auth_info[:provider]
@@ -160,12 +165,9 @@ class ProviderAuthorizationsController < ApplicationController
       end
       @provider_authorization = user.provider_authorizations.last
       user.update( site: @site ) if @site
-      if session[:invite_params].nil?
-        flash[:allow_edit_after_auth] = true
-        @landing_path = edit_after_auth_url
-        return @provider_authorization
-      end
-      @landing_path = root_path
+      flash[:allow_edit_after_auth] = true
+      @landing_path = edit_after_auth_url
+      return @provider_authorization
     end
 
     @landing_path ||= edit_user_path( current_user )

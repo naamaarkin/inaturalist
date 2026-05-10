@@ -33,7 +33,7 @@ class ProjectListing extends React.Component {
             defaultChecked={allowsAccess}
             id={`project-allow-input-${obj.project.id}`}
             onClick={( ) => {
-              updateCuratorAccess( obj, allowsAccess ? 0 : 1 );
+              updateCuratorAccess( obj, allowsAccess ? false : true );
             }}
           />
           <label htmlFor={`project-allow-input-${obj.project.id}`}>
@@ -97,7 +97,7 @@ class ProjectListing extends React.Component {
         <MenuItem
           key={`project-global-${obj.project.id}`}
           eventKey="globalSettings"
-          href="/users/edit#projects"
+          href="/users/edit#content"
         >
           { I18n.t( "edit_your_global_project_settings" ) }
         </MenuItem>

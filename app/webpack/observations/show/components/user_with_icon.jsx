@@ -1,11 +1,14 @@
 import React from "react";
 import PropTypes from "prop-types";
 import UserImage from "../../../shared/components/user_image";
+import UserLink from "../../../shared/components/user_link";
 
 const UserWithIcon = ( {
+  config,
   hideSubtitle,
   skipSubtitleLink,
   subtitle,
+  subtitleLinkOverwrite,
   subtitleIconClass,
   user
 } ) => {
@@ -25,9 +28,10 @@ const UserWithIcon = ( {
        }
     </>
   );
+  const subtitleLinkDefault = `/observations?user_id=${user.login}&place_id=any&verifiable=any`;
   const subtitleLink = skipSubtitleLink
     ? subtitleContent
-    : <a href={`/observations?user_id=${user.login}&place_id=any&verifiable=any`}>{ subtitleContent }</a>;
+    : <a href={subtitleLinkOverwrite || subtitleLinkDefault}>{ subtitleContent }</a>;
 
   return (
     <div className="UserWithIcon">
@@ -36,7 +40,7 @@ const UserWithIcon = ( {
       </div>
       <div className="title-subtitle">
         <div className="title">
-          <a href={`/people/${user.login}`}>{ user.login }</a>
+          <UserLink config={config} user={user} uniqueKey={`UserWithIcon-${user.id}`} />
         </div>
         { !hideSubtitle && (
           <div className="subtitle">{ subtitleLink }</div>
@@ -47,11 +51,13 @@ const UserWithIcon = ( {
 };
 
 UserWithIcon.propTypes = {
+  config: PropTypes.object,
   user: PropTypes.object,
   subtitle: PropTypes.oneOfType( [
     PropTypes.string,
     PropTypes.number
   ] ),
+  subtitleLinkOverwrite: PropTypes.string,
   subtitleIconClass: PropTypes.string,
   hideSubtitle: PropTypes.bool,
   skipSubtitleLink: PropTypes.bool

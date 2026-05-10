@@ -8,11 +8,12 @@ const CheckboxRow = ( {
   disabled,
   handleCheckboxChange,
   label,
+  modalClassName,
   modalDescription,
   modalDescriptionTitle,
   name,
-  profile,
-  showModalDescription
+  showModalDescription,
+  userSettings
 } ) => (
   <div className="row">
     <div className="col-xs-12">
@@ -21,8 +22,8 @@ const CheckboxRow = ( {
           <input
             id={`user_${name}`}
             type="checkbox"
-            // false when profile[name] is undefined
-            checked={profile[name] || false}
+            // false when userSettings[name] is undefined
+            checked={userSettings[name] || false}
             name={name}
             disabled={disabled}
             onChange={e => {
@@ -43,7 +44,10 @@ const CheckboxRow = ( {
               className="btn btn-link btn-nostyle"
               onClick={( ) => showModalDescription(
                 modalDescription,
-                { title: modalDescriptionTitle }
+                {
+                  title: modalDescriptionTitle,
+                  className: modalClassName
+                }
               )}
             >
               <i className="fa fa-info-circle" />
@@ -52,7 +56,7 @@ const CheckboxRow = ( {
             </button>
           </div>
         ) }
-        { description && typeof ( description ) === "string" && (
+        { typeof ( description ) === "string" && (
           <div className="checkbox-description-margin">
             <p
               className="text-muted"
@@ -61,7 +65,7 @@ const CheckboxRow = ( {
             />
           </div>
         ) }
-        { description && typeof ( description ) === "object" && (
+        { typeof ( description ) === "object" && (
           <div className="checkbox-description-margin">
             { description }
           </div>
@@ -72,7 +76,6 @@ const CheckboxRow = ( {
 );
 
 CheckboxRow.propTypes = {
-  profile: PropTypes.object,
   name: PropTypes.string,
   handleCheckboxChange: PropTypes.func,
   label: PropTypes.string,
@@ -80,9 +83,11 @@ CheckboxRow.propTypes = {
   disabled: PropTypes.bool,
   confirm: PropTypes.string,
   confirmChangeTo: PropTypes.func,
-  modalDescription: PropTypes.string,
+  modalClassName: PropTypes.string,
+  modalDescription: PropTypes.any,
   modalDescriptionTitle: PropTypes.string,
-  showModalDescription: PropTypes.func
+  showModalDescription: PropTypes.func,
+  userSettings: PropTypes.object
 };
 
 export default CheckboxRow;

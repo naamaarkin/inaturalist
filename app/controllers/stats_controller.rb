@@ -7,9 +7,20 @@ class StatsController < ApplicationController
     only: [:generate_year],
     if: -> { authenticate_with_oauth? }
   before_action :authenticate_user!,
-    only: [:cnc2017_taxa, :cnc2017_stats, :generate_year],
+    only: [:cnc2017_taxa, :cnc2017_stats, :generate_year, :user_segments, :daily_active_user_model],
     unless: -> { authenticated_with_oauth? }
-  before_action :allow_external_iframes, only: [:wed_bioblitz]
+  before_action :admin_required, only: [
+    :user_segments,
+    :segmentation_dau_mau,
+    :daily_active_user_model,
+    :acquisition_cohort_statistics,
+    :behavior_cohort_statistics,
+    :segment_active_users_statistics
+  ]
+
+  allow_external_iframes( only: [:wed_bioblitz] )
+
+  prepend_around_action :enable_replica, only: [:index, :summary]
 
   caches_action :summary, expires_in: 1.day
   caches_action :nps_bioblitz, expires_in: 5.minutes
@@ -20,6 +31,10 @@ class StatsController < ApplicationController
     respond_to do | format |
       format.json do
         fetch_statistics
+        @stats = @stats.map do | stat |
+          stat[:data] = stat[:data].except( "daily_active_user_model" )
+          stat
+        end
         render json: @stats, except: :id, callback: params[:callback]
       end
       format.html do
@@ -27,6 +42,10 @@ class StatsController < ApplicationController
           @start_date = @end_date - 1.year
         end
         fetch_statistics
+        @stats = @stats.map do | stat |
+          stat[:data] = stat[:data].except( "daily_active_user_model" )
+          stat
+        end
         render layout: "bootstrap"
       end
     end
@@ -81,7 +100,7 @@ class StatsController < ApplicationController
     if !@display_user &&
         !current_user&.is_admin? &&
         Date.today.year == @year &&
-        Date.today < Date.parse( "#{@year}-12-01" )
+        Date.today < Date.parse( "#{@year}-11-15" )
       @year_statistic = nil
     end
     @headless = @footless = true
@@ -248,7 +267,7 @@ class StatsController < ApplicationController
       species_count_response = INatAPIService.observations_species_counts( node_params )
       species_count = species_count_response&.total_results || 0
       observations_count_response = INatAPIService.observations( node_params )
-      observations_count =  observations_count_response&.total_results || 0
+      observations_count = observations_count_response&.total_results || 0
       identifiers_count_response = INatAPIService.get( "/observations/identifiers", node_params )
       identifiers_count = identifiers_count_response&.total_results || 0
       observers_count_response = INatAPIService.get( "/observations/observers", node_params )
@@ -320,11 +339,301 @@ class StatsController < ApplicationController
     end
   end
 
-  def wed_bioblitz
-    render layout: "basic"
+  def user_segments
+    segmentation_record, segmentation_records = SegmentationStatistic.record_for(
+      stat_date: params[:date]
+    )
+    redirect_to( root_url ) and return unless segmentation_record
+
+    @segmentation_prev_record, @segmentation_next_record = stat_record_neighbors(
+      segmentation_record,
+      segmentation_records
+    )
+    @segmentation_record_created_at = segmentation_record.created_at
+    @record_date = segmentation_record.created_at.strftime( "%Y-%m-%d" )
+
+    # Main metrics
+    seg_main_metrics = segmentation_record.data["main_metrics"]
+    @segmentation_statistic = { name: "all", children: [] }
+    @segmentation_statistic[:children] = seg_main_metrics.except( "all" ).map do | key, value |
+      children = value.except( "total" ).map do | subkey, subvalue |
+        next if subkey.include? "_ids"
+
+        {
+          name: subkey.gsub( "_obs", "" ),
+          children: subvalue.except( "total" ).map do | subsubkey, subsubvalue |
+            {
+              name: subsubkey,
+              value: subsubvalue
+            }
+          end
+        }
+      end.compact
+      children.select {| c | c[:name] == "power" }.
+        first[:children] << { name: "ider", value: value["power_ids"]["total"] }
+      children.select {| c | c[:name] == "casual" }.
+        first[:children] << { name: "ider", value: value["casual_ids"]["total"] }
+      {
+        name: key,
+        children: children
+      }
+    end
+
+    # DAU/MAU
+    respond_to do | format |
+      format.html do
+        render layout: "bootstrap"
+      end
+    end
+  end
+
+  def daily_active_user_model
+    stats_record, stats_records = SiteStatistic.record_for(
+      stat_date: params[:date]
+    )
+    redirect_to( root_url ) and return unless stats_record
+
+    @daily_active_users_prev_record, @daily_active_users_next_record = stat_record_neighbors(
+      stats_record,
+      stats_records
+    )
+    @daily_active_users_record_created_at = stats_record.created_at
+    @record_date = stats_record.created_at.strftime( "%Y-%m-%d" )
+    @daily_active_user_model = stats_record.data["daily_active_user_model"]
+    render layout: "bootstrap"
+  end
+
+  def segmentation_dau_mau
+    segmentation_record, segmentation_records = SegmentationStatistic.record_for(
+      stat_date: params[:date]
+    )
+    redirect_to( root_url ) and return unless segmentation_record
+
+    @segmentation_prev_record, @segmentation_next_record = stat_record_neighbors(
+      segmentation_record,
+      segmentation_records
+    )
+    @segmentation_record_created_at = segmentation_record.created_at
+    @record_date = segmentation_record.created_at.strftime( "%Y-%m-%d" )
+
+    seg_dau_mau = segmentation_record.data["dau_mau_metrics"]
+    @segmentation_dau_mau = []
+    @segmentation_dau_mau << {
+      label: seg_dau_mau["all_users"]["label"],
+      value: seg_dau_mau["all_users"]["dau_mau"]
+    }
+    @segmentation_dau_mau << {
+      label: seg_dau_mau["power_users"]["label"],
+      value: seg_dau_mau["power_users"]["dau_mau"]
+    }
+    @segmentation_dau_mau << {
+      label: seg_dau_mau["casual_users"]["label"],
+      value: seg_dau_mau["casual_users"]["dau_mau"]
+    }
+    @segmentation_dau_mau << {
+      label: seg_dau_mau["inactive_users"]["label"],
+      value: seg_dau_mau["inactive_users"]["dau_mau"]
+    }
+    @segmentation_dau_mau << {
+      label: seg_dau_mau["new_account"]["label"],
+      value: seg_dau_mau["new_account"]["dau_mau"]
+    }
+    @segmentation_dau_mau << {
+      label: seg_dau_mau["existing_account"]["label"],
+      value: seg_dau_mau["existing_account"]["dau_mau"]
+    }
+    @segmentation_dau_mau_by_created_at_buckets = []
+    @segmentation_dau_mau_by_created_at_buckets << {
+      label: seg_dau_mau["created_at_0d_30d"]["label"],
+      value: seg_dau_mau["created_at_0d_30d"]["dau_mau"]
+    }
+    @segmentation_dau_mau_by_created_at_buckets << {
+      label: seg_dau_mau["created_at_30d_3m"]["label"],
+      value: seg_dau_mau["created_at_30d_3m"]["dau_mau"]
+    }
+    @segmentation_dau_mau_by_created_at_buckets << {
+      label: seg_dau_mau["created_at_3m_6m"]["label"],
+      value: seg_dau_mau["created_at_3m_6m"]["dau_mau"]
+    }
+    @segmentation_dau_mau_by_created_at_buckets << {
+      label: seg_dau_mau["created_at_6m_1y"]["label"],
+      value: seg_dau_mau["created_at_6m_1y"]["dau_mau"]
+    }
+    @segmentation_dau_mau_by_created_at_buckets << {
+      label: seg_dau_mau["created_at_1y_2y"]["label"],
+      value: seg_dau_mau["created_at_1y_2y"]["dau_mau"]
+    }
+    @segmentation_dau_mau_by_created_at_buckets << {
+      label: seg_dau_mau["created_at_2y_3y"]["label"],
+      value: seg_dau_mau["created_at_2y_3y"]["dau_mau"]
+    }
+    @segmentation_dau_mau_by_created_at_buckets << {
+      label: seg_dau_mau["created_at_3y_4y"]["label"],
+      value: seg_dau_mau["created_at_3y_4y"]["dau_mau"]
+    }
+    @segmentation_dau_mau_by_created_at_buckets << {
+      label: seg_dau_mau["created_at_4y_5y"]["label"],
+      value: seg_dau_mau["created_at_4y_5y"]["dau_mau"]
+    }
+    @segmentation_dau_mau_by_created_at_buckets << {
+      label: seg_dau_mau["created_at_5y_10y"]["label"],
+      value: seg_dau_mau["created_at_5y_10y"]["dau_mau"]
+    }
+    @segmentation_dau_mau_by_created_at_buckets << {
+      label: seg_dau_mau["created_at_over_10y"]["label"],
+      value: seg_dau_mau["created_at_over_10y"]["dau_mau"]
+    }
+
+    respond_to do | format |
+      format.html do
+        render layout: "bootstrap"
+      end
+    end
+  end
+
+  # Load acquisition cohorts for a selected snapshot date (or latest).
+  def acquisition_cohort_statistics
+    acquisition_record, acquisition_records = CohortStatistic.record_for(
+      "acquisition",
+      stat_date: params[:date]
+    )
+    @acquisition_record = acquisition_record
+    @acquisition_prev_record, @acquisition_next_record = CohortStatistic.record_neighbors(
+      acquisition_record,
+      acquisition_records
+    )
+    set_acquisition_cohort_vars( acquisition_record )
+    render "acquisition_cohort_statistics", layout: "bootstrap"
+  end
+
+  # Load behavior cohorts for a selected snapshot date (or latest).
+  def behavior_cohort_statistics
+    behavior_record, behavior_records = CohortStatistic.record_for(
+      "behavior",
+      stat_date: params[:date]
+    )
+    @behavior_record = behavior_record
+    @behavior_prev_record, @behavior_next_record = CohortStatistic.record_neighbors(
+      behavior_record,
+      behavior_records
+    )
+    set_behavior_cohort_vars( behavior_record )
+    render "behavior_cohort_statistics", layout: "bootstrap"
+  end
+
+  # Load segment active users for a selected snapshot date (or latest).
+  def segment_active_users_statistics
+    segment_record, segment_records = CohortStatistic.record_for(
+      "segment_active_users",
+      stat_date: params[:date]
+    )
+    @segment_active_users_record = segment_record
+    @segment_active_users_prev_record, @segment_active_users_next_record = CohortStatistic.record_neighbors(
+      segment_record,
+      segment_records
+    )
+    set_segment_active_users_vars( segment_record )
+    render "segment_active_users_statistics", layout: "bootstrap"
+  end
+
+  # Build the table-ready rows and offsets for the acquisition view.
+  def set_acquisition_cohort_vars( acquisition_record )
+    acquisition = acquisition_record&.data
+    acquisition = acquisition.deep_symbolize_keys if acquisition.respond_to?( :deep_symbolize_keys )
+    if acquisition.blank?
+      @acquisition_generated_at = acquisition_record&.created_at
+      @acquisition_rows = []
+      @acquisition_offsets = []
+      return
+    end
+
+    @acquisition_generated_at = acquisition_record&.created_at
+    @acquisition_years = acquisition.keys.map( &:to_s ).sort
+    @acquisition_rows = acquisition.sort_by {| key, _ | key.to_s.to_i }.map do | key, data |
+      acquisitions_sorted = data[:acquisitions].sort_by {| item | item[:key].to_s.to_i }
+      acquisitions_by_offset = {}
+      acquisitions_sorted.each_with_index do | item, index |
+        acquisitions_by_offset[index] = item
+      end
+      {
+        key: key.to_s,
+        label: data[:label],
+        cohort_count: data[:cohort_count],
+        acquisitions_by_offset: acquisitions_by_offset
+      }
+    end
+    @acquisition_offsets = ( 0..@acquisition_rows.map {| row | row[:acquisitions_by_offset].size }.max.to_i - 1 ).
+      to_a
+  end
+
+  # Build the table-ready rows and offsets for the behavior view.
+  def set_behavior_cohort_vars( behavior_record )
+    behavior = behavior_record&.data
+    behavior = behavior.deep_symbolize_keys if behavior.respond_to?( :deep_symbolize_keys )
+    if behavior.blank?
+      @behavior_generated_at = behavior_record&.created_at
+      @behavior_rows = []
+      @behavior_offsets = []
+      return
+    end
+
+    @behavior_generated_at = behavior_record&.created_at
+
+    behavior = behavior.reject {| key, data | key == "precohort" || data[:cohort_count].to_i.zero? }
+    @behavior_rows = behavior.sort_by {| key, _ | key.to_s }.map do | key, data |
+      behaviors_sorted = data[:behaviors].sort_by {| item | item[:key].to_s }
+      behaviors_by_offset = {}
+      behaviors_sorted.each_with_index do | item, index |
+        behaviors_by_offset[index] = item
+      end
+      {
+        key: key.to_s,
+        label: data[:label],
+        cohort_count: data[:cohort_count],
+        behaviors_by_offset: behaviors_by_offset
+      }
+    end
+    @behavior_offsets = ( 0..@behavior_rows.map {| row | row[:behaviors_by_offset].size }.max.to_i - 1 ).to_a
+  end
+
+  # Build the table-ready rows for the segment active users view.
+  def set_segment_active_users_vars( segment_record )
+    segment_data = segment_record&.data
+    segment_data = segment_data.deep_symbolize_keys if segment_data.respond_to?( :deep_symbolize_keys )
+    if segment_data.blank?
+      @segment_active_users_generated_at = segment_record&.created_at
+      @segment_active_users_rows = []
+      @segment_active_users_max = 0
+      return
+    end
+
+    @segment_active_users_generated_at = segment_record&.created_at
+    sorted_segment_data = segment_data.sort_by do | key, _ |
+      key.to_s
+    end
+    @segment_active_users_rows = sorted_segment_data.map do | key, data |
+      {
+        key: key.to_s,
+        label: data[:label],
+        active: data[:active],
+        new: data[:new],
+        retained: data[:retained],
+        reengaged: data[:reengaged]
+      }
+    end
+    @segment_active_users_max = @segment_active_users_rows.map {| row | row[:active].to_i }.max.to_i
   end
 
   private
+
+  def stat_record_neighbors( record, records )
+    return [nil, nil] unless record
+
+    current_index = records.index( record )
+    prev_record = records[current_index + 1] if current_index
+    next_record = records[current_index - 1] if current_index&.positive?
+    [prev_record, next_record]
+  end
 
   def set_time_zone_to_utc
     Time.zone = "UTC"

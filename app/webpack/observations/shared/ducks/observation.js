@@ -1,8 +1,11 @@
 import _ from "lodash";
 import inatjs from "inaturalistjs";
-import { handleAPIError } from "../../show/ducks/confirm_modal";
+import { handleAPIError } from "../../../shared/ducks/confirm_modal";
 import util from "../../show/util";
 import { setProjectFieldsModalState } from "../../show/ducks/project_fields_modal";
+
+// eslint-disable-next-line no-unused-vars
+/* global RECENT_OBSERVATION_FIELDS */
 
 let lastAction;
 export function getActionTime( ) {
@@ -11,7 +14,7 @@ export function getActionTime( ) {
   return currentTime;
 }
 
-export function hasObsAndLoggedIn( state ) {
+function hasObsAndLoggedIn( state ) {
   return (
     state
     && state.config
@@ -22,7 +25,7 @@ export function hasObsAndLoggedIn( state ) {
   );
 }
 
-export function afterAPICall(
+function afterAPICall(
   observation,
   fetchObservation,
   options = { }
@@ -36,10 +39,6 @@ export function afterAPICall(
         )
       );
     }
-    if ( options.callback ) {
-      options.callback( );
-      return;
-    }
     if (
       ( options.actionTime && lastAction !== options.actionTime )
       || !observation
@@ -47,32 +46,47 @@ export function afterAPICall(
       return;
     }
     fetchObservation( );
+    if ( options.callback ) {
+      options.callback( );
+    }
   };
 }
 
-export function callAPI(
+function callAPI(
   observation,
   method,
   payload,
   fetchObservation,
   options = { }
 ) {
-  return dispatch => {
+  return ( dispatch, getState ) => {
     const opts = { ...options };
-    // only need to keep track of the times of non-custom callbacks
-    if ( !options.callback ) {
-      opts.actionTime = getActionTime( );
+    const state = getState( );
+    const { testingApiV2 } = state.config;
+    const originalApiUrl = $( "meta[name='config:inaturalist_api_url']" ).attr( "content" );
+    if ( !testingApiV2 && options.useApiV2 ) {
+      inatjs.setConfig( {
+        apiURL: originalApiUrl.replace( "/v1", "/v2" ),
+        writeApiURL: originalApiUrl.replace( "/v1", "/v2" )
+      } );
     }
-    method( payload ).then( ( ) => {
+    opts.actionTime = getActionTime( );
+    method( payload, opts ).then( ( ) => {
       dispatch( afterAPICall( observation, fetchObservation, opts ) );
     } ).catch( e => {
       opts.error = e;
       dispatch( afterAPICall( observation, fetchObservation, opts ) );
     } );
+    if ( !testingApiV2 && options.useApiV2 ) {
+      inatjs.setConfig( {
+        apiURL: originalApiUrl,
+        writeApiURL: originalApiUrl
+      } );
+    }
   };
 }
 
-export function addToProjectSubmit(
+function addToProjectSubmit(
   observation,
   project,
   setAttributes,
@@ -226,11 +240,19 @@ export function addObservationFieldValue(
         value: options.value
       }
     };
+    const callback = ( ) => {
+      const params = testingApiV2 ? { fields: "all" } : { };
+      inatjs.users.recent_observation_fields( params ).then( recentFieldsResponse => {
+        // eslint-disable-next-line no-global-assign
+        RECENT_OBSERVATION_FIELDS = recentFieldsResponse.results;
+      } );
+    };
     dispatch( callAPI(
       observation,
       inatjs.observation_field_values.create,
       payload,
-      fetchObservation
+      fetchObservation,
+      { callback }
     ) );
   };
 }
@@ -287,11 +309,80 @@ export function removeObservationFieldValue(
     const newOfvs = observation.ofvs.map( ofv => (
       ofv.uuid === id ? { ...ofv, api_status: "deleting" } : ofv ) );
     dispatch( setAttributes( { ofvs: newOfvs } ) );
+    const callback = ( ) => {
+      const { testingApiV2 } = state.config;
+      const params = testingApiV2 ? { fields: "all" } : { };
+      inatjs.users.recent_observation_fields( params ).then( recentFieldsResponse => {
+        // eslint-disable-next-line no-global-assign
+        RECENT_OBSERVATION_FIELDS = recentFieldsResponse.results;
+      } );
+    };
     dispatch( callAPI(
       observation,
       inatjs.observation_field_values.delete,
       { id },
-      fetchObservation
+      fetchObservation,
+      { callback }
     ) );
+  };
+}
+
+export function nominateIdentification( observation, id, setAttributes, fetchObservation ) {
+  return dispatch => {
+    const payload = { id };
+    dispatch(
+      callAPI(
+        observation,
+        inatjs.identifications.nominate,
+        payload,
+        fetchObservation,
+        { same_origin: true }
+      )
+    );
+  };
+}
+
+export function unnominateIdentification( observation, id, setAttributes, fetchObservation ) {
+  return dispatch => {
+    const payload = { id };
+    dispatch(
+      callAPI(
+        observation,
+        inatjs.identifications.unnominate,
+        payload,
+        fetchObservation,
+        { same_origin: true }
+      )
+    );
+  };
+}
+
+export function voteIdentification( observation, id, voteValue, setAttributes, fetchObservation ) {
+  return dispatch => {
+    const payload = { id, vote: voteValue };
+    dispatch(
+      callAPI(
+        observation,
+        inatjs.exemplar_identifications.vote,
+        payload,
+        fetchObservation,
+        { useApiV2: true }
+      )
+    );
+  };
+}
+
+export function unvoteIdentification( observation, id, setAttributes, fetchObservation ) {
+  return dispatch => {
+    const payload = { id };
+    dispatch(
+      callAPI(
+        observation,
+        inatjs.exemplar_identifications.unvote,
+        payload,
+        fetchObservation,
+        { useApiV2: true }
+      )
+    );
   };
 }

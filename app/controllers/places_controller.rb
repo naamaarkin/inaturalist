@@ -36,6 +36,8 @@ class PlacesController < ApplicationController
   before_action :curator_required, only: [:planner, :merge]
   before_action :check_quota, only: [:create]
 
+  prepend_around_action :enable_replica, only: [:show, :guide, :cached_guide]
+
   QUOTA = 3
 
   # Place names that cause some problem when we show associated Wikipedia
@@ -49,7 +51,7 @@ class PlacesController < ApplicationController
     if: proc {| c | c.session.blank? || c.session["warden.user.user.key"].blank? }
   cache_sweeper :place_sweeper, only: [:update, :destroy, :merge]
 
-  before_action :allow_external_iframes, only: [:guide_widget, :cached_guide]
+  allow_external_iframes( only: [:guide_widget, :cached_guide] )
 
   requires_privilege :organizer, only: [:new, :create, :edit, :update, :destroy],
     if: proc {| _c |
@@ -224,7 +226,7 @@ class PlacesController < ApplicationController
       @place.validate_with_geom( @geometry, max_area_km2: max_area_km2, max_observation_count: max_observation_count )
     end
 
-    if @geometry # && @place.valid?
+    if @geometry && @place.errors.none?
       @place.save_geom( @geometry, max_area_km2: max_area_km2, max_observation_count: max_observation_count )
       @place.save
       if @place.too_big_for_check_list?
@@ -237,9 +239,15 @@ class PlacesController < ApplicationController
     if @place.errors.any?
       flash[:error] = t( :there_were_problems_importing_that_place_geometry,
         error: @place.errors.full_messages.join( ", " ) )
+      render action: :new
+      return
     end
+
     if @place.save
-      notice ||= t( :place_imported )
+      if notice.blank?
+        notice = t( :place_imported )
+        notice += "<br>#{t( :place_imported_delay )}"
+      end
       flash[:notice] = notice
       redirect_to @place
     else
@@ -257,16 +265,18 @@ class PlacesController < ApplicationController
       return
     end
 
-    if max_area_km2 && @place.area_km2 > max_area_km2
-      flash[:error] = t( :only_staff_can_edit_large_places )
-      redirect_to place_path( @place )
-      nil
-    end
+    return unless max_area_km2
+    return unless @place.area_km2
+    return if @place.area_km2 <= max_area_km2
+
+    flash[:error] = t( :only_staff_can_edit_large_places )
+    redirect_to place_path( @place )
+    nil
   end
 
   def update
     if @place.update( params[:place] )
-      if max_area_km2 && @place.area_km2 > max_area_km2
+      if max_area_km2 && @place.area_km2 && @place.area_km2 > max_area_km2
         @place.add_custom_error( :place_geometry, :is_too_large_to_edit )
       elsif params[:file]
         assign_geometry_from_file
@@ -466,14 +476,10 @@ class PlacesController < ApplicationController
 
   def guide
     place_id = params[:id] || params[:place_id] || params[:place]
-    @place ||= if place_id.to_i.zero?
-      begin
-        Place.find( place_id )
-      rescue ActiveRecord::RecordNotFound
-        Place.elastic_paginate( filters: [{ match: { display_name: place_id } }], per_page: 1 ).first
-      end
-    else
-      Place.find_by_id( place_id.to_i )
+    @place ||= begin
+      Place.find( place_id )
+    rescue ActiveRecord::RecordNotFound
+      Place.elastic_paginate( filters: [{ match: { display_name: place_id } }], per_page: 1 ).first
     end
     return render_404 unless @place
 
@@ -599,6 +605,7 @@ class PlacesController < ApplicationController
   def filter_wikipedia_content
     hhtml = Nokogiri::HTML( @decoded )
     hhtml.search( "table[id=toc], table.metadata" ).remove
+    hhtml.css( ".mw-editsection" ).remove
     @decoded = hhtml.to_s
     @decoded.gsub!( /\[\d+\]/, "" )
     @decoded.gsub!( /width:\d+/, "" )

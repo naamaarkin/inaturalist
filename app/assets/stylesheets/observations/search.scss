@@ -22,6 +22,14 @@ body {
 #wrapper {
   margin-bottom: 0px;
 }
+
+body.responsive {
+  min-width: auto;
+  #wrapper {
+    min-width: 980px;
+  }
+}
+
 #results {
   width: 100%;
   background: #eee;
@@ -53,6 +61,9 @@ body {
 #result-grid .thumbnail {
   margin-bottom: 30px;
   border: 1px solid #ddd;
+}
+#taxa-grid .thumbnail.borderless {
+  overflow: visible;
 }
 .grid .taxon-grid-cell {
   width: 194px;
@@ -124,6 +135,9 @@ body {
   #result-grid .caption .userimage {
     top: 120px;
   }
+  .quality_grade .full {
+    display: none;
+  }
 }
 @media (min-width: 992px) {
   .grid .photo {
@@ -155,6 +169,9 @@ body {
   }
   #result-grid .caption .userimage {
     top: 225px;
+  }
+  .quality_grade .full {
+    display: inline;
   }
 }
 
@@ -217,7 +234,7 @@ body {
   }
 }
 inat-taxon.split-taxon .display-name {
-  font-weight: bold;
+  font-weight: 600;
   display: block;
   font-size: 15px;
   color: black;
@@ -239,7 +256,7 @@ inat-taxon.split-taxon .icon {display: none;}
   border-radius: 120px;
   width: 48px;
   height: 48px;
-  line-height: 45px;
+  line-height: 37px;
   font-size: 32px;
   background-size: cover;
   background-position: center;
@@ -258,13 +275,30 @@ inat-taxon.split-taxon .icon {display: none;}
 .bootstrap .userimage:active {opacity: 1; color: #eee;}
 #result-grid .meta {color: #a3a3a3; font-size: 12px; overflow: hidden;}
 #result-grid .meta .comments i,
-#result-grid .meta .identifications i {font-size: 110%;}
+#result-grid .meta .identifications i,
+#result-grid .meta .favorites i {font-size: 110%;}
 #result-grid .meta .pull-right {
   position: relative;
   top: 2px;
 }
-#result-grid .favorites { margin-inline-start: 5px;}
-#result-grid .comments {margin-inline-start: 5px;}
+#result-grid .favorites {
+  margin-inline-start: 5px;
+  .meta-text {
+    position: relative;
+    top: 1px;
+  }
+}
+#result-grid .comments {
+  margin-inline-start: 5px;
+  i {
+    position: relative;
+    top: -1px;
+  }
+}
+#result-grid .meta .identifications i {
+  position: relative;
+  top: -1px;
+}
 
 .form {
   background: #fff;
@@ -315,7 +349,7 @@ inat-taxon.split-taxon .icon {display: none;}
 .btn [class^="icon-"],
 .btn [class*=" icon-"] {
   position: relative;
-  top: -1px;
+  top: -3px;
 }
 #map-legend-control {
   position: absolute;
@@ -386,6 +420,29 @@ inat-taxon.split-taxon .icon {display: none;}
 #filter-container,
 #filters .primary-filters {
   margin-top: 20px;
+  display: flex;
+  align-items: flex-start;
+  gap: 5px;
+  margin-inline-end: 5px;
+
+  > button {
+    margin: 0;
+    color: #fff;
+    background: $btn-orange;
+  }
+
+  .without-taxa {
+    z-index: 2;
+    position: relative;
+    li {
+      display: flex;
+      align-items: center;
+      button {
+        position: relative;
+        top: 1px;
+      }
+    }
+  }
 }
 #filters .form-control {
   display: inline-block;
@@ -396,6 +453,7 @@ inat-taxon.split-taxon .icon {display: none;}
   border-color: $btn-grey;
   color: #eee;
   position: relative;
+  padding: 5px 12px 7px;
 }
 .bootstrap #filter-container > button:hover { color: white; }
 .bootstrap #filter-container > button.btn-default .badge {
@@ -431,7 +489,12 @@ inat-taxon.split-taxon .icon {display: none;}
   width: 900px;
 }
 #filters .dropdown-menu { background-color: #eee; padding: 0px;}
-.primary-filters .ac-chooser { display: inline-block; }
+.primary-filters .ac-chooser {
+  display: inline-block;
+  .ac-select-thumb {
+    line-height: 30px;
+  }
+}
 .bootstrap .primary-filters .form-control {width: 250px;}
 .primary-filters > span { margin: 0 5px;}
 #filter-container { margin-inline-start: 10px; }
@@ -457,26 +520,27 @@ inat-taxon.split-taxon .icon {display: none;}
   line-height: 75px;
   background: none;
   border: 0px;
-  font-weight: 100;
+  font-weight: 400;
   color: #eee;
 }
 #stats-container .geo.selected {
   color: #fff;
   border: 2px solid $btn-orange;
-  padding: 5px;
+  padding: 3px 5px 5px;
 }
 #stats-container .glyphicon-remove-sign {
   margin-inline-start: 5px;
   font-size: 0.7em;
+  top: 0px;
 }
 #stats-container .stat-title {
-  font-weight: 100;
-  text-transform: uppercase;
+  font-weight: 400;
   padding-bottom: 5px;
-  letter-spacing: 0.04em;
+  letter-spacing: 0.12em;
   color: #eee;
   font-size: 14px;
   position: relative;
+
 }
 #stats-container .stat-title i {
   line-height: 18px;
@@ -495,7 +559,7 @@ inat-taxon.split-taxon .icon {display: none;}
   inset-inline-start: 0.5px;
 }
 #stats-container .stat-value {
-  font-weight: bold;
+  font-weight: 600;
   font-size: 20px;
   line-height: 25px;
 }
@@ -529,11 +593,6 @@ inat-taxon.split-taxon .icon {display: none;}
 #obs-container .observation .location {
   display: inline-block;
   white-space: nowrap;
-}
-#obs-container .observation .date:before {
-  content: '\2022';
-  font-weight: bold;
-  margin: 0 3px 0 2px;
 }
 #obs-container .observation .pull-right .date:before {
   content: none;
@@ -593,7 +652,8 @@ inat-taxon.split-taxon .icon {display: none;}
 }
 #obs-container .media-body {
   padding: 5px 10px 26px 10px;
-  border-top: 1px solid #eee
+  border-top: 1px solid #eee;
+  position: relative;
 }
 
 #obs-container .userimage {
@@ -610,11 +670,17 @@ inat-taxon.split-taxon .icon {display: none;}
   clear: both;
   position: absolute;
   bottom: 7px;
+  padding-inline-end: 20px;
+  width: 100%;
+  flex-wrap: nowrap;
+  .meta-stats {
+    flex-wrap: nowrap;
+  }
 }
 
 .bootstrap label.sectionlabel {
   display: block;
-  font-weight: bold;
+  font-weight: 600;
   font-size: 16px;
 }
 
@@ -711,7 +777,7 @@ inat-taxon.split-taxon .icon {display: none;}
   margin-inline-start: 14px;
 }
 .dropdown-menu.places .name {
-  font-weight: 700;
+  font-weight: 600;
 }
 .dropdown-menu.places .place:hover {
   text-decoration: underline;
@@ -744,7 +810,7 @@ inat-taxon.split-taxon .icon {display: none;}
 
   #primary-map-controls {
     float: left;
-    margin-inline-end: 12px;
+    margin-inline-end: 10px;
     padding-bottom: 2px;
   }
 
@@ -796,7 +862,7 @@ inat-taxon.split-taxon .icon {display: none;}
     border-bottom-left-radius: 0;
   }
   .btn-redo-search {
-    padding: 7px 7px 5px !important;
+    padding: 6px 7px 6px !important;
     .glyphicon {
       margin-inline-end: 2px;
       color: white;
@@ -823,34 +889,32 @@ inat-taxon.split-taxon .icon {display: none;}
   }
 }
 .btn .glyphicon {
-  top: 3px;
+  top: 1px;
 }
 #view-controls .btn .glyphicon {
   top: 2px;
 }
 #subview-controls .btn-default, .btn.places {
-  padding: 7px 12px 5px;
-}
-#view-controls.open .btn-default.places {
-  color: #fff;
-  background: $btn-orange;
+  padding: 6px 12px 6px;
 }
 #place-name-input {margin-inline-start: 0;}
 #place-name-input button {
   background-color: $btn-orange;
   color: white;
   margin-inline-start: 5px;
+  padding: 5px 12px 7px;
 }
 .quality_grade {
   display: inline-block;
   background-color: #ddd;
-  padding-block: 2px 1px;
+  padding-block: 2px 2px;
   padding-inline: 10px 0;
   position: relative;
   font-size: 12px !important;
-  line-height: 17px !important;
+  line-height: 16px !important;
   z-index: 1;
   margin-inline-end: 20px;
+  white-space: nowrap;
 }
 .quality_grade:after {
   content: "";
@@ -895,19 +959,27 @@ inat-taxon.split-taxon .icon {display: none;}
   border-inline-end-color: transparent;
 }
 
+#result-table table {
+  // This is a weird trick that allows table cells to set height to 100% when
+  // display: flex
+  height: 100%;
+}
 #result-table th.media {
  width: 5%;
 }
 #result-table td {
   padding: 10px;
   position: relative;
+  height: 100%;
 }
 #result-table td.taxon {
-  padding: 10px 10px 35px 10px;
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
 }
 #result-table {
   .meta {
-    position: absolute;
     bottom: 10px;
     .icon-chatbubble {
       position: relative;
@@ -978,7 +1050,7 @@ inat-taxon.split-taxon .icon {display: none;}
 #result-table .img.iconic i {
   display: inline-block;
   font-size: 50px;
-  line-height: 70px;
+  line-height: 65px;
   color: white;
 }
 #result-table .img.iconic .sound-icon,
@@ -988,7 +1060,7 @@ inat-taxon.split-taxon .icon {display: none;}
 #result-table .img.sound .sound-icon {
   display: inline-block;
   font-size: 50px;
-  line-height: 70px;
+  line-height: 75px;
   color: #eee;
   opacity: 0.8;
 }
@@ -1002,7 +1074,7 @@ $photo-count-line-width: 1px;
   bottom: 8px;
   color: #eee;
   background-color: rgba(0,0,0,0.5);
-  padding: 3px;
+  padding: 2px 1px 2px;
   font-weight: 500;
   display: block;
   border: $photo-count-line-width solid #eee;
@@ -1010,7 +1082,7 @@ $photo-count-line-width: 1px;
   width: $photo-count-square-width;
   height: $photo-count-square-width;
   line-height: $photo-count-square-width / 2 + $photo-count-square-offset;
-  font-size: $photo-count-square-width * 0.65;
+  font-size: $photo-count-square-width * 0.60;
 }
 #result-grid .photo .photo-count:after {
   content: "";
@@ -1055,7 +1127,7 @@ $photo-count-line-width: 1px;
   width: 38px;
   height: 38px;
   font-size: 25px;
-  line-height: 37px;
+  line-height: 32px;
   border: 0 transparent;
   margin-inline-end: 5px;
 }
@@ -1105,6 +1177,86 @@ $photo-count-line-width: 1px;
   background-color:#D12F19;
 }
 
+.explore-details-popover {
+  position: relative;
+  &:hover {
+    cursor: pointer;
+  }
+  .btn-xs {
+    position: relative;
+    top: -1px;
+  }
+  .menu {
+    position: absolute;
+    box-shadow: 0 1px 10px rgba(0, 0, 0, .25);
+    background-color: white;
+    border: 0 transparent;
+    color: black;
+    text-align: start;
+    padding: 5px;
+    ul {
+      list-style: none;
+      padding-inline-start: 0px;
+      margin-bottom: 0;
+      li {
+        padding: 3px;
+
+        .split-taxon .display-name,
+        .split-taxon .secondary-name {
+          display: inline;
+        }
+      }
+    }
+  }
+}
+
+#taxa-grid {
+  .corner {
+    // We want z-index so the details appears over subsequent elements, but
+    // only when it's open
+    &.context-menu:has(details[open]) {
+      z-index: 1;
+    }
+    &.context-menu {
+      left: 0;
+      right: auto;
+      background-color: transparent;
+      details:hover {
+        summary {
+          color: white;
+        }
+      }
+      summary {
+        list-style: none;
+        width: 25px;
+        height: 25px;
+        text-shadow: 0 1px 5px rgba(0, 0, 0, .25);
+
+        &::-webkit-details-marker {
+          display: none;
+        }
+      }
+      .ancestor {
+        display: flex;
+        gap: 5px;
+        align-items: center;
+      }
+    }
+  }
+}
+@-moz-document url-prefix() {
+  #taxa-grid {
+    .corner {
+      .ancestor {
+        i.fa {
+          position: relative;
+          top: 1px;
+        }
+      }
+    }
+  }
+}
+
 #taxa-grid .photometa {
   position: absolute;
   top: 182px;
@@ -1128,7 +1280,7 @@ $photo-count-line-width: 1px;
 .plain-table {
   margin-top: 20px;
 }
-.plain-table th { white-space: nowrap; font-weight: bold;}
+.plain-table th { white-space: nowrap; font-weight: 600;}
 .plain-table th.user {
   width: 100%;
 }

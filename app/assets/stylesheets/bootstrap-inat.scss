@@ -25,7 +25,7 @@ h6 {
   color: #1A1A1A;
 }
 
-$font-stack: Whitney, "Trebuchet MS", Arial, sans-serif;
+$font-stack: Lato, "Trebuchet MS", Arial, sans-serif;
 
 .readable,
 p { 
@@ -258,8 +258,19 @@ input[type="color"]:focus,
   }
 }
 
-.form-group input[type="checkbox"] {
+.form-group input[type="checkbox"],
+.checkbox input[type="checkbox"],
+.radio-inline input[type="radio"] {
   margin-right: 5px;
+}
+
+// Firefox has weird line-heights for some reason
+@-moz-document url-prefix() {
+  .form-group input[type="checkbox"],
+  .checkbox input[type="checkbox"],
+  .radio-inline input[type="radio"] {
+    margin-top: 2px;
+  }
 }
 
 .nav-tabs.user-subnav .glyphicon,
@@ -376,7 +387,6 @@ input[type="color"]:focus,
   padding: 0;
   background-color: transparent;
   border: 0 transparent;
-  line-height: inherit;
   font-size: inherit;
 }
 
@@ -416,4 +426,16 @@ input[type="color"]:focus,
 
 .TaxonMap {
   overflow: hidden;
+}
+
+.user_image.img-responsive {
+  max-width: 100% !important;
+}
+
+label .fa-info-circle {
+  margin-inline-start: 5px;
+}
+
+summary.panel-heading {
+  cursor: pointer;
 }

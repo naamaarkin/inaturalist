@@ -35,13 +35,26 @@ describe ProviderOauthController do
         expect( User.find_by_email( google_response[:email] ) ).not_to be_blank
       end
 
-      it "should not return a token for a new user" do
+      it "confirms a user" do
         expect( User.find_by_email( google_response[:email] ) ).to be_blank
         post :assertion, format: :json, params: assertion_params
-        expect( response ).not_to be_successful
-        expect( User.find_by_email( google_response[:email] ) ).not_to be_confirmed
-        expect( JSON.parse( response.body )["access_token"] ).to be_blank
-        expect( JSON.parse( response.body )["error"] ).not_to be_blank
+        user = User.find_by_email( google_response[:email] )
+        expect( user ).to be_confirmed
+      end
+
+      it "should set oauth_application_id" do
+        expect( User.find_by_email( google_response[:email] ) ).to be_blank
+        post :assertion, format: :json, params: assertion_params
+        user = User.find_by_email( google_response[:email] )
+        expect( user.oauth_application_id ).to eq client.id
+      end
+
+      it "should return a token for a new user" do
+        expect( User.find_by_email( google_response[:email] ) ).to be_blank
+        post :assertion, format: :json, params: assertion_params
+        expect( response ).to be_successful
+        expect( JSON.parse( response.body )["access_token"] ).not_to be_blank
+        expect( JSON.parse( response.body )["error"] ).to be_blank
       end
 
       it "should return a token for a confirmed user" do
@@ -52,37 +65,51 @@ describe ProviderOauthController do
         expect( JSON.parse( response.body )["access_token"] ).not_to be_blank
       end
 
-      it "should not return a token for an unconfirmed user who never received a confirmation " \
-        "email after the requirement date" do
-        if Date.today > User::EMAIL_CONFIRMATION_REQUIREMENT_DATETIME
-          u = create :user,
-            email: google_response[:email],
-            confirmed_at: nil,
-            created_at: ( User::EMAIL_CONFIRMATION_RELEASE_DATE - 1.week )
-          User.where( id: u.id ).update_all( confirmation_sent_at: nil )
-          u.reload
-          expect( u ).not_to be_confirmed
-          expect( u.confirmation_sent_at ).to be_blank
-          post :assertion, format: :json, params: assertion_params
-          expect( response ).not_to be_successful
-          response_json = JSON.parse( response.body )
-          expect( response_json["access_token"] ).to be_blank
-          expect( response_json["error"] ).to eq "invalid_grant"
-          expect( response_json["error_description"] ).not_to be_blank
-        end
+      it "should return a token for an unconfirmed user" do
+        u = create :user,
+          email: google_response[:email],
+          confirmed_at: nil
+        expect( u ).not_to be_confirmed
+        post :assertion, format: :json, params: assertion_params
+        expect( response ).to be_successful
+        expect( JSON.parse( response.body )["access_token"] ).not_to be_blank
       end
 
-      it "should not return a token for a confirmed suspended user" do
+      # Token requests return 400 for suspended users,
+      # other API requests for suspended users return 401
+      it "should return a 400 with suspension details for a confirmed suspended user" do
         u = create :user, email: google_response[:email], confirmed_at: Time.now
         u.suspend!
         expect( u ).to be_confirmed
         expect( u ).to be_suspended
         post :assertion, format: :json, params: assertion_params
-        expect( response ).not_to be_successful
+        expect( response.status ).to eq 400
         response_json = JSON.parse( response.body )
         expect( response_json["access_token"] ).to be_blank
         expect( response_json["error"] ).to eq "invalid_grant"
         expect( response_json["error_description"] ).not_to be_blank
+      end
+
+      it "should include suspension reason for a timed suspension" do
+        u = create :user, email: google_response[:email], confirmed_at: Time.now
+        u.update!( suspended_at: Time.now, suspension_reason: "policy violation", suspended_until: 1.week.from_now )
+        expect( u ).to be_suspended
+        post :assertion, format: :json, params: assertion_params
+        expect( response.status ).to eq 400
+        response_json = JSON.parse( response.body )
+        expect( response_json["error"] ).to eq "invalid_grant"
+        expect( response_json["error_description"] ).to match( /policy violation/ )
+        expect( response_json["suspended_until"] ).not_to be_blank
+        expect( Time.parse( response_json["suspended_until"] ) ).to be_within( 1.minute ).of( 1.week.from_now )
+      end
+
+      it "should return null suspended_until for an indefinite suspension" do
+        u = create :user, email: google_response[:email], confirmed_at: Time.now
+        u.suspend!
+        post :assertion, format: :json, params: assertion_params
+        response_json = JSON.parse( response.body )
+        expect( response_json ).to have_key( "suspended_until" )
+        expect( response_json["suspended_until"] ).to be_nil
       end
 
       it "should not return a token for a confirmed child without permission" do
@@ -99,6 +126,15 @@ describe ProviderOauthController do
         expect( response_json["access_token"] ).to be_blank
         expect( response_json["error"] ).to eq "invalid_grant"
         expect( response_json["error_description"] ).not_to be_blank
+      end
+
+      it "should default to CC BY-NC licensing" do
+        expect( User.find_by_email( google_response[:email] ) ).to be_blank
+        post :assertion, format: :json, params: assertion_params
+        u = User.find_by_email( google_response[:email] )
+        expect( u.preferred_observation_license ).to eq Observation::CC_BY_NC
+        expect( u.preferred_photo_license ).to eq Observation::CC_BY_NC
+        expect( u.preferred_sound_license ).to eq Observation::CC_BY_NC
       end
 
       describe "with a bad assertion_type" do
@@ -156,8 +192,6 @@ describe ProviderOauthController do
           expect( response_json["error"] ).to eq "unauthorized_client"
         end
       end
-
-
     end
 
     describe "without an email address" do

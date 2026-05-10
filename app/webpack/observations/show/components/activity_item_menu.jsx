@@ -17,7 +17,10 @@ const ActivityItemMenu = ( {
   trustUser,
   untrustUser,
   hideContent,
-  unhideContent
+  unhideContent,
+  performOrOpenConfirmationModal,
+  nominateIdentification,
+  unnominateIdentification
 } ) => {
   if ( !item ) { return ( <div /> ); }
   if ( item.api_status ) {
@@ -36,6 +39,15 @@ const ActivityItemMenu = ( {
   );
   const viewerIsAdmin = loggedInUser && loggedInUser.roles
     && loggedInUser.roles.indexOf( "admin" ) >= 0;
+  const latestModeratorAction = _.first(
+    _.orderBy( item.moderator_actions || [], "created_at", "desc" )
+  );
+  const currentUserIsHidingCurator = latestModeratorAction
+    && latestModeratorAction.action === "hide"
+    && viewerIsCurator
+    && latestModeratorAction.user
+    && loggedInUser.id === latestModeratorAction.user.id;
+
   if ( isID ) {
     if ( viewerIsActor ) {
       if ( !item.hidden ) {
@@ -46,6 +58,7 @@ const ActivityItemMenu = ( {
             href={`/identifications/${item.uuid}/edit`}
             onClick={onEdit}
             target={linkTarget}
+            rel={linkTarget === "_blank" ? "noopener noreferrer" : null}
           >
             { editing ? I18n.t( "stop_editing" ) : I18n.t( "edit" ) }
           </MenuItem>
@@ -89,7 +102,7 @@ const ActivityItemMenu = ( {
           </MenuItem>
         ) );
       }
-      if ( viewerIsAdmin && item.hidden ) {
+      if ( ( viewerIsAdmin || currentUserIsHidingCurator ) && item.hidden ) {
         menuItems.push( (
           <MenuItem
             key={`identification-unhide-${item.uuid}`}
@@ -100,6 +113,27 @@ const ActivityItemMenu = ( {
         ) );
       }
     }
+    if ( config?.currentUser?.canUnnominateIdentification( item ) ) {
+      menuItems.push( (
+        <MenuItem
+          key="id-unnominate"
+          eventKey="unnominate"
+          title="Remove nomination"
+        >
+          Remove Nomination
+        </MenuItem>
+      ) );
+    } else if ( config?.currentUser?.canNominateIdentification( item ) ) {
+      menuItems.push( (
+        <MenuItem
+          key="id-nominate"
+          eventKey="nominate"
+        >
+          Nominate
+        </MenuItem>
+      ) );
+    }
+
     if ( item.flags && item.flags.length > 0 ) {
       menuItems.push( (
         <MenuItem
@@ -119,6 +153,7 @@ const ActivityItemMenu = ( {
           <a
             href={`/observations?taxon_id=${item.taxon.id}&user_id=${loggedInUser.id}`}
             target={linkTarget}
+            rel={linkTarget === "_blank" ? "noopener noreferrer" : null}
           >
             <i className="fa fa-arrow-circle-o-right" />
             <span className="menu-item-label">{ I18n.t( "you_" ) }</span>
@@ -132,6 +167,7 @@ const ActivityItemMenu = ( {
           <a
             href={`/observations?taxon_id=${item.taxon.id}&user_id=${item.user.id}`}
             target={linkTarget}
+            rel={linkTarget === "_blank" ? "noopener noreferrer" : null}
           >
             <i className="fa fa-arrow-circle-o-right" />
             <span className="menu-item-label">{ item.user.login }</span>
@@ -144,6 +180,7 @@ const ActivityItemMenu = ( {
         <a
           href={`/observations?taxon_id=${item.taxon.id}`}
           target={linkTarget}
+          rel={linkTarget === "_blank" ? "noopener noreferrer" : null}
         >
           <i className="fa fa-arrow-circle-o-right" />
           <span className="menu-item-label">{ I18n.t( "everyone_" ) }</span>
@@ -172,6 +209,7 @@ const ActivityItemMenu = ( {
             <a
               href={`/observations/identify?taxon_id=${item.taxon.id}`}
               target={linkTarget}
+              rel={linkTarget === "_blank" ? "noopener noreferrer" : null}
             >
               <i className="fa fa-arrow-circle-o-right" />
               <span className="menu-item-label">{ I18n.t( "of_this_taxon" ) }</span>
@@ -181,6 +219,7 @@ const ActivityItemMenu = ( {
             <a
               href={`/observations/identify?user_id=${item.user.login}`}
               target={linkTarget}
+              rel={linkTarget === "_blank" ? "noopener noreferrer" : null}
             >
               <i className="fa fa-arrow-circle-o-right" />
               <span className="menu-item-label">{ I18n.t( "by_user", { user: item.user.login } ) }</span>
@@ -198,6 +237,7 @@ const ActivityItemMenu = ( {
         href={`/comments/${item.uuid}/edit`}
         onClick={onEdit}
         target={linkTarget}
+        rel={linkTarget === "_blank" ? "noopener noreferrer" : null}
       >
         { editing ? I18n.t( "stop_editing" ) : I18n.t( "edit" ) }
       </MenuItem>
@@ -230,7 +270,7 @@ const ActivityItemMenu = ( {
         </MenuItem>
       ) );
     }
-    if ( viewerIsAdmin && item.hidden ) {
+    if ( ( viewerIsAdmin || currentUserIsHidingCurator ) && item.hidden ) {
       menuItems.push( (
         <MenuItem
           key={`comment-unhide-${item.uuid}`}
@@ -289,7 +329,7 @@ const ActivityItemMenu = ( {
     }
     menuItems.push( (
       <li key={`comment-delete-${item.uuid}`} className="search">
-        <a href="/relationships" target="_blank">
+        <a href="/relationships" target="_blank" rel="noopener noreferrer">
           <i className="icon-people" />
           { I18n.t( "manage_your_relationships" ) }
         </a>
@@ -303,17 +343,21 @@ const ActivityItemMenu = ( {
           id="grouping-control"
           onSelect={key => {
             if ( key === "flag" ) {
-              setFlaggingModalState( { item, show: true } );
+              performOrOpenConfirmationModal( ( ) => (
+                setFlaggingModalState( { item, show: true } )
+              ), {
+                permitOwnerOf: item
+              } );
             } else if ( key === "view-flags-for-comment" ) {
-              window.open( `/comments/${item.uuid}/flags`, "_blank" );
+              window.open( `/comments/${item.uuid}/flags`, "_blank", "noopener,noreferrer" );
             } else if ( key === "view-flags-for-identification" ) {
-              window.open( `/identifications/${item.uuid}/flags`, "_blank" );
+              window.open( `/identifications/${item.uuid}/flags`, "_blank", "noopener,noreferrer" );
             } else if ( key === "add-trust" ) {
               trustUser( item.user );
             } else if ( key === "remove-trust" ) {
               untrustUser( item.user );
             } else if ( key === "manage-relationships" ) {
-              window.open( "/relationships", "_blank" );
+              window.open( "/relationships", "_blank", "noopener,noreferrer" );
             } else if ( key === "withdraw" ) {
               withdrawID( item.uuid );
             } else if ( key === "restore" ) {
@@ -324,6 +368,10 @@ const ActivityItemMenu = ( {
               hideContent( item );
             } else if ( key === "unhide-comment" || key === "unhide-identification" ) {
               unhideContent( item );
+            } else if ( key === "nominate" ) {
+              nominateIdentification( item.uuid );
+            } else if ( key === "unnominate" ) {
+              unnominateIdentification( item.uuid );
             }
           }}
           disabled={_.isEmpty( menuItems )}
@@ -354,7 +402,10 @@ ActivityItemMenu.propTypes = {
   trustUser: PropTypes.func,
   untrustUser: PropTypes.func,
   hideContent: PropTypes.func,
-  unhideContent: PropTypes.func
+  unhideContent: PropTypes.func,
+  performOrOpenConfirmationModal: PropTypes.func,
+  nominateIdentification: PropTypes.func,
+  unnominateIdentification: PropTypes.func
 };
 
 export default ActivityItemMenu;

@@ -17,8 +17,15 @@ const StatusTab = ( {
   listedTaxa,
   listedTaxaCount,
   statuses,
-  taxon
+  taxon,
+  currentUser
 } ) => {
+  const isCurator = currentUser && currentUser.roles && (
+    currentUser.roles.indexOf( "curator" ) >= 0
+    || currentUser.roles.indexOf( "admin" ) >= 0
+  );
+  const responsive = currentUser?.isAdmin
+    && currentUser?.isInTestGroup( "responsive-taxon-detail" );
   const sortedStatuses = _.sortBy( statuses, status => {
     let sortKey = `-${status.iucn}`;
     if ( status.place ) {
@@ -64,6 +71,9 @@ const StatusTab = ( {
                 </span>
               </OverlayTrigger>
             </th>
+            { isCurator && (
+              <th />
+            ) }
           </tr>
         </thead>
         <tbody>
@@ -111,7 +121,7 @@ const StatusTab = ( {
             );
             return (
               <tr
-                key={`statuses-${status.authority}-${status.place ? status.place.id : "global"}`}
+                key={`statuses-${status.id}-${status.authority}-${status.place ? status.place.id : "global"}`}
               >
                 <td>
                   <div className="media">
@@ -204,6 +214,13 @@ const StatusTab = ( {
                 <td>
                   { geoprivacy }
                 </td>
+                { isCurator && (
+                  <td>
+                    <a href={`/conservation_statuses/${status.id}/edit`}>
+                      { I18n.t( "edit" ) }
+                    </a>
+                  </td>
+                ) }
               </tr>
             );
           } ) }
@@ -278,11 +295,11 @@ const StatusTab = ( {
       <Row className="conservation-status tab-section">
         <Col xs={12}>
           <Row>
-            <Col xs={8}>
+            <Col xs={responsive ? null : 8} sm={responsive ? 8 : null}>
               <h3>{ I18n.t( "conservation_status" ) }</h3>
               { statusSection || I18n.t( "we_have_no_conservation_status_for_this_taxon" ) }
             </Col>
-            <Col xs={4}>
+            <Col xs={responsive ? null : 4} sm={responsive ? 4 : null}>
               <h4>{ I18n.t( "about_conservation_status" ) }</h4>
               <p>
                 { I18n.t( "views.taxa.show.about_conservation_status_desc" ) }
@@ -295,6 +312,19 @@ const StatusTab = ( {
                   <i className="icon-link-external" />
                 </a>
               </p>
+              { isCurator ? (
+                <ul className="tab-links list-group">
+                  <li className="list-group-item internal">
+                    <a
+                      href={`/taxa/${taxon.id}/conservation_statuses/new`}
+                      rel="nofollow"
+                    >
+                      <i className="fa fa-plus accessory-icon" />
+                      { I18n.t( "add_a_conservation_status" ) }
+                    </a>
+                  </li>
+                </ul>
+              ) : null }
               <h4>{ I18n.t( "examples_of_ranking_organizations" ) }</h4>
               <ul className="tab-links list-group iconified-list-group">
                 {
@@ -333,11 +363,11 @@ const StatusTab = ( {
       <Row className="establishment-means tab-section">
         <Col xs={12}>
           <Row>
-            <Col xs={8}>
+            <Col xs={responsive ? null : 8} sm={responsive ? 8 : null}>
               <h3>{ I18n.t( "establishment_means" ) }</h3>
               { establishmentSection || I18n.t( "we_have_no_establishment_data_for_this_taxon" ) }
             </Col>
-            <Col xs={4}>
+            <Col xs={responsive ? null : 4} sm={responsive ? 4 : null}>
               <h4>{ I18n.t( "about_establishment_means" ) }</h4>
               <p>
                 { I18n.t( "views.taxa.show.about_establishment_desc" ) }
@@ -361,7 +391,8 @@ StatusTab.propTypes = {
   statuses: PropTypes.array,
   listedTaxa: PropTypes.array,
   listedTaxaCount: PropTypes.number,
-  taxon: PropTypes.object
+  taxon: PropTypes.object,
+  currentUser: PropTypes.object
 };
 
 StatusTab.defaultProps = {

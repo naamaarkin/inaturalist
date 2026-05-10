@@ -148,15 +148,23 @@ module ObservationSearch
         api_params[:id_above] = api_params[:min_id] - 1
         api_params.delete(:min_id)
       end
-      api_params.delete(:partial)
-      api_params.delete(:controller)
-      api_params.delete(:action)
-      api_params.delete(:with_photos)
-      api_params.delete(:with_sounds)
-      api_params.delete(:_query_params_set)
-      api_params.reject!{ |k,v| v == "any" || v.blank? }
+      unless api_params[:ofv_params].blank?
+        api_params[:ofv_params].each do | k, v |
+          api_params[k] = v[:value]
+        end
+        api_params.delete(:ofv_params)
+      end
+      api_params.delete( :partial )
+      api_params.delete( :controller )
+      api_params.delete( :action )
+      api_params.delete( :with_photos )
+      api_params.delete( :with_sounds )
+      api_params.delete( :_query_params_set )
+      api_params.reject! do | k, v |
+        v == "any" || ( v.blank? && !k.start_with?( "field:" ) )
+      end
       if api_params[:reviewed].blank?
-        api_params.delete(:viewer_id)
+        api_params.delete( :viewer_id )
       end
       if api_params[:per_page] && api_params[:per_page].to_i > 200
         api_params[:per_page] = 200
@@ -298,7 +306,11 @@ module ObservationSearch
           p[:observations_taxon] = TaxonName.where(taxon_name_conditions).joins(includes).first.try(:taxon)
         end
         if !p[:observations_taxon]
-          p.delete(:taxon_name)
+          p.delete( :taxon_name )
+          # a taxon_name parameter was provided, but the taxon name does not exist. Set an
+          # impossible condition so this search fails and does not default to returning
+          # all matches for all taxa
+          p[:taxon_ids] = [-1]
         end
       end
       if p[:taxon_ids] == [""]
@@ -310,7 +322,10 @@ module ObservationSearch
       end
 
       unless p[:without_taxon_id].blank?
-        p[:without_observations_taxon] = Taxon.find_by_id( p[:without_taxon_id].to_i )
+        withouth_taxon_ids = p[:without_taxon_id].split( "," )
+        if withouth_taxon_ids.size == 1
+          p[:without_observations_taxon] = Taxon.find_by_id( p[:without_taxon_id].to_i )
+        end
       end
 
       if p[:has]
@@ -353,6 +368,7 @@ module ObservationSearch
       end
       p[:observed_on_year] ||= p[:year].to_i unless p[:year].blank?
       p[:observed_on_month] ||= p[:month].to_i unless p[:month].blank? || p[:month].is_a?(Array)
+      p[:observed_on_week] ||= p[:week].to_i unless p[:week].blank?
       p[:observed_on_day] ||= p[:day].to_i unless p[:day].blank?
 
       # observation fields
@@ -371,7 +387,6 @@ module ObservationSearch
             v[:normalized_name] == ObservationField.normalize_name(of.name)
           end
         end
-        p[:ofv_params].delete_if{|k,v| v[:observation_field].blank?}
       end
 
       p[:user_id] = p[:user_id] || p[:user]

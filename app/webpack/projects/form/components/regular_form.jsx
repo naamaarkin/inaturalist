@@ -3,7 +3,7 @@ import React from "react";
 import PropTypes from "prop-types";
 import ReactDOM from "react-dom";
 import {
-  Grid, Row, Col, Panel
+  Grid, Row, Col, Panel, Overlay, Popover
 } from "react-bootstrap";
 import DateTimeFieldWrapper from
   "../../../observations/uploader/components/date_time_field_wrapper";
@@ -15,6 +15,9 @@ import UserSelector from "./user_selector";
 class RegularForm extends React.Component {
   constructor( props ) {
     super( props );
+    this.observedOnInput = React.createRef( );
+    this.dateRangeD1Input = React.createRef( );
+    this.dateRangeD2Input = React.createRef( );
     this.state = {
       inverseFiltersOpen: null
     };
@@ -42,12 +45,16 @@ class RegularForm extends React.Component {
     }
     const chosenTerm = project.rule_term_id
       ? allControlledTerms.find( t => t.id === _.toInteger( project.rule_term_id ) ) : null;
+    const usingDelegation = !!project.delegated_project_id;
+    const isDelegatedUmbrella = project.is_delegated_umbrella;
     return (
       <div id="RegularForm" className="Form">
         <Grid>
           <Row className="text">
             <Col xs={12}>
-              <h2>{ I18n.t( "observation_requirements" ) }</h2>
+              {!isDelegatedUmbrella && (
+                <h2>{ I18n.t( "observation_requirements" ) }</h2>
+              ) }
               <div className="help-text">
                 <p>
                   { I18n.t( "views.projects.new.specify_project_filters" ) }
@@ -63,13 +70,13 @@ class RegularForm extends React.Component {
           <Row>
             <Col xs={12} className="autocompletes">
               <Row>
-                <Col xs={4}>
+                <Col xs={4} className={usingDelegation ? "disabled" : null}>
                   <TaxonSelector {...this.props} />
                 </Col>
-                <Col xs={4}>
+                <Col xs={4} className={isDelegatedUmbrella ? "disabled" : null}>
                   <PlaceSelector {...this.props} />
                 </Col>
-                <Col xs={4}>
+                <Col xs={4} className={usingDelegation || isDelegatedUmbrella ? "disabled" : null}>
                   <UserSelector {...this.props} />
                 </Col>
               </Row>
@@ -94,13 +101,13 @@ class RegularForm extends React.Component {
               >
                 <Panel.Collapse>
                   <Row>
-                    <Col xs={4}>
+                    <Col xs={4} className={usingDelegation ? "disabled" : null}>
                       <TaxonSelector {...this.props} inverse />
                     </Col>
-                    <Col xs={4}>
+                    <Col xs={4} className={isDelegatedUmbrella ? "disabled" : null}>
                       <PlaceSelector {...this.props} inverse />
                     </Col>
-                    <Col xs={4}>
+                    <Col xs={4} className={usingDelegation || isDelegatedUmbrella ? "disabled" : null}>
                       <UserSelector {...this.props} inverse />
                     </Col>
                   </Row>
@@ -109,7 +116,12 @@ class RegularForm extends React.Component {
             </Col>
           </Row>
           <Row>
-            <Col xs={12} className="members-only">
+            <Col
+              xs={12}
+              className={
+              `members-only${usingDelegation || isDelegatedUmbrella ? " disabled" : ""}`
+              }
+            >
               <label className="sectionlabel">
                 { I18n.t( "project_members_only" ) }
               </label>
@@ -130,7 +142,12 @@ class RegularForm extends React.Component {
             </Col>
           </Row>
           <Row>
-            <Col xs={12}>
+            <Col
+              xs={12}
+              className={
+                `members-only${usingDelegation || isDelegatedUmbrella ? " disabled" : ""}`
+              }
+            >
               <div className="form-group annotations-form-group">
                 <label className="sectionlabel">{ I18n.t( "with_annotation" ) }</label>
                 <div className="help-text">
@@ -187,7 +204,7 @@ class RegularForm extends React.Component {
             </Col>
           </Row>
           <Row>
-            <Col xs={4}>
+            <Col xs={4} className={`members-only${usingDelegation ? " disabled" : ""}`}>
               <label>{ I18n.t( "data_quality" ) }</label>
               <div
                 className="help-text"
@@ -232,7 +249,7 @@ class RegularForm extends React.Component {
                 { I18n.t( "casual_" ) }
               </label>
             </Col>
-            <Col xs={4}>
+            <Col xs={4} className={`members-only${usingDelegation ? " disabled" : ""}`}>
               <label>{ I18n.t( "media_type" ) }</label>
               <div className="help-text">
                 { I18n.t( "views.projects.new.optionally_filter_media" ) }
@@ -290,7 +307,7 @@ class RegularForm extends React.Component {
                 { I18n.t( "has_photo_and_sound" ) }
               </label>
             </Col>
-            <Col xs={4}>
+            <Col xs={4} className={`members-only${usingDelegation ? " disabled" : ""}`}>
               <label>{ I18n.t( "establishment_means" ) }</label>
               <div className="help-text">
                 { I18n.t( "views.projects.new.select_native_to_include" ) }
@@ -361,7 +378,7 @@ class RegularForm extends React.Component {
             </Col>
           </Row>
           <Row className="date-row">
-            <Col xs={12}>
+            <Col xs={12} className={`members-only${usingDelegation ? " disabled" : ""}`}>
               <label>{ I18n.t( "date_observed_" ) }</label>
               <div className="help-text">
                 { I18n.t( "views.projects.new.use_this_for_a_time_limited_event" ) }
@@ -384,24 +401,40 @@ class RegularForm extends React.Component {
               <label className="inline" htmlFor="project-date-type-exact">
                 { I18n.t( "exact" ) }
               </label>
-              <DateTimeFieldWrapper
-                className="datefield"
-                mode="date"
-                ref="exactDate"
-                inputFormat="YYYY-MM-DD"
-                defaultText={project.rule_observed_on}
-                onChange={date => setRulePreference( "observed_on", date )}
-                allowFutureDates
-                inputProps={{
-                  className: "form-control",
-                  placeholder: "YYYY-MM-DD",
-                  onClick: ( ) => this.refs.exactDate.onClick( )
-                }}
-              />
+              <div className={`datetime-wrapper ${project.errors.observed_on && "has-error"}`}>
+                <DateTimeFieldWrapper
+                  className="datefield"
+                  mode="date"
+                  ref={this.observedOnInput}
+                  inputFormat="YYYY-MM-DD"
+                  defaultText={project.rule_observed_on}
+                  onChange={date => setRulePreference( "observed_on", date )}
+                  allowFutureDates
+                  inputProps={{
+                    className: "form-control",
+                    placeholder: "YYYY-MM-DD",
+                    onClick: ( ) => this.observedOnInput.current.onClick( )
+                  }}
+                />
+              </div>
+              { project.errors.observed_on && (
+                <Overlay
+                  show
+                  placement="top"
+                  target={( ) => this.observedOnInput.current}
+                >
+                  <Popover
+                    id="popover-observed-on"
+                    className="popover-error"
+                  >
+                    { project.errors.observed_on }
+                  </Popover>
+                </Overlay>
+              ) }
             </Col>
           </Row>
           <Row className="date-row">
-            <Col xs={12} className="date-range-col">
+            <Col xs={12} className={`date-range-col members-only${usingDelegation ? " disabled" : ""}`}>
               <input
                 type="radio"
                 id="project-date-type-range"
@@ -411,39 +444,71 @@ class RegularForm extends React.Component {
               <label className="inline" htmlFor="project-date-type-range">
                 { I18n.t( "date_picker.range" ) }
               </label>
-              <DateTimeFieldWrapper
-                mode="datetime"
-                ref="dateRangeD1"
-                inputFormat="YYYY-MM-DD HH:mm Z"
-                defaultText={project.rule_d1}
-                onChange={date => setRulePreference( "d1", date )}
-                allowFutureDates
-                inputProps={{
-                  className: "form-control",
-                  placeholder: I18n.t( "start_date_time" ),
-                  onClick: ( ) => this.refs.dateRangeD1.onClick( )
-                }}
-              />
-              <DateTimeFieldWrapper
-                mode="datetime"
-                ref="dateRangeD2"
-                inputFormat="YYYY-MM-DD HH:mm Z"
-                defaultText={project.rule_d2}
-                onChange={date => setRulePreference( "d2", date )}
-                allowFutureDates
-                inputProps={{
-                  className: "form-control",
-                  placeholder: I18n.t( "end_date_time" ),
-                  onClick: ( ) => this.refs.dateRangeD2.onClick( )
-                }}
-              />
+              <div className={`datetime-wrapper ${project.errors.d1 && "has-error"}`}>
+                <DateTimeFieldWrapper
+                  mode="datetime"
+                  ref={this.dateRangeD1Input}
+                  inputFormat="YYYY-MM-DD HH:mm Z"
+                  defaultText={project.rule_d1}
+                  onChange={date => setRulePreference( "d1", date )}
+                  allowFutureDates
+                  inputProps={{
+                    className: "form-control",
+                    placeholder: I18n.t( "start_date_time" ),
+                    onClick: ( ) => this.dateRangeD1Input.current.onClick( )
+                  }}
+                />
+              </div>
+              { project.errors.d1 && (
+                <Overlay
+                  show
+                  placement="top"
+                  target={( ) => this.dateRangeD1Input.current}
+                >
+                  <Popover
+                    id="popover-d1"
+                    className="popover-error"
+                  >
+                    { project.errors.d1 }
+                  </Popover>
+                </Overlay>
+              ) }
+              <div className={`datetime-wrapper ${project.errors.d2 && "has-error"}`}>
+                <DateTimeFieldWrapper
+                  mode="datetime"
+                  ref={this.dateRangeD2Input}
+                  inputFormat="YYYY-MM-DD HH:mm Z"
+                  defaultText={project.rule_d2}
+                  onChange={date => setRulePreference( "d2", date )}
+                  allowFutureDates
+                  inputProps={{
+                    className: "form-control",
+                    placeholder: I18n.t( "end_date_time" ),
+                    onClick: ( ) => this.dateRangeD2Input.current.onClick( )
+                  }}
+                />
+              </div>
+              { project.errors.d2 && (
+                <Overlay
+                  show
+                  placement="top"
+                  target={( ) => this.dateRangeD2Input.current}
+                >
+                  <Popover
+                    id="popover-d2"
+                    className="popover-error"
+                  >
+                    { project.errors.d2 }
+                  </Popover>
+                </Overlay>
+              ) }
               <div className="help-text">
                 { I18n.t( "views.projects.new.note_you_can_delete_the_time" ) }
               </div>
             </Col>
           </Row>
           <Row className="date-row">
-            <Col xs={12}>
+            <Col xs={12} className={`members-only${usingDelegation ? " disabled" : ""}`}>
               <input
                 type="radio"
                 id="project-date-type-months"

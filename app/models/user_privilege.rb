@@ -8,11 +8,13 @@ class UserPrivilege < ApplicationRecord
   SPEECH = "speech"
   ORGANIZER = "organizer"
   COORDINATE_ACCESS = "coordinate_access"
+  INTERACTION = "interaction"
 
   PRIVILEGES = [
     SPEECH,
     ORGANIZER,
-    COORDINATE_ACCESS
+    COORDINATE_ACCESS,
+    INTERACTION
   ].freeze
 
   # The earned_#{privilege}? methods are intended to calculate whether the user
@@ -26,7 +28,10 @@ class UserPrivilege < ApplicationRecord
   end
 
   def self.earned_organizer?( user )
-    user.observations.verifiable.limit( 50 ).count == 50
+    return false unless user.confirmed?
+
+    ( user.observations.verifiable.limit( 50 ).count == 50 ) ||
+      ( user.identifications.current.for_others.limit( 100 ).count == 100 )
   end
 
   def self.earned_coordinate_access?( user )
@@ -49,6 +54,21 @@ class UserPrivilege < ApplicationRecord
       ]
     ).total_entries
     improving_ids_count >= 1000
+  end
+
+  def self.earned_interaction?( user )
+    # there _should_ be a configured activation date. If there is and it is not active yet,
+    # all users gain INTERACTION. After activation, users must have a confirmed email. If
+    # for whatever reason the active date is not defined, default to requiring users must
+    # have a confirmed email
+    if CONFIG.email_confirmation_for_interaction_active_date
+      if Time.now >= Date.parse( CONFIG.email_confirmation_for_interaction_active_date )
+        return user.confirmed?
+      end
+
+      return true
+    end
+    user.confirmed?
   end
 
   def self.check( user, privilege )

@@ -101,6 +101,20 @@ class ObservationModal extends React.Component {
     }
   }
 
+  defaultKeyboardShortcut( shortcut ) {
+    return (
+      <tr
+        className="keyboard-shortcuts"
+        key={`keyboard-shortcuts-${shortcut.keys.join( "-" )}`}
+      >
+        <td>
+          <span dangerouslySetInnerHTML={{ __html: shortcut.keys.map( k => `<kbd>${k}</kbd>` ).join( " + " ) }} />
+        </td>
+        <td>{ shortcut.label }</td>
+      </tr>
+    );
+  }
+
   render( ) {
     const {
       addComment,
@@ -141,6 +155,7 @@ class ObservationModal extends React.Component {
       toggleKeyboardShortcuts,
       toggleReviewed,
       updateCurrentUser,
+      updateSuggestionSession,
       visible
     } = this.props;
     if ( !observation ) {
@@ -204,13 +219,13 @@ class ObservationModal extends React.Component {
             latitude={obsForMap.latitude}
             longitude={obsForMap.longitude}
             zoomLevel={
-              mapZoomLevelLocked && mapZoomLevel ? mapZoomLevel : ( obsForMap.map_scale || 5 )
+              mapZoomLevelLocked && _.isNumber( mapZoomLevel )
+                ? mapZoomLevel : ( obsForMap.map_scale || 5 )
             }
             onZoomChanged={onMapZoomChanged}
             mapTypeControl
             mapTypeControlOptions={{
-              style: typeof ( google ) !== "undefined" && google.maps.MapTypeControlStyle.DROPDOWN_MENU,
-              position: typeof ( google ) !== "undefined" && google.maps.ControlPosition.TOP_RIGHT
+              style: typeof ( google ) !== "undefined" && google.maps.MapTypeControlStyle.DROPDOWN_MENU
             }}
             showAccuracy
             showAllLayer={false}
@@ -218,6 +233,7 @@ class ObservationModal extends React.Component {
             zoomControlOptions={{
               position: typeof ( google ) !== "undefined" && google.maps.ControlPosition.TOP_LEFT
             }}
+            minZoom={1}
             currentUser={currentUser}
             updateCurrentUser={updateCurrentUser}
           />
@@ -251,6 +267,7 @@ class ObservationModal extends React.Component {
           <ZoomableImageGallery
             key={`map-for-${observation.id}`}
             items={images}
+            slideDuration={0}
             slideIndex={imagesCurrentIndex}
             showThumbnails={images && images.length > 1}
             lazyLoad={false}
@@ -405,17 +422,7 @@ class ObservationModal extends React.Component {
       <tbody>
         {
           defaultShortcuts.map( shortcut => (
-            blind && shortcut.skipBlind ? null : (
-              <tr
-                className="keyboard-shortcuts"
-                key={`keyboard-shortcuts-${shortcut.keys.join( "-" )}`}
-              >
-                <td>
-                  <span dangerouslySetInnerHTML={{ __html: shortcut.keys.map( k => `<kbd>${k}</kbd>` ).join( " + " ) }} />
-                </td>
-                <td>{ shortcut.label }</td>
-              </tr>
-            )
+            blind && shortcut.skipBlind ? null : this.defaultKeyboardShortcut( shortcut )
           ) )
         }
       </tbody>
@@ -454,6 +461,14 @@ class ObservationModal extends React.Component {
           }
         } );
       } );
+      annoShortcuts.push( {
+        keys: ["SHIFT", "P"],
+        label: I18n.t( "add_to_project" )
+      } );
+      annoShortcuts.push( {
+        keys: ["SHIFT", "F"],
+        label: I18n.t( "add_observation_fields" )
+      } );
     }
 
     const country = _.find( observation.places || [], p => p.admin_level === 0 );
@@ -463,7 +478,8 @@ class ObservationModal extends React.Component {
         dateTimeObserved = moment( observation.observed_on ).format( I18n.t( "momentjs.month_year" ) );
       } else if ( observation.time_observed_at ) {
         dateTimeObserved = formattedDateTimeInTimeZone(
-          observation.time_observed_at, observation.observed_time_zone
+          observation.time_observed_at,
+          observation.observed_time_zone
         );
       } else {
         dateTimeObserved = moment( observation.observed_on ).format( "LL" );
@@ -532,6 +548,8 @@ class ObservationModal extends React.Component {
                     show={keyboardShortcutsShown}
                     container={$( ".ObservationModal" ).get( 0 )}
                     target={( ) => $( ".keyboard-shortcuts-container > .btn" ).get( 0 )}
+                    rootClose
+                    onHide={( ) => toggleKeyboardShortcuts( true ) }
                   >
                     <Popover title={I18n.t( "keyboard_shortcuts" )} id="keyboard-shortcuts-popover">
                       <table>
@@ -548,6 +566,9 @@ class ObservationModal extends React.Component {
                                   <tbody>
                                     {
                                       annoShortcuts.map( shortcut => {
+                                        if ( shortcut.label && !shortcut.attributeLabel ) {
+                                          return this.defaultKeyboardShortcut( shortcut );
+                                        }
                                         // If you add more controlled terms, you'll need to
                                         // add keys like
                                         // add_plant_phenology_flowering_annotation to
@@ -648,27 +669,34 @@ class ObservationModal extends React.Component {
           </div>
           <div className="right-col">
             <ul className="inat-tabs">
-              {activeTabs.map( tabName => (
-                <li key={`obs-modal-tabs-${tabName}`} className={activeTab === tabName ? "active" : ""}>
-                  <button
-                    type="button"
-                    className="btn btn-nostyle"
-                    onClick={e => {
-                      e.preventDefault( );
-                      chooseTab( tabName, { observation } );
-                      return false;
-                    }}
-                  >
-                    {
-                      tabTitles[tabName]
-                      || translateWithConsistentCase(
-                        _.snakeCase( tabName ),
-                        { case: "upper", defaultValue: tabName }
-                      )
-                    }
-                  </button>
-                </li>
-              ) ) }
+              {activeTabs.map( tabName => {
+                const title = tabTitles[tabName]
+                || translateWithConsistentCase(
+                  _.snakeCase( tabName ),
+                  { case: "upper", defaultValue: tabName }
+                );
+                return (
+                  <li key={`obs-modal-tabs-${tabName}`} className={activeTab === tabName ? "active" : ""}>
+                    {activeTabs.length > 1 ? (
+                      <button
+                        type="button"
+                        className="btn btn-nostyle"
+                        onClick={e => {
+                          e.preventDefault( );
+                          chooseTab( tabName, { observation } );
+                          return false;
+                        }}
+                      >
+                        {title}
+                      </button>
+                    ) : (
+                      <span className="btn-nostyle active">
+                        {title}
+                      </span>
+                    ) }
+                  </li>
+                );
+              } ) }
             </ul>
             <div className="sidebar">
               { activeTabs.indexOf( "info" ) < 0 ? null : (
@@ -838,16 +866,16 @@ class ObservationModal extends React.Component {
               ) }
               { activeTabs.indexOf( "suggestions" ) < 0 ? null : (
                 <div className={`inat-tab suggestions-tab ${activeTab === "suggestions" ? "active" : ""}`}>
-                  <SuggestionsContainer chooseTaxon={chooseSuggestedTaxon} />
+                  <SuggestionsContainer
+                    chooseTaxon={chooseSuggestedTaxon}
+                    updateSuggestionSession={updateSuggestionSession}
+                  />
                 </div>
               ) }
               { activeTabs.indexOf( "annotations" ) < 0 ? null : (
                 <div className={`inat-tab annotations-tab ${activeTab === "annotations" ? "active" : ""}`} tabIndex="-1">
-                  <div className="column-header">{ I18n.t( "annotations" ) }</div>
                   <AnnotationsContainer />
-                  <div className="column-header">{ I18n.t( "projects" ) }</div>
                   <ProjectsContainer />
-                  <div className="column-header">{ I18n.t( "observation_fields" ) }</div>
                   <ObservationFieldsContainer />
                 </div>
               ) }
@@ -903,7 +931,8 @@ ObservationModal.propTypes = {
   toggleKeyboardShortcuts: PropTypes.func,
   toggleReviewed: PropTypes.func,
   updateCurrentUser: PropTypes.func,
-  visible: PropTypes.bool,
+  updateSuggestionSession: PropTypes.bool,
+  visible: PropTypes.bool
 };
 
 ObservationModal.defaultProps = {
@@ -911,7 +940,8 @@ ObservationModal.defaultProps = {
   controlledTerms: [],
   imagesCurrentIndex: 0,
   tabs: TABS,
-  tabTitles: {}
+  tabTitles: {},
+  updateSuggestionSession: true
 };
 
 export default ObservationModal;

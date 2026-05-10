@@ -21,5 +21,4 @@ const InsufficientRequirementsContainer = connect(
   mapDispatchToProps
 )( InsufficientRequirements );
 
-
 export default InsufficientRequirementsContainer;

@@ -12,6 +12,13 @@ base: &base
       - Hawaii
       - Alaska
 
+    id_summaries_demo:
+        # Users listed here can access the ID Summary Demo even if they are not admins.
+        # Administrators always retain access.
+        allowed_user_ids:
+            - 1
+            - 2
+
     rest_auth:
         # See vendor/plugins/restful_authentication/notes/Tradeoffs.txt for more info
         REST_AUTH_SITE_KEY: 09af09af09af09af09af09af09af09af09af09af
@@ -27,16 +34,10 @@ base: &base
     #     tracker_id: UA-090909-9
     #     domain_name: yoursite.org
 
-    ubio:
-        # http://www.ubio.org/index.php?pagename=form
-        key: 09af09af09af09af09af09af09af09af09af09af
-
     tile_servers:
         # EXPERIMENTAL: These endpoints should return map tiles when hit with
         # requests like /{Z}/{X}/{Y}.png.
         # See http://bitbucket.org/springmeyer/tilelite/
-        observations: 'http://localhost:8000'
-        tilestache: 'http://localhost:8080'
         elasticsearch: http://localhost:4000/v1
 
     google_webmaster:
@@ -56,16 +57,7 @@ base: &base
     # facebook:
     #     namespace: appname # your facebook app's namespace, used for open graph tags
 
-    # twitter:
-    #     key: 09af09af09af09af09af09af09af09af09af09af
-    #     secret: 09af09af09af09af09af09af09af09af09af09af
-    #     username: your_twitter_username
-
     # cloudmade:
-    #     key: 09af09af09af09af09af09af09af09af09af09af
-
-    # bing:
-    #     # http://www.bingmapsportal.com/
     #     key: 09af09af09af09af09af09af09af09af09af09af
 
     flickr:
@@ -116,6 +108,9 @@ base: &base
     # same code running at CONFIG.tile_servers.elasticsearch
     node_api_url: http://localhost:4000/v1
 
+    # An instance of https://github.com/inaturalist/inatVisionAPI
+    vision_api_url: http://localhost:8080
+
     # The secrets used to sign the JWT for authenticated requests to the
     # iNaturalistAPI. These need to be same as in the API's config.js.
     jwt_secret: secret
@@ -160,17 +155,19 @@ base: &base
             default: 1234
     help_email: help@inaturalist.org
 
+    model_taxonomy: taxonomy.csv
+
 development:
     <<: *base
 
 test:
     <<: *base
-    # We shouldn't assume a working instance of the node API is running in a
+    # We shouldn't assume working instances of APIs are running in a
     # test environment, so use different defaults to ensure we don't get fooled
-    # when a test passes in a development environment where the node API *is*
+    # when a test passes in a development environment where the APIs *are*
     # running
-    node_api_host: "localhost:5000/v1"
     node_api_url: http://localhost:5000/v1
+    vision_api_url: http://localhost:8081
 
 production:
     <<: *base

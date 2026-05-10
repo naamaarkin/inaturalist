@@ -1,34 +1,23 @@
+# frozen_string_literal: true
+
 class WelcomeController < ApplicationController
   before_action :set_homepage_wiki, only: :index
 
+  prepend_around_action :enable_replica, only: [:index]
+
   def index
-    respond_to do |format|
+    respond_to do | format |
       format.html do
-        scope = Announcement.
-          where(placement: "welcome/index").
-          where('? BETWEEN "start" AND "end"', Time.now.utc).
-          joins( "LEFT OUTER JOIN announcements_sites ON announcements_sites.announcement_id = announcements.id").
-          joins( "LEFT OUTER JOIN sites ON sites.id = announcements_sites.site_id" ).
-          limit( 5 )
-        base_scope = scope
-        scope = scope.where( "sites.id IS NULL OR sites.id = ?", @site )
-        @announcements = scope.in_locale( I18n.locale )
-        @announcements = scope.in_locale( I18n.locale.to_s.split('-').first ) if @announcements.blank?
-        if @announcements.blank?
-          @announcements = base_scope.where( "sites.id IS NULL AND locales IN (?)", [] ).to_a
-          @announcements += base_scope.in_locale( I18n.locale ).where( "sites.id IS NULL" ).to_a
-        end
-        @announcements = @announcements.sort_by {|a| [
-          a.site_ids.include?( @site.try(:id) ) ? 0 : 1,
-          a.locales.include?( I18n.locale ) ? 0 : 1,
-          a.id * -1
-        ] }
+        @announcements = Announcement.active_in_placement( Announcement::WELCOME_INDEX, { site: @site } )
         @google_webmaster_verification = @site.google_webmaster_verification if @site
-        
+
         if logged_in? && !@site.draft?
           redirect_to home_path
+        elsif @site == Site.default
+          setup_v2_homepage
+          render template: "welcome_v2/index", layout: "bootstrap"
         elsif !@page
-          render layout: 'bootstrap'
+          render layout: "bootstrap"
         end
       end
     end
@@ -37,16 +26,40 @@ class WelcomeController < ApplicationController
   private
 
   def set_homepage_wiki
-    if @site
-      # use a custom wiki page for this locale
-      if path = @site.home_page_wiki_path_by_locale( I18n.locale )
-        @page = WikiPage.find_by_path( path )
-      end
-      # otherwise use the site default wiki page
-      if @page.blank? && ( path = @site.home_page_wiki_path )
-        @page = WikiPage.find_by_path( path )
-      end
+    return unless @site
+
+    # use a custom wiki page for this locale
+    path = @site.home_page_wiki_path_by_locale( I18n.locale )
+    if path
+      @page = WikiPage.find_by_path( path )
+      return
     end
+
+    # otherwise use the site default wiki page
+    path = @site.home_page_wiki_path
+    @page = WikiPage.find_by_path( path ) if path
   end
 
+  def setup_v2_homepage
+    @responsive = true
+    @skip_external_connections = true
+    @skip_react = true
+
+    @store_url = "https://tr.ee/MymHMn"
+    @header_utm = "utm_source=inaturalist_homepage&utm_campaign=homepage_redesign_2026"
+    @header_donate_url = "#{donate_path}?redirect=true&segment=gmHome&#{@header_utm}&utm_medium=webmobile&utm_content=header_donate_cta"
+    @header_login_url  = "#{login_path}?#{@header_utm}&utm_medium=owned_web&utm_content=header_login_cta"
+    @header_signup_url = "#{signup_path}?#{@header_utm}&utm_medium=owned_web&utm_content=header_signup_cta"
+
+    @locale_key = I18n.locale.to_s
+    @locale_base = @locale_key.split( "-" ).first
+
+    @story_data = Site.homepage_story_data( locale_key: @locale_key, locale_base: @locale_base )
+    observations_data = Site.homepage_observation_data
+    @sample_observation_data = observations_data["sample"]
+    @sample_observation_common_name = @sample_observation_data["common_names"][@locale_key] ||
+      @sample_observation_data["common_names"][@locale_base] ||
+      @sample_observation_data["common_names"]["en"]
+    @explore_observations_data = observations_data["explore"] || []
+  end
 end

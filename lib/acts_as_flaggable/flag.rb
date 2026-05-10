@@ -1,7 +1,7 @@
 # frozen_string_literal: true
 
 class Flag < ApplicationRecord
-  # include ActsAsUUIDable
+  include ActsAsUUIDable
   before_validation :set_uuid
   def set_uuid
     self.uuid ||= SecureRandom.uuid
@@ -11,10 +11,12 @@ class Flag < ApplicationRecord
   SPAM = "spam"
   INAPPROPRIATE = "inappropriate"
   COPYRIGHT_INFRINGEMENT = "copyright infringement"
+  ARTIFICIALLY_GENERATED_CONTENT = "artificially generated content"
   FLAGS = [
     SPAM,
     INAPPROPRIATE,
-    COPYRIGHT_INFRINGEMENT
+    COPYRIGHT_INFRINGEMENT,
+    ARTIFICIALLY_GENERATED_CONTENT
   ].freeze
   TYPES = %w(CheckList Comment Guide GuideSection Identification List Message Observation Photo Place Post Project Sound
              Taxon User).freeze
@@ -30,14 +32,30 @@ class Flag < ApplicationRecord
     include_owner: true,
     include_notifier: true,
     on: :update,
-    queue_if: proc {| flag |
+    if: lambda {| flag, _, subscription |
+      # this is meant to address a problem where the flag resolver was getting notified they
+      # they resolved a flag, and users shouldn't be notified of their own actions. This isn't
+      # perfect though, as this affects all `update` notifications. But, resolved flags are almost
+      # never updated, and even less so for reasons worth notifying
+      return false if flag.resolver == subscription.user
+
+      true
+    },
+    unless: proc {| flag |
       # existing flag whose comment has been changed
-      !flag.saved_change_to_id && flag.saved_change_to_comment
+      flag.saved_change_to_id || !flag.saved_change_to_comment
     }
   auto_subscribes :resolver, on: :update, if: proc {| record, _resource |
     record.saved_change_to_resolved? && !record.resolver.blank? &&
       !record.resolver.subscriptions.where( resource_type: "Flag", resource_id: record.id ).exists?
   }
+
+  # requires_privilege :interaction, unless: proc {| flag |
+  #   flag.user_id.blank? ||
+  #     flag.user_id.zero? ||
+  #     ( flag.flaggable.respond_to?( :user ) && flag.flaggable.user.id == flag.user_id ) ||
+  #     ( flag.flaggable.is_a?( Message ) && flag.flaggable.to_user_id == flag.user_id )
+  # }
 
   blockable_by ->( flag ) { flag.flaggable.try( :user_id ) }, on: :create
 
@@ -154,6 +172,49 @@ class Flag < ApplicationRecord
     flaggable_str.constantize.find( flaggable_id )
   end
 
+  def self.instance_parent( instance )
+    return unless instance
+
+    instance_type = instance.class.polymorphic_name
+    case instance_type
+    when "Comment", "Post" then instance.parent
+    when "Identification" then instance.observation
+    when "Photo"
+      if instance.observations.exists?
+        instance.observations.first
+      elsif instance.taxa.exists?
+        instance.taxa.first
+      elsif instance.guide_photos.exists?
+        instance.guide_photos.first.guide_taxon
+      end
+    when "Sound"
+      if instance.observations.exists?
+        instance.observations.first
+      end
+    end
+  end
+
+  def self.instance_user( instance )
+    return unless instance
+
+    instance_type = instance.class.polymorphic_name
+    case instance_type
+    when "User" then instance
+    when "Message" then instance.from_user
+    else
+      k, reflection = instance.class.reflections.detect do | r |
+        r[1].class_name == "User" && r[1].macro == :belongs_to
+      end
+      if reflection
+        instance.send( k )
+      end
+    end
+  end
+
+  def self.instance_content( instance )
+    instance.try_methods( :body, :description )
+  end
+
   def flagged_object
     return unless ( klass = Object.const_get( flaggable_type ) )
 
@@ -171,59 +232,39 @@ class Flag < ApplicationRecord
     true
   end
 
-  def get_flaggable_user
-    case flaggable_type
-    when "User" then flaggable
-    when "Message" then flaggable.from_user
-    else
-      k, reflection = flaggable.class.reflections.detect do | r |
-        r[1].class_name == "User" && r[1].macro == :belongs_to
-      end
-      if reflection
-        flaggable.send( k )
-      end
-    end
-  end
-
   def set_flaggable_user_id
-    return true unless flaggable
+    return unless flaggable
 
-    if ( u = get_flaggable_user )
-      self.flaggable_user_id = u.id
-    end
-    true
+    user = Flag.instance_user( flaggable )
+    return if user.blank?
+
+    self.flaggable_user_id = user.id
   end
 
   def set_flaggable_content
-    return true unless flaggable
+    return unless flaggable
 
-    self.flaggable_content = flaggable.try_methods( :body, :description )
-    true
+    self.flaggable_content = Flag.instance_content( flaggable )
   end
 
   def set_flaggable_parent
-    return true unless flaggable
+    return unless flaggable
 
-    self.flaggable_parent = case flaggable_type
-    when "Comment", "Post" then flaggable.parent
-    when "Identification" then flaggable.observation
-    when "Photo"
-      if flaggable.observations.exists?
-        flaggable.observations.first
-      elsif flaggable.taxa.exists?
-        flaggable.taxa.first
-      elsif flaggable.guide_photos.exists?
-        flaggable.guide_photos.first.guide_taxon
-      end
-    end
+    self.flaggable_parent = Flag.instance_parent( flaggable )
   end
 
-  def flaggable_content_viewable_by?( user )
+  def viewable_by?( user )
     if flaggable_type == "Message" && !( user && user.is_admin? )
       return false
     end
 
-    !flaggable_content.blank? && user && user.is_curator?
+    return true if user&.is_curator?
+
+    false
+  end
+
+  def flaggable_content_viewable_by?( user )
+    !flaggable_content.blank? && viewable_by?( user )
   end
 
   def deletable_by?( user )

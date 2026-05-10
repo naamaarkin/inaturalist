@@ -13,7 +13,7 @@ import UserAutocomplete from "../../../observations/identify/components/user_aut
 import RegularForm from "./regular_form";
 import UmbrellaForm from "./umbrella_form";
 import SharedForm from "./shared_form";
-import ConfirmModalContainer from "../../shared/containers/confirm_modal_container";
+import ConfirmModalContainer from "../../../shared/containers/confirm_modal_container";
 import UserImage from "../../../shared/components/user_image";
 
 class ProjectForm extends React.Component {
@@ -39,12 +39,16 @@ class ProjectForm extends React.Component {
     const coordinatesAccessible = project.prefers_user_trust
       && project.observation_requirements_updated_at
       && moment( project.observation_requirements_updated_at ) < moment( ).subtract( 1, "week" );
+    const isDelegatedUmbrella = project.is_delegated_umbrella;
     return (
       <div className="Form">
         <SharedForm {...this.props} />
         { project.project_type === "umbrella"
           ? <UmbrellaForm {...this.props} />
           : <RegularForm {...this.props} /> }
+        { project.project_type === "umbrella" && project.is_delegated_umbrella && (
+          <RegularForm {...this.props} />
+        )}
         <Grid>
           <Row>
             <Col xs={12}>
@@ -52,7 +56,7 @@ class ProjectForm extends React.Component {
                 <button
                   type="button"
                   className="btn-white"
-                  onClick={( ) => window.open( `/observations?${project.previewSearchParamsString}`, "_blank" )}
+                  onClick={( ) => window.open( `/observations?${project.previewSearchParamsString}`, "_blank", "noopener,noreferrer" )}
                 >
                   <i className="fa fa-external-link" />
                   { I18n.t( "preview_observations_with_these_observation_requirements" ) }
@@ -61,7 +65,7 @@ class ProjectForm extends React.Component {
             </Col>
           </Row>
           <Row>
-            <Col xs={12}>
+            <Col xs={12} className={`members-only${isDelegatedUmbrella ? " disabled" : ""}`}>
               <h2>{ I18n.t( "members" ) }</h2>
               <label className="section-label">
                 { I18n.t( "trust" ) }
@@ -152,44 +156,48 @@ class ProjectForm extends React.Component {
                 <div className="icon-previews">
                   <table className="table">
                     <tbody>
-                      { _.map( project.undestroyedAdmins, admin => (
-                        <tr className="badge-div" key={`user_rule_${admin.user.id}`}>
-                          <td>
-                            <UserImage user={admin.user} />
-                          </td>
-                          <td>
-                            <span className="badge">
-                              { admin.user.login }
-                              { ( project.user && admin.user.id === project.user.id ) ? " (owner)" : (
-                                <button
-                                  type="button"
-                                  className="btn btn-nostyle"
-                                  onClick={( ) => removeProjectManager( admin )}
-                                >
-                                  <i className="fa fa-times-circle-o" />
-                                </button>
-                              ) }
-                            </span>
-                          </td>
-                          <td>
-                            {
-                              project.user
-                                && config.currentUser.id === project.user.id
-                                && admin.id
-                                && admin.user.id !== config.currentUser.id
-                                && (
+                      { _.map( project.undestroyedAdmins, admin => {
+                        const isOwner = ( project.user && admin.user.id === project.user.id );
+                        return (
+                          <tr className="badge-div" key={`user_rule_${admin.user.id}`}>
+                            <td>
+                              <UserImage user={admin.user} />
+                            </td>
+                            <td>
+                              <span className={`badge${isOwner ? " owner" : ""}`}>
+                                { admin.user.login }
+                                { isOwner ? " (owner)" : (
                                   <button
-                                    className="btn btn-sm btn-default"
                                     type="button"
-                                    onClick={( ) => changeOwner( admin )}
+                                    className="btn btn-nostyle"
+                                    onClick={( ) => removeProjectManager( admin )}
+                                    alt={I18n.t( "remove" )}
                                   >
-                                    { I18n.t( "views.projects.edit.make_owner" ) }
+                                    <i className="fa fa-times-circle-o" />
                                   </button>
-                                )
-                            }
-                          </td>
-                        </tr>
-                      ) ) }
+                                ) }
+                              </span>
+                            </td>
+                            <td>
+                              {
+                                project.user
+                                  && config.currentUser.id === project.user.id
+                                  && admin.id
+                                  && admin.user.id !== config.currentUser.id
+                                  && (
+                                    <button
+                                      className="btn btn-sm btn-default"
+                                      type="button"
+                                      onClick={( ) => changeOwner( admin )}
+                                    >
+                                      { I18n.t( "views.projects.edit.make_owner" ) }
+                                    </button>
+                                  )
+                              }
+                            </td>
+                          </tr>
+                        )
+                      } ) }
                     </tbody>
                   </table>
                 </div>

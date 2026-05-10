@@ -8,9 +8,14 @@ import {
   loadingDiscussionItem,
   stopLoadingDiscussionItem,
   deleteComment,
-  updateIdentification
+  updateIdentification,
+  nominateIdentification,
+  unnominateIdentification,
+  voteIdentification,
+  unvoteIdentification
 } from "../actions";
 import { setFlaggingModalState } from "../../show/ducks/flagging_modal";
+import { performOrOpenConfirmationModal } from "../../../shared/ducks/user_confirmation";
 
 function mapStateToProps( state, ownProps ) {
   return {
@@ -81,7 +86,18 @@ function mapDispatchToProps( dispatch, ownProps ) {
     },
     showHidden: ( ) => dispatch( setConfig( { showHidden: true } ) ),
     hideContent: item => dispatch( showModeratorActionForm( item ) ),
-    unhideContent: item => dispatch( showModeratorActionForm( item, "unhide" ) )
+    unhideContent: item => dispatch( showModeratorActionForm( item, "unhide" ) ),
+    performOrOpenConfirmationModal: ( method, options = { } ) => (
+      dispatch( performOrOpenConfirmationModal( method, options ) )
+    ),
+    nominateIdentification: id => dispatch(
+      nominateIdentification( id )
+    ),
+    unnominateIdentification: id => dispatch(
+      unnominateIdentification( id )
+    ),
+    voteIdentification: ( id, vote ) => { dispatch( voteIdentification( id, vote ) ); },
+    unvoteIdentification: id => { dispatch( unvoteIdentification( id ) ); }
   };
 }
 

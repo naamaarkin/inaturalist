@@ -1,3 +1,5 @@
+# frozen_string_literal: true
+
 require "spec_helper"
 
 describe CheckList do
@@ -106,9 +108,8 @@ describe CheckList, "refresh_with_observation" do
   end
 
   it "should add listed taxa" do
-    o = make_research_grade_observation( latitude: @place.latitude, longitude: @place.longitude, taxon: @taxon )
     expect( @check_list.taxon_ids ).not_to include @taxon.id
-    CheckList.refresh_with_observation( o )
+    o = make_research_grade_observation( latitude: @place.latitude, longitude: @place.longitude, taxon: @taxon )
     @check_list.reload
     expect( @check_list.taxon_ids ).to include @taxon.id
   end
@@ -197,6 +198,7 @@ describe CheckList, "refresh_with_observation" do
         where( "ST_Intersects( place_geometries.geom, ST_Point(#{obscured_lon}, #{obscured_lat} ))" ).
         map( &:place_id )
     ).not_to include( p.id )
+    expect( l.taxon_ids ).not_to include( @taxon.id )
     o = make_research_grade_observation(latitude: p.latitude, 
       longitude: p.longitude, taxon: @taxon, geoprivacy: Observation::OBSCURED)
     Observation.where( id: o.id ).update_all(
@@ -208,8 +210,6 @@ describe CheckList, "refresh_with_observation" do
         where( "ST_Intersects( place_geometries.geom, ST_Point(#{o.private_longitude}, #{o.private_latitude} ))" ).
         map( &:place_id )
     ).to include( p.id )
-    expect( l.taxon_ids ).not_to include( @taxon.id )
-    CheckList.refresh_with_observation( o )
     l.reload
     expect( l.taxon_ids ).to include( @taxon.id )
   end
@@ -367,16 +367,15 @@ describe CheckList, "refresh_with_observation" do
       @atlas = Atlas.make!(is_active: true, taxon: @taxon)
       @atlas_place_check_list = List.find(@atlas_place.check_list_id)
       @descendant_place_check_list = List.find(@descendant_place.check_list_id)
-      o = make_research_grade_observation( latitude: @descendant_place.latitude, longitude: @descendant_place.longitude, taxon: @taxon )
       expect( @descendant_place_check_list.taxon_ids ).not_to include @taxon.id
       expect( @atlas_place_check_list.taxon_ids ).not_to include @taxon.id
-      CheckList.refresh_with_observation( o )
+      make_research_grade_observation( latitude: @descendant_place.latitude, longitude: @descendant_place.longitude, taxon: @taxon )
       @descendant_place_check_list.reload
       @atlas_place_check_list.reload
       expect( @descendant_place_check_list.taxon_ids ).to include @taxon.id
       expect( @atlas_place_check_list.taxon_ids ).not_to include @taxon.id
     end
-    
+
     it "should remove listed taxa if observation deleted" do
       o = make_research_grade_observation( latitude: @place.latitude, longitude: @place.longitude, taxon: @taxon )
       expect( @place.place_geometry.geom ).not_to be_blank
@@ -425,18 +424,16 @@ describe CheckList, "refresh_with_observation" do
       expect( state.check_list.taxa ).to include species
     end
     it "should add a listed taxon if there is an inactive complete set for the observed taxon" do
-      o = make_research_grade_observation( taxon: species, latitude: state.latitude, longitude: state.longitude )
-      complete_set = CompleteSet.make!( is_active: false, taxon: species )
       expect( state.check_list.taxa ).not_to include( species )
-      CheckList.refresh_with_observation( o )
+      CompleteSet.make!( is_active: false, taxon: species )
+      make_research_grade_observation( taxon: species, latitude: state.latitude, longitude: state.longitude )
       state.reload
       expect( state.check_list.taxa ).to include( species )
     end
     it "should add a listed taxon if there is an inactive complete set for an ancestor of the observed taxon" do
-      o = make_research_grade_observation( taxon: species, latitude: state.latitude, longitude: state.longitude )
-      complete_set = CompleteSet.make!( is_active: false, taxon: genus )
       expect( state.check_list.taxa ).not_to include( species )
-      CheckList.refresh_with_observation( o )
+      CompleteSet.make!( is_active: false, taxon: genus )
+      make_research_grade_observation( taxon: species, latitude: state.latitude, longitude: state.longitude )
       state.reload
       expect( state.check_list.taxa ).to include( species )
     end
@@ -453,14 +450,63 @@ describe CheckList, "refresh_with_observation" do
       ListedTaxon.make!( list: country.check_list, taxon: species )
       complete_set = CompleteSet.make!( is_active: true, taxon: genus, place: country )
       expect( complete_set.get_taxa_for_place_taxon ).to include species
-      o = make_research_grade_observation( taxon: species, latitude: state.latitude, longitude: state.longitude )
       expect( state.check_list.taxa ).not_to include( species )
-      CheckList.refresh_with_observation( o )
+      make_research_grade_observation( taxon: species, latitude: state.latitude, longitude: state.longitude )
       state.reload
       expect( state.check_list.taxa ).to include( species )
     end
   end
 
+  describe "listed_taxa_editable_by?" do
+    before do
+      allow( CONFIG ).to(
+        receive( :content_creation_restriction_days ).and_return( 1 )
+      )
+    end
+    let( :unrestricted_user ) do
+      user = User.make!( created_at: 2.days.ago )
+      UserPrivilege.make!( privilege: UserPrivilege::ORGANIZER, user: user )
+      expect( user.privileged_with?( UserPrivilege::ORGANIZER ) ).to be true
+      expect( user.content_creation_restrictions? ).to be false
+      user
+    end
+
+    it "is not editable by non-users" do
+      expect( @check_list.listed_taxa_editable_by?( nil ) ).to be false
+    end
+
+    it "is editable by curators" do
+      expect( @check_list.listed_taxa_editable_by?( make_curator ) ).to be true
+    end
+
+    it "is editable by owner" do
+      @check_list.update( user: User.make! )
+      expect( @check_list.listed_taxa_editable_by?( @check_list.user ) ).to be true
+    end
+
+    it "is editable by users without content restrictions" do
+      expect( @check_list.listed_taxa_editable_by?( unrestricted_user ) ).to be true
+    end
+
+    it "is not editable by users with content restrictions" do
+      expect( @check_list.listed_taxa_editable_by?( User.make! ) ).to be false
+    end
+
+    it "comprehensive lists are not editable by users without content restrictions" do
+      @check_list.update( comprehensive: true )
+      expect( @check_list.listed_taxa_editable_by?( unrestricted_user ) ).to be false
+    end
+
+    it "comprehensive lists are editable by curators" do
+      @check_list.update( comprehensive: true )
+      expect( @check_list.listed_taxa_editable_by?( make_curator ) ).to be true
+    end
+
+    it "comprehensive lists are editable by owner" do
+      @check_list.update( comprehensive: true, user: User.make! )
+      expect( @check_list.listed_taxa_editable_by?( @check_list.user ) ).to be true
+    end
+  end
 end
 
 describe CheckList, "sync_with_parent" do

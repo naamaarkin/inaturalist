@@ -10,12 +10,13 @@ const Faves = ( {
   fave,
   unfave,
   faveText,
-  hideOtherUsers
+  hideOtherUsers,
+  performOrOpenConfirmationModal
 } ) => {
   const loggedIn = config && config.currentUser && config.currentUser.id;
   if ( !observation || !loggedIn ) { return ( <div /> ); }
-  const userHasFavedThis = observation.faves && _.find( observation.faves, o => (
-    o.user.id === config.currentUser.id
+  const userHasFavedThis = observation.faves && _.find( observation.faves, f => (
+    f.user && f.user.id === config.currentUser.id
   ) );
   const starIconClass = userHasFavedThis ? "fa-star" : "fa-star-o";
   const hoverStarIconClass = userHasFavedThis ? "fa-star-o" : "fa-star";
@@ -23,11 +24,15 @@ const Faves = ( {
     <a
       className="linky"
       onClick={( ) => {
-        if ( userHasFavedThis ) {
-          unfave( observation.id );
-        } else {
-          fave( observation.id );
-        }
+        performOrOpenConfirmationModal( ( ) => {
+          if ( userHasFavedThis ) {
+            unfave( observation.id );
+          } else {
+            fave( observation.id );
+          }
+        }, {
+          permitOwnerOf: observation
+        } );
         return false;
       }}
       onMouseOver={e => {
@@ -85,11 +90,15 @@ const Faves = ( {
   const starIcon = (
     <i className={`action fa ${starIconClass}`}
       onClick={( ) => {
-        if ( userHasFavedThis ) {
-          unfave( observation.id );
-        } else {
-          fave( observation.id );
-        }
+        performOrOpenConfirmationModal( ( ) => {
+          if ( userHasFavedThis ) {
+            unfave( observation.id );
+          } else {
+            fave( observation.id );
+          }
+        }, {
+          permitOwnerOf: observation
+        } );
       }}
       onMouseOver={e => {
         $( e.target ).removeClass( starIconClass );
@@ -115,7 +124,8 @@ Faves.propTypes = {
   fave: PropTypes.func,
   unfave: PropTypes.func,
   faveText: PropTypes.string,
-  hideOtherUsers: PropTypes.bool
+  hideOtherUsers: PropTypes.bool,
+  performOrOpenConfirmationModal: PropTypes.func
 };
 
 Faves.defaultProps = {

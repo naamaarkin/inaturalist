@@ -3,6 +3,13 @@
 
 var genericAutocomplete = { };
 
+// keys like arrows, tab, shift, caps-lock, etc. won't change
+// the value of the field so we don't need to reset the selection
+genericAutocomplete.nonCharacters = [
+  9, 16, 17, 18, 19, 20, 27, 33,
+  34, 35, 36, 37, 38, 39, 40, 91, 93, 144, 145
+];
+
 // allow <li class="category"> to be included in the results
 // but do not consider them selectable items
 $.widget( "ui.autocomplete", $.ui.autocomplete, {
@@ -145,7 +152,13 @@ $.fn.genericAutocomplete = function ( acOptions ) {
     position: options.position,
     classes: options.classes,
     open: function ( ) {
-      $( $( this ).data( ).uiAutocomplete.menu.element ).addClass( "open" );
+      var { menu } = $( this ).data( ).uiAutocomplete;
+      $( menu.element ).addClass( "open" );
+      // when selectFirstMatch is enabled, activate the first menu item as
+      // soon as results appear, replaces previous keydown based selection
+      if ( options.selectFirstMatch ) {
+        menu.focus( null, $( menu.element ).children( ".ui-menu-item" ).first( ) );
+      }
     }
   } ).data( "uiAutocomplete" );
   field.on( "autocompleteclose", function ( ) {
@@ -219,24 +232,20 @@ $.fn.genericAutocomplete = function ( acOptions ) {
         // option when the menu is open but not submit the form, and if the menu
         // is closed and the input has focus, ENTER *will* submit the form
         if ( options.preventEnterSubmit ) { return false; }
-        // can be configured to select the top result when hitting enter
-        if ( options.selectFirstMatch ) { field.selectFirst( ); }
         if ( options.allowEnterSubmit || genericAutocomplete.menuClosed( ) ) {
           return true;
         }
         return false;
       }
       if ( options.resetOnChange === false ) { return; }
-      // keys like arrows, tab, shift, caps-lock, etc. won't change
-      // the value of the field so we don't need to reset the selection
-      var nonCharacters = [9, 16, 17, 18, 19, 20, 27, 33,
-        34, 35, 36, 37, 38, 39, 40, 91, 93, 144, 145];
-      if ( _.includes( nonCharacters, key ) ) { return; }
+      if ( _.includes( genericAutocomplete.nonCharacters, key ) ) { return; }
       field.trigger( "resetSelection" );
     }
   } );
   field.keyup( function ( e ) {
     if ( !field.val( ) ) {
+      var key = e.keyCode || e.which;
+      if ( _.includes( genericAutocomplete.nonCharacters, key ) ) { return; }
       ac._close( );
       if ( options.resetOnChange !== false ) {
         field.trigger( "resetSelection" );

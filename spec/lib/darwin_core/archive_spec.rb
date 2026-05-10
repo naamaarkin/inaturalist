@@ -73,6 +73,30 @@ describe DarwinCore::Archive, "make_descriptor" do
     core_field_terms = xml.xpath( "//xmlns:archive/xmlns:core/xmlns:field" ).map{ |f| f["term"] }
     expect( core_field_terms ).to include "http://rs.tdwg.org/dwc/terms/otherCatalogNumbers"
   end
+  it "should include additional field for county if requested" do
+    archive = DarwinCore::Archive.new
+    xml = Nokogiri::XML( File.open( archive.make_descriptor ) )
+    core_field_terms = xml.xpath( "//xmlns:archive/xmlns:core/xmlns:field" ).map {| f | f["term"] }
+    expect( core_field_terms ).to_not include "http://rs.tdwg.org/dwc/terms/county"
+
+    archive = DarwinCore::Archive.new( include_county: true )
+    xml = Nokogiri::XML( File.open( archive.make_descriptor ) )
+    core_field_terms = xml.xpath( "//xmlns:archive/xmlns:core/xmlns:field" ).map {| f | f["term"] }
+    expect( core_field_terms ).to include "http://rs.tdwg.org/dwc/terms/county"
+  end
+  it "should include additional fields for public coordinates if requested" do
+    archive = DarwinCore::Archive.new
+    xml = Nokogiri::XML( File.open( archive.make_descriptor ) )
+    core_field_terms = xml.xpath( "//xmlns:archive/xmlns:core/xmlns:field" ).map {| f | f["term"] }
+    expect( core_field_terms ).to_not include "https://www.inaturalist.org/terminology/latitude"
+    expect( core_field_terms ).to_not include "https://www.inaturalist.org/terminology/longitude"
+
+    archive = DarwinCore::Archive.new( include_public_coordinates: true )
+    xml = Nokogiri::XML( File.open( archive.make_descriptor ) )
+    core_field_terms = xml.xpath( "//xmlns:archive/xmlns:core/xmlns:field" ).map {| f | f["term"] }
+    expect( core_field_terms ).to include "https://www.inaturalist.org/terminology/latitude"
+    expect( core_field_terms ).to include "https://www.inaturalist.org/terminology/longitude"
+  end
 end
 
 describe DarwinCore::Archive, "make_simple_multimedia_data" do
@@ -609,6 +633,51 @@ describe DarwinCore::Archive, "make_occurrence_data" do
     expect( obs['coordinateUncertaintyInMeters'] ).to eq o.uncertainty_cell_diagonal_meters.to_s
   end
 
+  describe "excluding humans" do
+    before( :all ) do
+      Taxon.instance_eval { remove_const( "HOMO" ) }
+      Taxon::HOMO = Taxon.make!( name: "Homo" )
+      Taxon.instance_eval { remove_const( "HUMAN" ) }
+      Taxon::HUMAN = Taxon.make!( name: "Homo sapiens" )
+    end
+
+    it "excludes observations of Homo by default" do
+      Observation.make!( taxon: Taxon::HOMO )
+      archive = DarwinCore::Archive.new( quality_grade: "any" )
+      archive.make_data
+      path = archive.extension_paths[:occurrence]
+      obs = CSV.read( path, headers: true )
+      expect( obs.empty? ).to be true
+    end
+
+    it "excludes observations of Homo sapiens by default" do
+      Observation.make!( taxon: Taxon::HUMAN )
+      archive = DarwinCore::Archive.new( quality_grade: "any" )
+      archive.make_data
+      path = archive.extension_paths[:occurrence]
+      obs = CSV.read( path, headers: true )
+      expect( obs.empty? ).to be true
+    end
+
+    it "includes observations of Homo if requested" do
+      Observation.make!( taxon: Taxon::HOMO )
+      archive = DarwinCore::Archive.new( quality_grade: "any", include_humans: true )
+      archive.make_data
+      path = archive.extension_paths[:occurrence]
+      obs = CSV.read( path, headers: true )
+      expect( obs.empty? ).to be false
+    end
+
+    it "includes observations of Homo sapiens if requested" do
+      Observation.make!( taxon: Taxon::HUMAN )
+      archive = DarwinCore::Archive.new( quality_grade: "any", include_humans: true )
+      archive.make_data
+      path = archive.extension_paths[:occurrence]
+      obs = CSV.read( path, headers: true )
+      expect( obs.empty? ).to be false
+    end
+  end
+
   describe "annotation filters" do
     before( :all ) do
       @sex_attribute = make_controlled_term_with_label( "Sex" )
@@ -720,53 +789,80 @@ describe DarwinCore::Archive, "make_occurrence_data" do
 
   describe "private_coordinates" do
     it "should include private coordinates" do
-      o = make_research_grade_observation(geoprivacy: Observation::PRIVATE)
-      archive = DarwinCore::Archive.new(private_coordinates: true)
+      o = make_research_grade_observation( geoprivacy: Observation::PRIVATE )
+      archive = DarwinCore::Archive.new( private_coordinates: true )
       archive.make_data
       path = archive.extension_paths[:occurrence]
       obs = CSV.read( path, headers: true ).first
-      expect( obs['id'] ).to eq o.id.to_s
-      expect( obs['decimalLatitude'] ).to eq o.private_latitude.to_s
-      expect( obs['decimalLongitude'] ).to eq o.private_longitude.to_s
-      expect( obs["informationWithheld"] ).to be_blank
+      expect( obs["id"] ).to eq o.id.to_s
+      expect( obs["decimalLatitude"] ).to eq o.private_latitude.to_s
+      expect( obs["decimalLongitude"] ).to eq o.private_longitude.to_s
+      expect( obs["informationWithheld"] ).to eq(
+        "Coordinates included here but private on iNaturalist"
+      )
     end
 
     it "should report coordinateUncertaintyInMeters as the positional_accuracy" do
       o = make_research_grade_observation( geoprivacy: Observation::OBSCURED, positional_accuracy: 10 )
-      archive = DarwinCore::Archive.new(private_coordinates: true)
+      archive = DarwinCore::Archive.new( private_coordinates: true )
       archive.make_data
       path = archive.extension_paths[:occurrence]
       obs = CSV.read( path, headers: true ).first
-      expect( obs['coordinateUncertaintyInMeters'] ).to eq o.positional_accuracy.to_s
+      expect( obs["coordinateUncertaintyInMeters"] ).to eq o.positional_accuracy.to_s
+      expect( obs["informationWithheld"] ).to eq(
+        "Coordinates not obscured here but publicly obscured on iNaturalist"
+      )
     end
 
     it "should report coordinateUncertaintyInMeters as blank if positional_accuracy is blank" do
-      o = make_research_grade_observation(geoprivacy: Observation::OBSCURED)
-      archive = DarwinCore::Archive.new(private_coordinates: true)
+      make_research_grade_observation( geoprivacy: Observation::OBSCURED )
+      archive = DarwinCore::Archive.new( private_coordinates: true )
       archive.make_data
       path = archive.extension_paths[:occurrence]
       obs = CSV.read( path, headers: true ).first
-      expect( obs['coordinateUncertaintyInMeters'] ).to be_blank
+      expect( obs["coordinateUncertaintyInMeters"] ).to be_blank
+      expect( obs["informationWithheld"] ).to eq(
+        "Coordinates not obscured here but publicly obscured on iNaturalist"
+      )
+    end
+
+    it "should include private coordinates for an observation of a threatened taxon" do
+      threatened_taxon = Taxon.make!( rank: Taxon::SPECIES )
+      ConservationStatus.make!( taxon: threatened_taxon )
+      o = make_research_grade_observation( taxon: threatened_taxon )
+      expect( o ).to be_coordinates_obscured
+      archive = DarwinCore::Archive.new( private_coordinates: true )
+      archive.make_data
+      path = archive.extension_paths[:occurrence]
+      obs = CSV.read( path, headers: true ).first
+      expect( obs["id"] ).to eq o.id.to_s
+      expect( obs["decimalLatitude"] ).to eq o.private_latitude.to_s
+      expect( obs["decimalLongitude"] ).to eq o.private_longitude.to_s
+      expect( obs["informationWithheld"] ).to eq(
+        "Coordinates not obscured here but publicly obscured on iNaturalist due to taxon geoprivacy"
+      )
     end
   end
 
   describe "taxon_private_coordinates" do
-    let(:threatened_taxon) {
+    let( :threatened_taxon ) do
       t = Taxon.make!( rank: Taxon::SPECIES )
-      ct = ConservationStatus.make!( taxon: t )
+      ConservationStatus.make!( taxon: t )
       t
-    }
+    end
     it "should include private coordinates for an observation of a threatened taxon" do
       o = make_research_grade_observation( taxon: threatened_taxon )
       expect( o ).to be_coordinates_obscured
       archive = DarwinCore::Archive.new( taxon_private_coordinates: true )
       archive.make_data
       path = archive.extension_paths[:occurrence]
-      obs = CSV.read( path, headers: true, ).first
+      obs = CSV.read( path, headers: true ).first
       expect( obs["id"] ).to eq o.id.to_s
       expect( obs["decimalLatitude"] ).to eq o.private_latitude.to_s
       expect( obs["decimalLongitude"] ).to eq o.private_longitude.to_s
-      expect( obs["informationWithheld"] ).to be_blank
+      expect( obs["informationWithheld"] ).to eq(
+        "Coordinates not obscured here but publicly obscured on iNaturalist due to taxon geoprivacy"
+      )
     end
     it "should not include private coordinates for an observation of a threatened taxon with obscured geoprivacy" do
       o = make_research_grade_observation(
@@ -781,7 +877,9 @@ describe DarwinCore::Archive, "make_occurrence_data" do
       expect( obs["id"] ).to eq o.id.to_s
       expect( obs["decimalLatitude"] ).not_to eq o.private_latitude.to_s
       expect( obs["decimalLongitude"] ).not_to eq o.private_longitude.to_s
-      expect( obs["informationWithheld"] ).not_to be_blank
+      expect( obs["informationWithheld"] ).to eq(
+        "Coordinate uncertainty increased to #{o.public_positional_accuracy}m at the request of the observer"
+      )
     end
     it "should not include private coordinates for an observation of a unthreatened taxon with obscured geoprivacy" do
       o = make_research_grade_observation( geoprivacy: Observation::OBSCURED )
@@ -793,6 +891,23 @@ describe DarwinCore::Archive, "make_occurrence_data" do
       expect( obs["id"] ).to eq o.id.to_s
       expect( obs["decimalLatitude"] ).not_to eq o.private_latitude.to_s
       expect( obs["decimalLongitude"] ).not_to eq o.private_longitude.to_s
+      expect( obs["informationWithheld"] ).to eq(
+        "Coordinate uncertainty increased to #{o.public_positional_accuracy}m at the request of the observer"
+      )
+    end
+    it "should not include private coordinates for an observation with private geoprivacy" do
+      o = make_research_grade_observation( geoprivacy: Observation::PRIVATE )
+      expect( o ).to be_coordinates_obscured
+      archive = DarwinCore::Archive.new( taxon_private_coordinates: true )
+      archive.make_data
+      path = archive.extension_paths[:occurrence]
+      obs = CSV.read( path, headers: true ).first
+      expect( obs["id"] ).to eq o.id.to_s
+      expect( obs["decimalLatitude"] ).to be_blank
+      expect( obs["decimalLongitude"] ).to be_blank
+      expect( obs["informationWithheld"] ).to eq(
+        "Coordinates hidden at the request of the observer"
+      )
     end
   end
 
@@ -820,5 +935,30 @@ describe DarwinCore::Archive, "make_occurrence_data" do
     CSV.foreach( path, headers: true ) do |row|
       expect( row['countryCode'] ).to eq country.code
     end
+  end
+end
+
+describe DarwinCore::Archive, "generate" do
+  elastic_models( Observation, Taxon )
+
+  let( :o ) { make_research_grade_observation }
+
+  it "removes tmp directory after moving completed archive" do
+    final_archive_path = File.join( Dir.tmpdir, "dwca_from_archive_spec.zip" )
+    if File.exist?( final_archive_path )
+      FileUtils.rm( final_archive_path )
+    end
+    archive = DarwinCore::Archive.new(
+      taxon: o.taxon_id,
+      extensions: %w(SimpleMultimedia),
+      path: final_archive_path
+    )
+    archive_work_path = archive.instance_variable_get( "@opts" )[:work_path]
+    expect( Dir.exist?( archive_work_path ) ).to be true
+    expect( File.exist?( final_archive_path ) ).to be false
+    archive.generate
+    expect( Dir.exist?( archive_work_path ) ).to be false
+    expect( File.exist?( final_archive_path ) ).to be true
+    FileUtils.rm( final_archive_path )
   end
 end

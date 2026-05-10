@@ -6,17 +6,18 @@ import inatjs, {
 } from "inaturalistjs";
 import moment from "moment";
 import { fetchObservationPlaces, setObservationPlaces } from "./observation_places";
-import { resetControlledTerms } from "./controlled_terms";
+import { resetControlledTerms, fetchControlledTerms } from "./controlled_terms";
 import {
-  fetchMoreFromThisUser, fetchNearby, fetchMoreFromClade,
+  fetchMoreFromThisUser,
   setEarlierUserObservations, setLaterUserObservations, setNearby,
   setMoreFromClade
 } from "./other_observations";
 import { fetchQualityMetrics, setQualityMetrics } from "./quality_metrics";
 import { fetchSubscriptions, resetSubscriptions, setSubscriptions } from "./subscriptions";
+import { fetchRelationships, resetRelationships, setRelationships } from "./relationships";
 import { fetchIdentifiers, setIdentifiers } from "./identifications";
 import { setFlaggingModalState } from "./flagging_modal";
-import { setConfirmModalState, handleAPIError } from "./confirm_modal";
+import { setConfirmModalState, handleAPIError } from "../../../shared/ducks/confirm_modal";
 import { updateSession } from "./users";
 import { showDisagreementAlert } from "../../shared/ducks/disagreement_alert";
 import RejectedFilesError from "../../../shared/components/rejected_files_error";
@@ -26,7 +27,11 @@ import {
   joinProject as sharedJoinProject,
   addObservationFieldValue as sharedAddObservationFieldValue,
   updateObservationFieldValue as sharedUpdateObservationFieldValue,
-  removeObservationFieldValue as sharedRemoveObservationFieldValue
+  removeObservationFieldValue as sharedRemoveObservationFieldValue,
+  nominateIdentification as sharedNominateIdentification,
+  unnominateIdentification as sharedUnnominateIdentification,
+  voteIdentification as sharedVoteIdentification,
+  unvoteIdentification as sharedUnvoteIdentification
 } from "../../shared/ducks/observation";
 
 const SET_OBSERVATION = "obs-show/observation/SET_OBSERVATION";
@@ -55,7 +60,8 @@ const TAXON_FIELDS = {
     is_active: true,
     preferred_common_name: true,
     rank: true,
-    rank_level: true
+    rank_level: true,
+    ancestor_ids: true
   },
   default_photo: {
     attribution: true,
@@ -113,7 +119,10 @@ const FIELDS = {
   comments: {
     body: true,
     created_at: true,
-    flags: { id: true },
+    flags: {
+      id: true,
+      resolved: true
+    },
     hidden: true,
     id: true,
     moderator_actions: MODERATOR_ACTION_FIELDS,
@@ -122,6 +131,7 @@ const FIELDS = {
   },
   community_taxon: TAXON_FIELDS,
   created_at: true,
+  created_at_details: "all",
   description: true,
   faves: {
     id: true,
@@ -141,7 +151,10 @@ const FIELDS = {
     created_at: true,
     current: true,
     disagreement: true,
-    flags: { id: true },
+    flags: {
+      id: true,
+      resolved: true
+    },
     hidden: true,
     moderator_actions: MODERATOR_ACTION_FIELDS,
     previous_observation_taxon: TAXON_FIELDS,
@@ -151,7 +164,8 @@ const FIELDS = {
     updated_at: true,
     user: { ...USER_FIELDS, id: true },
     uuid: true,
-    vision: true
+    vision: true,
+    exemplar_identification: "all"
   },
   identifications_most_agree: true,
   // TODO refactor to rely on geojson instead of lat and lon
@@ -169,6 +183,7 @@ const FIELDS = {
   },
   obscured: true,
   observed_on: true,
+  observed_on_details: "all",
   observed_time_zone: true,
   ofvs: {
     observation_field: {
@@ -199,7 +214,9 @@ const FIELDS = {
       id: true,
       flag: true,
       resolved: true
-    }
+    },
+    moderator_actions: MODERATOR_ACTION_FIELDS,
+    hidden: true
   },
   place_guess: true,
   place_ids: true,
@@ -216,11 +233,13 @@ const FIELDS = {
       allows_curator_coordinate_access: true
     },
     project: PROJECT_FIELDS,
+    user_id: true,
     uuid: true
   },
   public_positional_accuracy: true,
   quality_grade: true,
   reviewed_by: true,
+  species_guess: true,
   sounds: {
     file_url: true,
     file_content_type: true,
@@ -228,7 +247,14 @@ const FIELDS = {
     license_code: true,
     play_local: true,
     url: true,
-    uuid: true
+    uuid: true,
+    flags: {
+      id: true,
+      flag: true,
+      resolved: true
+    },
+    moderator_actions: MODERATOR_ACTION_FIELDS,
+    hidden: true
   },
   tags: true,
   taxon: TAXON_FIELDS,
@@ -296,7 +322,6 @@ export function setAttributes( attributes ) {
   };
 }
 
-/* global SITE */
 export function windowStateForObservation( observation, state, opts = { } ) {
   const options = { hash: "", ...opts };
   const currentUser = state && state.config && state.config.currentUser;
@@ -387,9 +412,10 @@ export function resetStates( ) {
     dispatch( setQualityMetrics( [] ) );
     dispatch( setEarlierUserObservations( [] ) );
     dispatch( setLaterUserObservations( [] ) );
-    dispatch( setNearby( [] ) );
-    dispatch( setMoreFromClade( [] ) );
+    dispatch( setNearby( null ) );
+    dispatch( setMoreFromClade( null ) );
     dispatch( setSubscriptions( [] ) );
+    dispatch( setRelationships( [] ) );
   };
 }
 
@@ -470,10 +496,20 @@ export function renderObservation( observation, options = { } ) {
         )
       )
     );
+    if ( options.initialPhotoID ) {
+      const matchingInitialPhoto = _.find(
+        observation.photos,
+        p => p.id === Number( options.initialPhotoID )
+      );
+      if ( matchingInitialPhoto ) {
+        matchingInitialPhoto.initialPhoto = true;
+      }
+    }
     dispatch( setObservation( observation ) );
     if ( taxonUpdated ) {
       dispatch( setIdentifiers( null ) );
-      dispatch( setMoreFromClade( [] ) );
+      dispatch( setMoreFromClade( null ) );
+      dispatch( fetchControlledTerms( { reload: true } ) );
     }
     if ( taxonUpdated || fetchAll ) {
       dispatch( fetchTaxonSummary( ) );
@@ -482,6 +518,7 @@ export function renderObservation( observation, options = { } ) {
     if ( fetchAll || options.fetchQualityMetrics ) { dispatch( fetchQualityMetrics( ) ); }
     if ( hasObsAndLoggedIn( s ) && ( fetchAll || options.fetchSubscriptions ) ) {
       dispatch( resetSubscriptions( ) );
+      dispatch( resetRelationships( ) );
     }
     if ( fetchAll || options.fetchPlaces ) { dispatch( fetchObservationPlaces( ) ); }
     if ( fetchAll || options.replaceState ) {
@@ -493,12 +530,8 @@ export function renderObservation( observation, options = { } ) {
     // delay these requests for a short while, unless the taxon has changed
     // which is a user-initiated action that should have a quick re-render time
     setTimeout( ( ) => {
-      if ( fetchAll || options.fetchOtherObservations ) {
+      if ( fetchAll ) {
         dispatch( fetchMoreFromThisUser( ) );
-        dispatch( fetchNearby( ) );
-      }
-      if ( fetchAll || options.fetchOtherObservations || taxonUpdated ) {
-        dispatch( fetchMoreFromClade( ) );
       }
       if ( ( fetchAll || taxonUpdated ) && !_.has( observation, "non_traditional_projects" ) ) {
         dispatch( fetchNewProjects( ) );
@@ -578,7 +611,7 @@ export function callAPI( method, payload, options = { } ) {
     if ( !options.callback ) {
       opts.actionTime = getActionTime( );
     }
-    method( payload ).then( ( ) => {
+    method( payload, options ).then( ( ) => {
       dispatch( afterAPICall( opts ) );
     } ).catch( e => {
       opts.error = e;
@@ -637,7 +670,7 @@ export function addTag( tag ) {
     const state = getState( );
     if ( !tag || !hasObsAndLoggedIn( state ) ) { return; }
     if ( _.find( state.observation.tags, t => (
-      _.lowerCase( t.tag || t ) === _.lowerCase( tag ) ) ) ) { return; }
+      _.toLower( t.tag || t ) === _.toLower( tag ) ) ) ) { return; }
     dispatch( setAttributes( {
       tags: state.observation.tags.concat( [{ tag, api_status: "saving" }] )
     } ) );
@@ -798,7 +831,8 @@ export function doAddID( taxon, confirmForm, options = { } ) {
         taxon_id: taxon.id,
         body: options.body,
         vision: !!taxon.isVisionResult,
-        disagreement: options.disagreement
+        disagreement: options.disagreement,
+        nominate: options.nominate
       }
     };
     dispatch( callAPI( inatjs.identifications.create, payload ) );
@@ -813,8 +847,8 @@ export function addID( taxon, options = { } ) {
     let observationTaxon = o.taxon;
     if (
       o.preferences.prefers_community_taxon === false
-      || (o.user.preferences.prefers_community_taxa === false 
-      && o.preferences.prefers_community_taxon === null)
+      || ( o.user.preferences.prefers_community_taxa === false
+      && o.preferences.prefers_community_taxon === null )
     ) {
       observationTaxon = o.community_taxon || o.taxon;
     }
@@ -1011,6 +1045,23 @@ export function followUser( ) {
     const state = getState( );
     if ( !hasObsAndLoggedIn( state ) ) { return; }
     if ( userIsObserver( state ) ) { return; }
+    const { testingApiV2 } = state.config;
+    if ( testingApiV2 ) {
+      // v2 handles following through the relationships endpoints
+      dispatch( setRelationships( [{
+        api_status: "saving"
+      }] ) );
+      const payload = {
+        relationship: {
+          friend_id: state.observation.user.id
+        }
+      };
+      dispatch( callAPI( inatjs.relationships.create, payload, {
+        callback: ( ) => dispatch( fetchRelationships( ) )
+      } ) );
+      return;
+    }
+
     const newSubscriptions = state.subscriptions.subscriptions.concat( [{
       resource_type: "User",
       resource_id: state.observation.user.id,
@@ -1030,8 +1081,26 @@ export function unfollowUser( ) {
     const state = getState( );
     if ( !hasObsAndLoggedIn( state ) ) { return; }
     if ( userIsObserver( state ) ) { return; }
-    const newSubscriptions = _.map( state.subscriptions, s => (
-      s.resource_type === "User"
+    const { testingApiV2 } = state.config;
+    if ( testingApiV2 ) {
+      // v2 handles following through the relationships endpoints
+      const relationship = state.relationships.relationships[0];
+      if ( _.isEmpty( relationship ) ) {
+        return;
+      }
+      dispatch( setRelationships( [{
+        api_status: "deleting"
+      }] ) );
+      dispatch( callAPI( inatjs.relationships.delete, { id: relationship.id }, {
+        callback: ( ) => {
+          dispatch( fetchRelationships( ) );
+        }
+      } ) );
+      return;
+    }
+
+    const newSubscriptions = _.map( state.subscriptions.subscriptions, s => (
+      ( s.resource_type === "User" )
         ? { ...s, api_status: "deleting" }
         : s
     ) );
@@ -1351,7 +1420,7 @@ export function setItemAPIStatus( item, apiStatus ) {
   };
 }
 
-export function onFileDrop( droppedFiles, rejectedFiles, dropEvent ) {
+export function onFileDrop( droppedFiles, rejectedFiles ) {
   return ( dispatch, getState ) => {
     const { observation } = getState( );
     if ( rejectedFiles && rejectedFiles.length > 0 ) {
@@ -1380,7 +1449,8 @@ export function onFileDrop( droppedFiles, rejectedFiles, dropEvent ) {
           params,
           { same_origin: true }
         ) );
-      } else if ( f.type.match( /^audio\// ) ) {
+      } else if ( f.type.match( /^(audio|video)\// ) ) {
+        // some mp4 audio files are detected as video/mp4
         newSounds.push( { file_url: f.preview } );
         const params = {
           "observation_sound[observation_id]": observation.id,
@@ -1440,5 +1510,70 @@ export function fetchTaxonIdentifiers( ) {
     dispatch( fetchIdentifiers( {
       taxon_id: observation.taxon.id, quality_grade: "research", per_page: 10
     } ) );
+  };
+}
+
+export function nominateIdentification( id ) {
+  return ( dispatch, getState ) => {
+    const { observation } = getState( );
+    dispatch( sharedNominateIdentification(
+      observation,
+      id,
+      null,
+      ( ) => {
+        dispatch( fetchObservation(
+          observation.uuid
+        ) );
+      }
+    ) );
+  };
+}
+
+export function unnominateIdentification( id ) {
+  return ( dispatch, getState ) => {
+    const { observation } = getState( );
+    dispatch( sharedUnnominateIdentification(
+      observation,
+      id,
+      null,
+      ( ) => {
+        dispatch( fetchObservation(
+          observation.uuid
+        ) );
+      }
+    ) );
+  };
+}
+
+export function voteIdentification( id, voteValue ) {
+  return ( dispatch, getState ) => {
+    const { observation } = getState( );
+    dispatch( sharedVoteIdentification(
+      observation,
+      id,
+      voteValue,
+      null,
+      ( ) => {
+        dispatch( fetchObservation(
+          observation.uuid
+        ) );
+      }
+    ) );
+  };
+}
+
+export function unvoteIdentification( id ) {
+  return ( dispatch, getState ) => {
+    const { observation } = getState( );
+    dispatch( sharedUnvoteIdentification(
+      observation,
+      id,
+      null,
+      ( ) => {
+        dispatch( fetchObservation(
+          observation.uuid
+        ) );
+      }
+    ) );
   };
 }

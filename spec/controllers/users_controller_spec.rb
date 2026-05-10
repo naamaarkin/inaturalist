@@ -10,38 +10,135 @@ describe UsersController, "dashboard" do
     get :dashboard
     expect( response ).to be_successful
   end
-  it "should show a site-specific announcement instead of a siteless one" do
-    site = Site.make!
-    a = Announcement.make!
-    site_a = Announcement.make!
-    site_a.sites << site
-    u = User.make!( site: site )
-    sign_in u
-    get :dashboard, params: { inat_site_id: site.id }
-    expect( assigns( :announcements ) ).to include site_a
-    expect( assigns( :announcements ) ).not_to include a
-  end
-  it "should show a locale-specific announcement instead of a localeless one" do
-    a = Announcement.make!
-    locale_a = Announcement.make!( locales: ["es"] )
-    u = User.make!( locale: "es" )
-    sign_in u
-    get :dashboard, params: { locale: "es" }
-    expect( assigns( :announcements ) ).to include locale_a
-    expect( assigns( :announcements ) ).not_to include a
-  end
-  it "should show a siteless, localeless announcement" do
-    a = Announcement.make!
-    sign_in User.make!
-    get :dashboard
-    expect( assigns( :announcements ) ).to include a
-  end
-  it "should show a siteless, localeless announcement even if the user has a site and a locale" do
-    a = Announcement.make!
-    site = Site.make!
-    sign_in User.make!( locale: "es", site: site )
-    get :dashboard, params: { inat_site_id: site.id }
-    expect( assigns( :announcements ) ).to include a
+
+  describe "announcements" do
+    it "should target a site" do
+      site = create :site
+      annc = create :announcement
+      annc.sites << site
+      user = create :user, site: site
+      sign_in user
+      get :dashboard, params: { inat_site_id: site.id }
+      expect( assigns( :announcements ) ).to include annc
+    end
+
+    it "should include an anouncement without a site if one with a site exists" do
+      annc = create :announcement
+      site = create :site
+      site_annc = create :announcement
+      site_annc.sites << site
+      user = create :user, site: site
+      sign_in user
+      get :dashboard, params: { inat_site_id: site.id }
+      expect( assigns( :announcements ) ).to include site_annc
+      expect( assigns( :announcements ) ).to include annc
+    end
+
+    # The intent is to allow the creation of a siteless announcement that can
+    # be *overridden* for a site, e.g. an announcement to all iNat users that
+    # iNatMX chooses to translate into Spanish
+    describe "there exists another annc targeting a site that excludes non-site anncs" do
+      it "should not include an anouncement without a site" do
+        annc = create :announcement
+        site = create :site
+        site_annc = create :announcement, excludes_non_site: true
+        site_annc.sites << site
+        user = create :user, site: site
+        sign_in user
+        get :dashboard, params: { inat_site_id: site.id }
+        expect( assigns( :announcements ) ).to include site_annc
+        expect( assigns( :announcements ) ).not_to include annc
+      end
+    end
+
+    it "should target locales" do
+      a = Announcement.make!
+      locale_a = Announcement.make!( locales: ["es"] )
+      u = User.make!( locale: "es" )
+      sign_in u
+      get :dashboard, params: { locale: "es" }
+      expect( assigns( :announcements ) ).to include locale_a
+      expect( assigns( :announcements ) ).not_to include a
+    end
+
+    it "should appear for everyone without targeting" do
+      a = Announcement.make!
+      sign_in User.make!
+      get :dashboard
+      expect( assigns( :announcements ) ).to include a
+    end
+
+    it "should appear for everyone without targeting even if the user has a site and a locale" do
+      a = Announcement.make!
+      site = Site.make!
+      sign_in User.make!( locale: "es", site: site )
+      get :dashboard, params: { inat_site_id: site.id }
+      expect( assigns( :announcements ) ).to include a
+    end
+
+    describe "rendering" do
+      render_views
+
+      describe "for regular users" do
+        let( :user ) { create :user }
+        before { sign_in user }
+
+        it "should not include dismissed" do
+          a = create :announcement, dismissible: true
+          a.dismiss_user_ids << user.id
+          a.save!
+          expect( a ).to be_dismissed_by user
+          get :dashboard
+          expect( response.body ).not_to include a.body
+        end
+
+        it "should not be shown if targeting staff" do
+          a = create :announcement, prefers_target_staff: true
+          get :dashboard
+          expect( response.body ).not_to include a.body
+        end
+
+        it "should create an AnnouncementImpression" do
+          a = create :announcement
+          expect( AnnouncementImpression.where( announcement_id: a.id ).count ).to eq 0
+          get :dashboard
+          expect( response.body ).to include a.body
+          expect( AnnouncementImpression.where( announcement_id: a.id ).count ).to eq 1
+        end
+      end
+
+      it "should target staff" do
+        user = create :user, :as_admin
+        sign_in user
+        a = create :announcement, prefers_target_staff: true
+        get :dashboard
+        expect( response.body ).to include a.body
+      end
+
+      it "should exclude donorbox monthly supporters" do
+        user = create :user,
+          donorbox_donor_id: 1,
+          donorbox_plan_status: "active",
+          donorbox_plan_type: "monthly"
+        expect( user ).to be_monthly_donor
+        sign_in user
+        a = create :announcement, target_logged_in: Announcement::YES, prefers_exclude_monthly_supporters: true
+        get :dashboard
+        expect( response.body ).not_to include a.body
+      end
+
+      it "should exclude fundraiseup monthly supporters" do
+        user = create :user,
+          virtuous_donor_contact_id: 1,
+          fundraiseup_plan_status: "active",
+          fundraiseup_plan_frequency: "monthly"
+        expect( user ).to be_monthly_donor
+        sign_in user
+        a = create :announcement, target_logged_in: Announcement::YES, prefers_exclude_monthly_supporters: true
+        get :dashboard
+        expect( response.body ).not_to include a.body
+      end
+    end
   end
 end
 
@@ -69,6 +166,12 @@ describe UsersController, "delete" do
       count ).to eq 1
   end
 
+  it "redirects with the account_deleted=true parameter" do
+    sign_in user
+    delete :destroy, params: { id: user.id, confirmation: user.login, confirmation_code: user.login }
+    expect( response.redirect_url ).to match /account_deleted=true/
+  end
+
   it "should be possible for the user" do
     sign_in user
     without_delay { delete :destroy, params: { id: user.id, confirmation: user.login, confirmation_code: user.login } }
@@ -81,6 +184,17 @@ describe UsersController, "delete" do
     sign_in nogoodnik
     delete :destroy, params: { id: user.id }
     expect( User.find_by_id( user.id ) ).not_to be_blank
+  end
+
+  it "redirects to the user details page if destroyed by an admin" do
+    controller.request.host = URI.parse( Site.default.url ).host
+    admin_user = make_admin( locale: "en" )
+    user = User.make!
+    sign_in admin_user
+    delete :destroy, params: { id: user.id, confirmation: user.login, confirmation_code: user.login }
+    expect( flash[:notice] ).to match( "#{user.login} has been removed from iNaturalist" )
+    expect( response ).to be_redirect
+    expect( response.redirect_url ).to eq user_url( user )
   end
 end
 
@@ -98,6 +212,7 @@ describe UsersController, "set_spammer" do
   describe "curators" do
     before( :each ) do
       @curator = make_curator
+      UserPrivilege.make!( privilege: UserPrivilege::INTERACTION, user: @curator )
       sign_in( @curator )
       request.env["HTTP_REFERER"] = "/"
     end
@@ -334,7 +449,11 @@ describe UsersController, "show" do
 end
 
 describe UsersController, "moderation" do
-  let( :subject_user ) { User.make! }
+  let( :subject_user ) do
+    user = UserPrivilege.make!( privilege: UserPrivilege::ORGANIZER ).user
+    UserPrivilege.make!( privilege: UserPrivilege::INTERACTION, user: user )
+    user
+  end
   let( :curator ) { make_curator }
   it "should be viewable by curators" do
     sign_in make_curator
@@ -364,7 +483,12 @@ describe UsersController, "moderation" do
     it "should work with a flag and ModeratorAction" do
       comment = create :comment, user: subject_user
       flag = create :flag, flaggable: comment
-      moderator_action = create :moderator_action, resource: comment, action: ModeratorAction::HIDE
+      moderator_action = create(
+        :moderator_action,
+        resource: comment,
+        action: ModeratorAction::HIDE,
+        user: make_curator
+      )
       get :moderation, params: { id: subject_user.login }
       expect( response.response_code ).to eq 200
       expect( assigns( :records ) ).to include flag
@@ -376,5 +500,150 @@ describe UsersController, "moderation" do
       expect( response.response_code ).to eq 200
       expect( assigns( :records ) ).to include moderator_note
     end
+    it "displays ModeratorActions even if the moderated resource has since been deleted" do
+      observation = Observation.make!
+      identification = Identification.make!( observation: observation, user: observation.user )
+      action = ModeratorAction.create(
+        resource: identification,
+        action: ModeratorAction::HIDE,
+        user: make_admin,
+        reason: Faker::Lorem.sentence
+      )
+      identification.destroy
+      get :moderation, params: { id: observation.user_id }
+      expect( response.response_code ).to eq 200
+      expect( assigns( :records ) ).to include action
+      expect( assigns( :records ).first.resource ).to be_nil
+      expect( response.body ).to have_tag(
+        "td", text: /Moderator Action.*Identification.*Removed/m
+      )
+    end
+  end
+end
+
+describe UsersController, "join_test" do
+  it "does not allow unauthenticated requests" do
+    controller.request.host = URI.parse( Site.default.url ).host
+    another_user = User.make!
+    put :join_test, params: { test: "test-group", id: another_user.id }
+    expect( response ).not_to be_successful
+    expect( response.response_code ).to eq 302
+    expect( response.location ).to eq new_user_session_url
+  end
+
+  it "allows logged-in users to join test groups" do
+    controller.request.host = URI.parse( Site.default.url ).host
+    user = User.make!
+    sign_in user
+    expect( user.test_groups ).to be_blank
+    put :join_test, params: { test: "test-group", id: user.id }
+    expect( response ).to be_redirect
+    user.reload
+    expect( user.test_groups ).not_to be_blank
+    expect( user.test_groups ).to include( "test-group" )
+  end
+
+  it "does not allow non-admins to join admin test groups" do
+    controller.request.host = URI.parse( Site.default.url ).host
+    user = User.make!
+    sign_in user
+    expect( user.test_groups ).to be_blank
+    expect do
+      put :join_test, params: { test: User::ADMIN_ONLY_TEST_GROUPS.first, id: user.id }
+    end.to throw_symbol( :abort )
+    expect( flash[:error] ).to eq "Only administrators may access that page"
+    expect( user.test_groups ).to be_blank
+  end
+
+  it "allows admins to join admin test groups" do
+    controller.request.host = URI.parse( Site.default.url ).host
+    user = make_admin
+    sign_in user
+    expect( user.test_groups ).to be_blank
+    put :join_test, params: { test: User::ADMIN_ONLY_TEST_GROUPS.first, id: user.id }
+    expect( response ).to be_redirect
+    user.reload
+    expect( user.test_groups ).not_to be_blank
+    expect( user.test_groups ).to include( User::ADMIN_ONLY_TEST_GROUPS.first )
+  end
+
+  it "does not allow unpermitted users to join the helpful IDs test group" do
+    controller.request.host = URI.parse( Site.default.url ).host
+    user = User.make!
+    sign_in user
+    expect( user.test_groups ).to be_blank
+    put :join_test, params: { test: User::HELPFUL_ID_TIPS_TEST_GROUP, id: user.id }
+    user.reload
+    expect( user.test_groups ).to be_blank
+  end
+
+  it "allows permitted users to join the helpful IDs test group" do
+    controller.request.host = URI.parse( Site.default.url ).host
+    user = User.make!
+    user.update_columns( test_groups: User::HELPFUL_ID_TIPS_REVIEWER_TEST_GROUP )
+    sign_in user
+    expect( user.test_groups ).to include( User::HELPFUL_ID_TIPS_REVIEWER_TEST_GROUP )
+    put :join_test, params: { test: User::HELPFUL_ID_TIPS_TEST_GROUP, id: user.id }
+    user.reload
+    expect( user.test_groups ).to include( User::HELPFUL_ID_TIPS_TEST_GROUP )
+  end
+end
+
+describe UsersController, "suspend" do
+  let( :curator ) { make_curator }
+  let( :user_with_expired_suspension ) do
+    user = User.make!
+    user.update_columns( suspended_at: 2.days.ago, suspended_until: 1.day.ago )
+    user
+  end
+
+  before do
+    sign_in curator
+    request.env["HTTP_REFERER"] = "/"
+  end
+
+  it "unsuspends a user whose timed suspension has expired" do
+    expect( user_with_expired_suspension.suspended_at ).not_to be_nil
+    get :suspend, params: { id: user_with_expired_suspension.id }
+    user_with_expired_suspension.reload
+    expect( user_with_expired_suspension ).not_to be_suspended
+  end
+end
+
+describe UsersController, "unsuspend" do
+  let( :curator ) { make_curator }
+  let( :suspended_user ) do
+    user = User.make!
+    user.update_columns( suspended_at: 1.day.ago, suspended_until: 1.day.from_now )
+    user
+  end
+
+  before do
+    sign_in curator
+    request.env["HTTP_REFERER"] = "/"
+  end
+
+  it "sets suspended_at to nil" do
+    expect( suspended_user.suspended_at ).not_to be_nil
+    ModeratorAction.create!(
+      resource: suspended_user,
+      user: curator,
+      action: ModeratorAction::UNSUSPEND,
+      reason: "Unsuspending this user"
+    )
+    suspended_user.reload
+    expect( suspended_user.suspended_at ).to be_nil
+  end
+
+  it "sets suspended_until to nil" do
+    expect( suspended_user.suspended_until ).not_to be_nil
+    ModeratorAction.create!(
+      resource: suspended_user,
+      user: curator,
+      action: ModeratorAction::UNSUSPEND,
+      reason: "Unsuspending this user"
+    )
+    suspended_user.reload
+    expect( suspended_user.suspended_until ).to be_nil
   end
 end

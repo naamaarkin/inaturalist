@@ -3,7 +3,7 @@
 require "#{File.dirname( __FILE__ )}/../spec_helper"
 
 shared_examples_for "a QualityMetricsController" do
-  let( :user ) { User.make! }
+  let( :user ) { make_user_with_privilege( UserPrivilege::INTERACTION ) }
 
   describe "vote" do
     let( :o ) { Observation.make! }
@@ -49,6 +49,13 @@ shared_examples_for "a QualityMetricsController" do
       expect( QualityMetric.find_by_id( qm.id ) ).to be_nil
       o.reload
       expect( o.quality_metrics ).to be_blank
+    end
+
+    it "should fail if the metric is about the date but the date does not exist" do
+      dateless = create( :observation, observed_on_string: "" )
+      expect( dateless.observed_on ).to be_blank
+      post :vote, as: :json, params: { id: dateless.id, metric: QualityMetric::DATE }
+      expect( response.status ).to eq 422
     end
 
     describe "elastic index" do

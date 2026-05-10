@@ -1,4 +1,51 @@
-require File.dirname(__FILE__) + '/../spec_helper'
+# frozen_string_literal: true
+
+require "spec_helper"
+
+shared_examples_for "loading a place from the ID parameter" do | route |
+  describe "place loading" do
+    it "loads a place from its ID" do
+      place = make_place_with_geom( id: 999 )
+      get route, params: { id: place.id }
+      expect( assigns( :place ) ).to eq place
+    end
+
+    it "loads a place from its string slug" do
+      place = make_place_with_geom
+      place.update( slug: "test-slug" )
+      get route, params: { id: place.slug }
+      expect( assigns( :place ) ).to eq place
+    end
+
+    it "loads a place from its numeric slug" do
+      place = make_place_with_geom
+      place.update( slug: 999 )
+      get route, params: { id: place.slug }
+      expect( assigns( :place ) ).to eq place
+    end
+
+    it "loads a place from its mixed slug" do
+      place = make_place_with_geom
+      place.update( slug: "999-slug" )
+      get route, params: { id: place.slug }
+      expect( assigns( :place ) ).to eq place
+    end
+
+    it "prioritizes loading a place from its slug" do
+      make_place_with_geom( id: 999 )
+      place_by_slug = make_place_with_geom
+      place_by_slug.update( slug: 999 )
+      get route, params: { id: 999 }
+      expect( assigns( :place ) ).to eq place_by_slug
+    end
+
+    it "renders a 404 for unknown place IDs" do
+      make_place_with_geom( id: 1 )
+      get route, params: { id: 999 }
+      expect( response.status ).to eq 404
+    end
+  end
+end
 
 describe PlacesController do
   let(:user) { UserPrivilege.make!( privilege: UserPrivilege::ORGANIZER ).user }
@@ -89,6 +136,8 @@ describe PlacesController do
   end
 
   describe "show" do
+    it_behaves_like "loading a place from the ID parameter", :show
+
     render_views
     let(:place) { make_place_with_geom( user: user ) }
     it "renders a self-referential canonical tag" do
@@ -163,6 +212,7 @@ describe PlacesController do
       p.reload
       expect( p.name ).to eq "the new name"
     end
+
     it "does not allow removal of the geometry with old remove_geom" do
       p = make_place_with_geom( user: user )
       put :update, params: { id: p.id,
@@ -174,6 +224,18 @@ describe PlacesController do
       expect( response ).to be_redirect
       p.reload
       expect( p.place_geometry ).not_to be_blank
+    end
+
+    it "does not raise an error if the place geometry is missing" do
+      p = make_place_with_geom( user: user )
+      # places should have a place geometry, but for whatever reason some don't
+      p.place_geometry.destroy
+      sign_in p.user
+      expect do
+        put :update, params: { id: p.id, place: {
+          name: "Place without geom"
+        } }
+      end.not_to raise_error
     end
   end
 
@@ -272,6 +334,46 @@ describe PlacesController do
       expect( Place.find_by_id( reject.id ) ).to be_blank
     end
   end
+
+  describe "edit" do
+    it "does not raise an error if the place geometry is missing" do
+      p = make_place_with_geom( user: user )
+      # places should have a place geometry, but for whatever reason some don't
+      p.place_geometry.destroy
+      sign_in p.user
+      expect do
+        get :edit, params: { id: p.id }
+      end.not_to raise_error
+    end
+  end
+
+  describe "guide" do
+    it_behaves_like "loading a place from the ID parameter", :guide
+  end
+
+  describe "wikipedia" do
+    it "replaces hrefs with no protocol with https" do
+      expect_any_instance_of( WikipediaService ).to receive( :query ).
+        and_return( Nokogiri::XML( "<page>Page</page>" ) )
+      expect_any_instance_of( WikipediaService ).to receive( :parse ).
+        and_return( Nokogiri::XML( "<text>#{
+          HTMLEntities.new.encode( '<a href="//www.wikipedia.org">link</a>' )
+        }</text>" ) )
+      get :wikipedia, params: { id: make_place_with_geom.id }
+      expect( response.body ).to include "<a href=\"https://www.wikipedia.org\">"
+    end
+
+    it "replaces srcs with no protocol with https" do
+      expect_any_instance_of( WikipediaService ).to receive( :query ).
+        and_return( Nokogiri::XML( "<page>Page</page>" ) )
+      expect_any_instance_of( WikipediaService ).to receive( :parse ).
+        and_return( Nokogiri::XML( "<text>#{
+          HTMLEntities.new.encode( '<img src="//upload.wikimedia.org">' )
+        }</text>" ) )
+      get :wikipedia, params: { id: make_place_with_geom.id }
+      expect( response.body ).to include "<img src=\"https://upload.wikimedia.org\">"
+    end
+  end
 end
 
 describe PlacesController, "geometry" do
@@ -303,7 +405,7 @@ def test_place_kml(size = :default)
     [[0,0], [0,1]]
   end
   path = File.join(Dir::tmpdir, "test-place-kml-#{size}.kml")
-  if File.exists?( path )
+  if File.exist?( path )
     Rack::Test::UploadedFile.new( path, "application/vnd.google-earth.kml+xml", false )
   end
   kml = <<-XML

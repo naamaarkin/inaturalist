@@ -8,13 +8,19 @@ import {
   fetchSuggestions,
   fetchDetailTaxon
 } from "../ducks/suggestions";
+import { performOrOpenConfirmationModal } from "../../../shared/ducks/user_confirmation";
+import {
+  onSubmitIdentification
+} from "../actions";
 
 function mapStateToProps( state ) {
   let nextTaxon;
   let prevTaxon;
   if ( state.suggestions.detailTaxon ) {
-    const detailTaxonIndex = _.findIndex( state.suggestions.response.results,
-      r => r.taxon.id === state.suggestions.detailTaxon.id );
+    const detailTaxonIndex = _.findIndex(
+      state.suggestions.response.results,
+      r => r.taxon.id === state.suggestions.detailTaxon.id
+    );
     const prevResult = state.suggestions.response.results[detailTaxonIndex - 1];
     prevTaxon = prevResult ? prevResult.taxon : null;
     const nextResult = state.suggestions.response.results[detailTaxonIndex + 1];
@@ -28,17 +34,23 @@ function mapStateToProps( state ) {
   } );
 }
 
-function mapDispatchToProps( dispatch ) {
+function mapDispatchToProps( dispatch, ownProps ) {
   return {
+    onSubmitIdentification: ( identification, options = {} ) => {
+      dispatch( onSubmitIdentification( ownProps.observation, identification, options ) );
+    },
     setDetailTaxon: ( taxon, options = {} ) => {
       dispatch( setDetailTaxon( taxon, options ) );
       dispatch( fetchDetailTaxon( ) );
     },
-    setQuery: query => {
-      dispatch( updateQuery( query ) );
+    setQuery: ( query, options ) => {
+      dispatch( updateQuery( query, options ) );
       dispatch( fetchSuggestions( ) );
     },
-    updateCurrentUser: updates => dispatch( updateCurrentUser( updates ) )
+    updateCurrentUser: updates => dispatch( updateCurrentUser( updates ) ),
+    performOrOpenConfirmationModal: ( method, options = { } ) => (
+      dispatch( performOrOpenConfirmationModal( method, options ) )
+    )
   };
 }
 

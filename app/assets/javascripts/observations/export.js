@@ -114,10 +114,27 @@ $(document).ready(function() {
   } );
   $( "#filters input[name=without_taxon_name]" ).taxonAutocomplete( {
     idEl: $( "#without_taxon_id" ),
+    // when without_taxon_id contains multiple values (e.g. contains a comma),
+    // do not use the taxon autocomplete initial lookup which will want to
+    // replace the selection with a single taxon, overriding the multiple values
+    skipInitialLookup: _.includes( $( "#filters :input[name=without_taxon_id]" ).val( ), "," ),
     afterSelect: function( ) {
       filtersToQuery( );
       reloadPreview( );
     }
+  } );
+  $( "input[type='checkbox']" ).on( "change", function ( e ) {
+    var element = $( e.target );
+    var name = element.attr( "name" );
+    // ignore checkboxes for array parameters
+    if ( _.endsWith( name, "[]" ) ) {
+      return;
+    }
+    // some observation field options can be shared between personal and
+    // project fields. This ensures that interacting with a field in one
+    // section makes the same change to a field with the same name in
+    // the other section
+    $( "input[type='checkbox'][name='" + name + "']" ).prop( "checked", element.prop( "checked" ) );
   } );
 } );
 

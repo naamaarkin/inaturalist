@@ -42,8 +42,9 @@ class SearchBar extends React.Component {
       allControlledTerms,
       config
     } = this.props;
+    const userLacksInteraction = !config?.currentUser?.privilegedWith( "interaction" );
     return (
-      <form className="SearchBar form-inline">
+      <form className={`SearchBar form-inline${userLacksInteraction ? " disabled" : ""}`}>
         <div className="pull-right">
           <ImageSizeControlButtonContainer />
           <MarkAllAsReviewedButtonContainer />
@@ -81,7 +82,7 @@ class SearchBar extends React.Component {
             bootstrapClear
             afterSelect={result => {
               updateSearchParams( {
-                place_id: config.testingApiV2 ? result.item.uuid : result.item.id
+                place_id: result.item.id,
               } );
             }}
             afterUnselect={idWas => {

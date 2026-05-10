@@ -30,10 +30,9 @@ class LicensingModal extends Component {
     this.props.updateObservation( obsAttrs );
     this.props.setAttributes( { license_code: selectedLicense.toLowerCase( ) } );
     if ( makeDefault ) {
-      const updatedUser = Object.assign( { }, this.props.config.currentUser, {
+      this.props.updateCurrentUser( {
         preferred_observation_license: selectedLicense.toLowerCase( )
       } );
-      this.props.setConfig( { currentUser: updatedUser } );
     }
     this.close( );
   }
@@ -73,7 +72,7 @@ class LicensingModal extends Component {
                   <label htmlFor="license_cc0">
                     <img src={ inatLicenses.cc0.icon_large } alt="Cc0" />
                     { I18n.t( "cc_0_name" ) }
-                    { preferred === "cc0" ? `(${I18n.t( "your_default" )})` : "" }
+                    { preferred === "cc0" ? ` (${I18n.t( "your_default" )})` : "" }
                   </label>
                 </div>
                 <div className="info">
@@ -100,7 +99,7 @@ class LicensingModal extends Component {
                   <label htmlFor="license_cc-by">
                     <img src={ inatLicenses["cc-by"].icon_large } alt="Cc by" />
                     { I18n.t( "cc_by_name" ) }
-                    { preferred === "cc-by" ? `(${I18n.t( "your_default" )})` : "" }
+                    { preferred === "cc-by" ? ` (${I18n.t( "your_default" )})` : "" }
                   </label>
                 </div>
                 <div className="info">
@@ -129,7 +128,7 @@ class LicensingModal extends Component {
                   <label htmlFor="license_cc-by-nc">
                     <img src={ inatLicenses["cc-by-nc"].icon_large } alt="Cc by nc" />
                     { I18n.t( "cc_by_nc_name" ) }
-                    { preferred === "cc-by-nc" ? `(${I18n.t( "your_default" )})` : "" }
+                    { preferred === "cc-by-nc" ? ` (${I18n.t( "your_default" )})` : "" }
                   </label>
                 </div>
                 <div className="info">
@@ -156,7 +155,7 @@ class LicensingModal extends Component {
                   <label htmlFor="license_cc-by-sa">
                     <img src={ inatLicenses["cc-by-sa"].icon_large } alt="Cc by sa" />
                     { I18n.t( "cc_by_sa_name" ) }
-                    { preferred === "cc-by-sa" ? `(${I18n.t( "your_default" )})` : "" }
+                    { preferred === "cc-by-sa" ? ` (${I18n.t( "your_default" )})` : "" }
                   </label>
                 </div>
                 <div className="info">
@@ -182,7 +181,7 @@ class LicensingModal extends Component {
                   <label htmlFor="license_cc-by-nd">
                     <img src={ inatLicenses["cc-by-nd"].icon_large } alt="Cc by nd" />
                     { I18n.t( "cc_by_nd_name" ) }
-                    { preferred === "cc-by-nd" ? `(${I18n.t( "your_default" )})` : "" }
+                    { preferred === "cc-by-nd" ? ` (${I18n.t( "your_default" )})` : "" }
                   </label>
                 </div>
                 <div className="info">
@@ -206,7 +205,7 @@ class LicensingModal extends Component {
                   <label htmlFor="license_cc-by-nc-sa">
                     <img src={ inatLicenses["cc-by-nc-sa"].icon_large } alt="Cc by nc sa" />
                     { I18n.t( "cc_by_nc_sa_name" ) }
-                    { preferred === "cc-by-nc-sa" ? `(${I18n.t( "your_default" )})` : "" }
+                    { preferred === "cc-by-nc-sa" ? ` (${I18n.t( "your_default" )})` : "" }
                   </label>
                 </div>
                 <div className="info">
@@ -232,7 +231,7 @@ class LicensingModal extends Component {
                   <label htmlFor="license_cc-by-nc-nd">
                     <img src={ inatLicenses["cc-by-nc-nd"].icon_large } alt="Cc by nc nd" />
                     { I18n.t( "cc_by_nc_nd_name" ) }
-                    { preferred === "cc-by-nc-nd" ? `(${I18n.t( "your_default" )})` : "" }
+                    { preferred === "cc-by-nc-nd" ? ` (${I18n.t( "your_default" )})` : "" }
                   </label>
                 </div>
                 <div className="info">
@@ -256,7 +255,7 @@ class LicensingModal extends Component {
                   />
                   <label htmlFor="license_reserved">
                     { I18n.t( "no_license_all_rights_reserved" ) }
-                    { !preferred ? `(${I18n.t( "your_default" )})` : "" }
+                    { !preferred ? ` (${I18n.t( "your_default" )})` : "" }
                   </label>
                 </div>
                 <div className="info">
@@ -293,7 +292,7 @@ LicensingModal.propTypes = {
   config: PropTypes.object,
   observation: PropTypes.object,
   setAttributes: PropTypes.func,
-  setConfig: PropTypes.func,
+  updateCurrentUser: PropTypes.func,
   setLicensingModalState: PropTypes.func,
   updateObservation: PropTypes.func,
   show: PropTypes.bool

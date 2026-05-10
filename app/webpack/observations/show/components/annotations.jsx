@@ -7,14 +7,16 @@ import {
 import UsersPopover from "./users_popover";
 import UserImage from "../../../shared/components/user_image";
 import { termsForTaxon } from "../ducks/controlled_terms";
+import { controlledTermDefinition, controlledTermLabel } from "../../../shared/util";
 
 class Annotations extends React.Component {
   constructor( props ) {
     super( props );
-    const { config } = props;
+    const { config, context } = props;
     const currentUser = config && config.currentUser;
+    this.collapsePreference = `prefers_hide_${context}_annotations`;
     this.state = {
-      open: currentUser ? !currentUser.prefers_hide_obs_show_annotations : true
+      open: currentUser ? !currentUser[this.collapsePreference] : true
     };
     this.toggleOpenPanel = this.toggleOpenPanel.bind( this );
   }
@@ -23,9 +25,20 @@ class Annotations extends React.Component {
     this.fetchAnnotations( );
   }
 
-  componentDidUpdate( prevProps ) {
+  componentDidUpdate( prevProps, prevState ) {
+    if ( prevState.open === this.state.open ) {
+      this.setOpenStateOnConfigUpdate( );
+    }
     if ( prevProps.open !== this.props.open ) {
       this.fetchAnnotations( );
+    }
+  }
+
+  setOpenStateOnConfigUpdate( ) {
+    const { config } = this.props;
+    if ( config.currentUser
+      && config.currentUser[this.collapsePreference] === this.state.open ) {
+      this.setState( { open: !config.currentUser[this.collapsePreference] } );
     }
   }
 
@@ -36,7 +49,7 @@ class Annotations extends React.Component {
     const loggedIn = config && config.currentUser;
     if ( loggedIn ) {
       updateSession( {
-        prefers_hide_obs_show_annotations: !newOpenState
+        [this.collapsePreference]: !newOpenState
       } );
     }
     this.setState( { open: newOpenState } );
@@ -72,7 +85,7 @@ class Annotations extends React.Component {
         votersAgainst.push( v.user );
         if ( v.api_status ) { voteAgainstLoading = true; }
       }
-      if ( this.loggedIn && v.user.id === config.currentUser.id ) {
+      if ( this.loggedIn && v.user?.id === config.currentUser.id ) {
         userVotedFor = ( v.vote_flag === true );
         userVotedAgainst = ( v.vote_flag === false );
       }
@@ -126,11 +139,11 @@ class Annotations extends React.Component {
     );
     const attr = a.controlled_attribute;
     const value = a.controlled_value;
-    const termLabel = I18n.t( `controlled_term_labels.${_.snakeCase( term.label )}` );
-    const attrLabel = I18n.t( `controlled_term_labels.${_.snakeCase( attr.label )}` );
-    const valueLabel = I18n.t( `controlled_term_labels.${_.snakeCase( value.label )}` );
-    const termDefinition = I18n.t( `controlled_term_definitions.${_.snakeCase( term.label )}` );
-    const valueDefinition = I18n.t( `controlled_term_definitions.${_.snakeCase( value.label )}` );
+    const termLabel = controlledTermLabel( term.label );
+    const attrLabel = controlledTermLabel( attr.label );
+    const valueLabel = controlledTermLabel( value.label );
+    const termDefinition = controlledTermDefinition( term.label );
+    const valueDefinition = controlledTermDefinition( value.label );
     const termPopover = (
       <Popover
         id={`annotation-popover-${a.uuid}`}
@@ -158,7 +171,7 @@ class Annotations extends React.Component {
     );
     return (
       <tr
-        key={`term-row-${value.id}`}
+        key={`term-row-${a.uuid}-${value.id}`}
         className={a.api_status ? "disabled" : ""}
       >
         <td className="attribute">
@@ -169,14 +182,15 @@ class Annotations extends React.Component {
             animation={false}
             overlay={termPopover}
           >
-            <div>{ termLabel }</div>
+            <div title={termDefinition}>{ termLabel }</div>
           </OverlayTrigger>
         </td>
         <td className="value">
           <UserImage user={a.user} />
-          <span title={valueDefinition}>
+          <span className="value-label" title={valueDefinition}>
             { valueLabel }
           </span>
+          &nbsp;
           { action }
         </td>
         <td className="agree">
@@ -185,13 +199,19 @@ class Annotations extends React.Component {
               <i className="fa fa-check" />
             ) : null }
           </span>
-          { this.loggedIn && (
-            <button type="button" className="btn btn-nostyle" onClick={voteAction}>
+          { this.userCanInteract && (
+            <button
+              type="button"
+              className="btn btn-nostyle"
+              onClick={voteAction}
+              aria-label={I18n.t( "agree_" )}
+              title={I18n.t( "agree_" )}
+            >
               <i className={`fa ${agreeClass}`} />
             </button>
           ) }
           <span className="count">{ votesForCount }</span>
-          { !this.loggedIn && <span className="fa" /> }
+          { !this.userCanInteract && <span className="fa" /> }
         </td>
         <td className="disagree">
           <span className="check">
@@ -199,17 +219,19 @@ class Annotations extends React.Component {
               <i className="fa fa-times" />
             ) : null }
           </span>
-          { this.loggedIn && (
+          { this.userCanInteract && (
             <button
               type="button"
               onClick={unvoteAction}
               className="btn btn-nostyle"
+              aria-label={I18n.t( "disagree_" )}
+              title={I18n.t( "disagree_" )}
             >
               <i className={`fa ${disagreeClass}`} />
             </button>
           ) }
           <span className="count">{ votesAgainstCount }</span>
-          { !this.loggedIn && <span className="fa" /> }
+          { !this.userCanInteract && <span className="fa" /> }
         </td>
       </tr>
     );
@@ -221,7 +243,6 @@ class Annotations extends React.Component {
       config,
       controlledTerms,
       addAnnotation,
-      collapsible,
       loading
     } = this.props;
     const { open } = this.state;
@@ -234,8 +255,10 @@ class Annotations extends React.Component {
       return ( <span /> );
     }
     this.loggedIn = config && config.currentUser;
+    this.userCanInteract = config?.currentUserCanInteractWithResource( observation );
     this.viewerIsObserver = this.loggedIn && config.currentUser.id === observation.user.id;
-    if ( !this.loggedIn && _.isEmpty( observationAnnotations ) ) {
+    if ( !this.userCanInteract && _.isEmpty( observationAnnotations )
+    ) {
       return ( <span /> );
     }
     const annotations = _.filter(
@@ -277,27 +300,27 @@ class Annotations extends React.Component {
       if ( observation.taxon ) {
         availableValues = termsForTaxon( availableValues, observation ? observation.taxon : null );
       }
-      const ctLabel = I18n.t( `controlled_term_labels.${_.snakeCase( ct.label )}`, {
-        defaultValue: ct.label
-      } );
+      const termLabel = controlledTermLabel( ct.label );
+      const termDefinition = controlledTermDefinition( ct.label );
       const termPopover = (
         <Popover
           id={`annotation-popover-${ct.id}`}
           className="AnnotationPopover"
         >
           <div className="contents">
+            { termDefinition && !termDefinition.match( /\[missing/ ) && <p>{ termDefinition }</p> }
             <div className="view">{ I18n.t( "label_colon", { label: I18n.t( "view" ) } ) }</div>
             <div className="search">
               <a href={`/observations?term_id=${ct.id}`}>
                 <i className="fa fa-arrow-circle-o-right" />
-                { I18n.t( "observations_annotated_with_annotation", { annotation: ctLabel } ) }
+                { I18n.t( "observations_annotated_with_annotation", { annotation: termLabel } ) }
               </a>
             </div>
           </div>
         </Popover>
       );
       if (
-        this.loggedIn
+        this.userCanInteract
         && availableValues.length > 0
         && !( groupedAnnotations[ct.id] && !ct.multivalued )
       ) {
@@ -313,7 +336,7 @@ class Annotations extends React.Component {
                 animation={false}
                 overlay={termPopover}
               >
-                <div>{ ctLabel }</div>
+                <div title={termDefinition}>{ termLabel }</div>
               </OverlayTrigger>
             </td>
             <td>
@@ -334,19 +357,9 @@ class Annotations extends React.Component {
                       <MenuItem
                         key={`term-${v.id}`}
                         eventKey={index}
-                        title={
-                          I18n.t( `controlled_term_definitions.${_.snakeCase( v.label )}`, {
-                            defaultValue: I18n.t( `controlled_term_labels.${_.snakeCase( v.label )}`, {
-                              defaultValue: v.label
-                            } )
-                          } )
-                        }
+                        title={controlledTermDefinition( v.label )}
                       >
-                        {
-                          I18n.t( `controlled_term_labels.${_.snakeCase( v.label )}`, {
-                            defaultValue: v.label
-                          } )
-                        }
+                        {controlledTermLabel( v.label )}
                       </MenuItem>
                     ) )
                   }
@@ -381,14 +394,6 @@ class Annotations extends React.Component {
         </tbody>
       </table>
     );
-
-    if ( !collapsible ) {
-      return (
-        <div className="Annotations">
-          { table }
-        </div>
-      );
-    }
 
     const count = observationAnnotations.length > 0 ? `(${observationAnnotations.length})` : "";
     return (
@@ -426,14 +431,14 @@ Annotations.propTypes = {
   voteAnnotation: PropTypes.func,
   unvoteAnnotation: PropTypes.func,
   updateSession: PropTypes.func.isRequired,
-  collapsible: PropTypes.bool,
+  context: PropTypes.string,
   fetchControlledTerms: PropTypes.func,
   loading: PropTypes.bool,
   open: PropTypes.bool
 };
 
 Annotations.defaultProps = {
-  collapsible: true
+  context: "obs_show"
 };
 
 export default Annotations;

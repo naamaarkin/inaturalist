@@ -1,16 +1,20 @@
-require 'machinist/active_record'
-require 'faker'
+# frozen_string_literal: true
+
+require "machinist/active_record"
+require "faker"
 
 Announcement.blueprint do
   start { 1.day.ago }
-  send(:end) { 1.day.from_now }
+  send( :end ) { 1.day.from_now }
   body { Faker::Lorem.sentence }
   placement { "users/dashboard#sidebar" }
 end
+
 Annotation.blueprint do
   controlled_attribute { make_controlled_term_with_label }
   controlled_value { make_controlled_value_with_label( nil, controlled_attribute ) }
   resource { Observation.make! }
+  user { UserPrivilege.make!( privilege: UserPrivilege::INTERACTION ).user }
 end
 
 ApiEndpoint.blueprint do
@@ -40,6 +44,11 @@ Atlas.blueprint do
   is_active { true }
 end
 
+BlockedIp.blueprint do
+  ip { Faker::Internet.ip_v4_address }
+  user { User.make }
+end
+
 CheckList.blueprint do
   place { make_place_with_geom }
 end
@@ -49,7 +58,7 @@ Color.blueprint do
 end
 
 Comment.blueprint do
-  user { User.make }
+  user { UserPrivilege.make!( privilege: UserPrivilege::INTERACTION ).user }
   body { Faker::Lorem.paragraph }
   parent { Observation.make! }
 end
@@ -92,6 +101,19 @@ DataPartner.blueprint do
   url { "https://#{Faker::Internet.domain_name}" }
 end
 
+DeletedPhoto.blueprint do
+  user { User.make! }
+end
+
+DeletedSound.blueprint do
+  user { User.make! }
+end
+
+ExemplarIdentification.blueprint do
+  identification { Identification.make!( body: Faker::Lorem.sentence ) }
+  nominated_by_user { User.make! }
+end
+
 ExplodedAtlasPlace.blueprint do
   atlas { Atlas.make! }
   place { make_place_with_geom }
@@ -106,7 +128,7 @@ FilePrefix.blueprint do
 end
 
 Flag.blueprint do
-  user { User.make! }
+  user { UserPrivilege.make!( privilege: UserPrivilege::INTERACTION ).user }
   flaggable_user { User.make! }
   flaggable { Taxon.make! }
   flag { Faker::Name.name }
@@ -118,8 +140,8 @@ FlickrIdentity.blueprint do
 end
 
 Friendship.blueprint do
-  user { User.make! }
-  friend { User.make! }
+  user { UserPrivilege.make!( privilege: UserPrivilege::INTERACTION ).user }
+  friend { UserPrivilege.make!( privilege: UserPrivilege::INTERACTION ).user }
 end
 
 GoogleStreetViewPhoto.blueprint do
@@ -165,7 +187,7 @@ GuideUser.blueprint do
 end
 
 Identification.blueprint do
-  user { User.make! }
+  user { UserPrivilege.make!( privilege: UserPrivilege::INTERACTION ).user }
   observation { Observation.make! }
   taxon { Taxon.make! }
 end
@@ -205,7 +227,7 @@ LocalSound.blueprint do
 end
 
 Message.blueprint do
-  from_user { User.make! }
+  from_user { UserPrivilege.make!( privilege: UserPrivilege::INTERACTION ).user }
   to_user { User.make! }
   subject { Faker::Lorem.sentence }
   body { Faker::Lorem.paragraph }
@@ -232,7 +254,7 @@ OauthApplication.blueprint do
 end
 
 Observation.blueprint do
-  user { User.make! }
+  user { UserPrivilege.make!( privilege: UserPrivilege::INTERACTION ).user }
   license { Observation::CC_BY }
   description { Faker::Lorem.sentence }
 end
@@ -249,6 +271,11 @@ ObservationFieldValue.blueprint do
   value {"foo"}
 end
 
+ObservationGeoScore.blueprint do
+  observation { Observation.make! }
+  geo_score { rand( 0.9 ) }
+end
+
 ObservationPhoto.blueprint do
   observation { Observation.make }
   photo { Photo.make }
@@ -256,7 +283,7 @@ end
 
 ObservationReview.blueprint do
   observation { Observation.make }
-  user { User.make! }
+  user { UserPrivilege.make!( privilege: UserPrivilege::INTERACTION ).user }
 end
 
 ObservationSound.blueprint do
@@ -315,7 +342,11 @@ Post.blueprint(:draft) do
 end
 
 Project.blueprint do
-  user { UserPrivilege.make!( privilege: UserPrivilege::ORGANIZER ).user }
+  user do
+    user = UserPrivilege.make!( privilege: UserPrivilege::ORGANIZER ).user
+    UserPrivilege.make!( privilege: UserPrivilege::INTERACTION, user: user )
+    user
+  end
   title { Faker::Lorem.sentence }
   description { Faker::Lorem.paragraph.truncate(255) }
 end
@@ -362,7 +393,7 @@ ProviderAuthorization.blueprint do
 end
 
 QualityMetric.blueprint do
-  user { User.make }
+  user { UserPrivilege.make!( privilege: UserPrivilege::INTERACTION ).user }
   observation { Observation.make }
   metric { QualityMetric::METRICS.first }
 end
@@ -411,7 +442,12 @@ end
 
 Sound.blueprint do
   user { User.make }
-  native_sound_id { rand(1000) }
+  native_sound_id { rand( 1000 ) }
+end
+
+SoundcloudSound.blueprint do
+  native_response { { secret_token: "secret" } }
+  native_sound_id { rand( 1000 ) }
 end
 
 Source.blueprint do
@@ -420,7 +456,7 @@ end
 
 Subscription.blueprint do
   resource { Observation.make! }
-  user { User.make! }
+  user { UserPrivilege.make!( privilege: UserPrivilege::INTERACTION ).user }
 end
 
 Taxon.blueprint do
@@ -564,9 +600,18 @@ UserBlock.blueprint do
   blocked_user { User.make! }
 end
 
+UserDonation.blueprint do
+  user { User.make! }
+  donated_at { Time.now }
+end
+
 UserMute.blueprint do
   user { User.make! }
   muted_user { User.make! }
+end
+
+UsernameReservedWord.blueprint do
+  word { Faker::Lorem.word }
 end
 
 UserParent.blueprint do
@@ -579,6 +624,11 @@ end
 UserPrivilege.blueprint do
   user { User.make! }
   privilege { UserPrivilege::SPEECH }
+end
+
+UserVirtuousTag.blueprint do
+  user { User.make! }
+  virtuous_tag { Faker::Lorem.word }
 end
 
 WikiPage.blueprint do

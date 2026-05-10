@@ -3,8 +3,9 @@ import ActivityCreatePanel from "../components/activity_create_panel";
 import {
   addID
 } from "../ducks/observation";
-import { setActiveTab } from "../ducks/comment_id_panel";
+import { setActiveTab, setNominateOnSubmit } from "../ducks/comment_id_panel";
 import { updateEditorContent } from "../../shared/ducks/text_editors";
+import { confirmResendConfirmation } from "../../../shared/ducks/user_confirmation";
 
 function mapStateToProps( state ) {
   const observation = Object.assign( {}, state.observation, {
@@ -14,6 +15,7 @@ function mapStateToProps( state ) {
     observation,
     config: state.config,
     activeTab: state.commentIDPanel.activeTab,
+    nominate: state.commentIDPanel.nominate,
     content: state.textEditor.activity
   };
 }
@@ -22,7 +24,9 @@ function mapDispatchToProps( dispatch ) {
   return {
     addID: ( taxon, options ) => { dispatch( addID( taxon, options ) ); },
     setActiveTab: activeTab => { dispatch( setActiveTab( activeTab ) ); },
-    updateEditorContent: ( editor, content ) => dispatch( updateEditorContent( editor, content ) )
+    setNominateOnSubmit: nominate => { dispatch( setNominateOnSubmit( nominate ) ); },
+    updateEditorContent: ( editor, content ) => dispatch( updateEditorContent( editor, content ) ),
+    confirmResendConfirmation: method => dispatch( confirmResendConfirmation( method ) )
   };
 }
 

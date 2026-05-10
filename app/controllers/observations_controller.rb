@@ -1,8 +1,10 @@
-#encoding: utf-8
+# frozen_string_literal: true
+
 class ObservationsController < ApplicationController
   before_action :decide_if_skipping_preloading, only: [ :index, :show, :taxon_summary, :review ]
-  before_action :allow_external_iframes, only: [:stats, :user_stats, :taxa, :map]
   before_action :allow_cors, only: [:index], 'if': -> { Rails.env.development? }
+
+  allow_external_iframes( only: [:stats, :user_stats, :taxa, :map] )
 
   WIDGET_CACHE_EXPIRATION = 15.minutes
   cache_sweeper :observation_sweeper, :only => [:create, :update, :destroy]
@@ -66,15 +68,19 @@ class ObservationsController < ApplicationController
     :update_photos, :destroy]
   before_action :curator_required, :only => [:curation]
   before_action :load_photo_identities, :only => [:new, :new_batch, :show,
-    :new_batch_csv,:edit, :update, :edit_batch, :create, :import, 
+    :new_batch_csv,:edit, :update, :edit_batch, :import,
     :import_photos, :import_sounds, :new_from_list]
   before_action :load_sound_identities, :only => [:new, :new_batch, :show,
-    :new_batch_csv,:edit, :update, :edit_batch, :create, :import, 
+    :new_batch_csv,:edit, :update, :edit_batch, :import,
     :import_photos, :import_sounds, :new_from_list]
   before_action :photo_identities_required, :only => [:import_photos]
   before_action :load_prefs, :only => [:index, :project, :by_login]
+  before_action :check_interaction_privilege, only: [:identify]
+  before_action :check_webinar_banner_preference, only: [:identify]
 
-  prepend_around_action :enable_replica, only: [:by_login, :show, :taxon_summary]
+  prepend_around_action :enable_replica, only: [
+    :index, :by_login, :show, :taxon_summary, :identify, :viewed_updates
+  ]
 
   ORDER_BY_FIELDS = %w"created_at observed_on project species_guess votes id"
   REJECTED_FEED_PARAMS = %w"page view filters_open partial action id locale"
@@ -125,10 +131,10 @@ class ObservationsController < ApplicationController
       @observations = h[:observations]
     end
     respond_to do |format|
-
       format.html do
         if showing_partial
-          pagination_headers_for(@observations)
+          Observation.preload_for_component( @observations, logged_in: !!current_user )
+          pagination_headers_for( @observations )
           return render_observations_partial(params[:partial])
         end
         # one of the few things we do in Rails. Look up the taxon_name param
@@ -206,7 +212,7 @@ class ObservationsController < ApplicationController
         end
       end
     end
-  rescue Elasticsearch::Transport::Transport::Errors::InternalServerError => e
+  rescue Elastic::Transport::Transport::Errors::InternalServerError => e
     raise e unless e.message =~ /window is too large/
     msg = "Too many results. Try using smaller searches or the id_above parameter."
     response.headers["X-Error"] = msg
@@ -322,6 +328,10 @@ class ObservationsController < ApplicationController
 
         @skip_application_js = true
         @flash_js = true
+        if current_user&.in_test_group?( "responsive-header" ) &&
+            current_user.in_test_group?( "responsive-obs-detail" )
+          @skip_min_width = true
+        end
         return render layout: "bootstrap"
       end
        
@@ -439,7 +449,6 @@ class ObservationsController < ApplicationController
     end
 
     sync_flickr_photo if params[:flickr_photo_id] && current_user.flickr_identity
-    sync_picasa_photo if params[:picasa_photo_id] && current_user.picasa_identity
     sync_local_photo if params[:local_photo_id]
       
     @welcome = params[:welcome]
@@ -497,7 +506,6 @@ class ObservationsController < ApplicationController
     end
 
     sync_flickr_photo if params[:flickr_photo_id]
-    sync_picasa_photo if params[:picasa_photo_id]
     sync_local_photo if params[:local_photo_id]
     @observation_fields = ObservationField.recently_used_by(current_user).limit(10)
 
@@ -657,13 +665,19 @@ class ObservationsController < ApplicationController
 
     # check for errors
     errors = false
-    if params[:uploader]
-      @observations.compact.each { |obs|
-        obs.errors.delete(:project_observations)
-        errors = true if obs.errors.any?
-      }
-    else
-      @observations.compact.each { |obs| errors = true unless obs.valid? }
+    @observations.compact.each do | obs |
+      if params[:uploader]
+        obs.errors.delete( :project_observations )
+      end
+      if obs.errors.any?
+        errors = true
+      elsif !obs.persisted?
+        # If for some reason an observation has no errors but still isn't
+        # persisted, something is still wrong and we should not fail
+        # silently
+        errors = true
+        obs.errors.add( :base, :cannot_be_saved_for_unknown_reason )
+      end
     end
     Observation.elastic_index!(
       ids: @observations.compact.map( &:id ),
@@ -1134,17 +1148,7 @@ class ObservationsController < ApplicationController
         :user => current_user, :photo_class => klass)
     end.flatten.compact
     @observations = photos.map do |p|
-      photo_obs = p.to_observation
-      if p.is_a?( PicasaPhoto )
-        # Sometimes Google doesn't return all the metadata for undetermined
-        # reasons. See https://github.com/inaturalist/inaturalist/issues/1408
-        if photo_obs.observed_on.blank? || photo_obs.latitude.blank?
-          local_photo = Photo.local_photo_from_remote_photo( p )
-          photo_obs = local_photo.to_observation
-          photo_obs.observation_photos.build( photo: p )
-        end
-      end
-      photo_obs
+      p.to_observation
     end
     @observation_photos = ObservationPhoto.joins(:photo, :observation).
       where("photos.native_photo_id IN (?)", photos.map(&:native_photo_id))
@@ -1183,8 +1187,8 @@ class ObservationsController < ApplicationController
       @projects = params[:projects].collect{|id| Project.find( id ) rescue nil}.compact
     end
     if @projects
-      @observation_fields = @projects.collect do |proj|
-        proj.project_observation_fields.collect(&:observation_field)
+      @observation_fields_for_projects = @projects.collect do | proj |
+        proj.project_observation_fields.collect( &:observation_field )
       end.flatten
     end
     if @observation_fields.blank?
@@ -1271,7 +1275,7 @@ class ObservationsController < ApplicationController
         prepare_map(search_params)
         @observer_provider_authorizations = @selected_user.provider_authorizations
         if logged_in? && @selected_user.id == current_user.id
-          @project_users = current_user.project_users.joins(:project).order("projects.title")
+          @project_users = current_user.project_users.includes(:project)
           if @proj_obs_errors = Rails.cache.read("proj_obs_errors_#{current_user.id}") 
             @project = Project.find_by_id(@proj_obs_errors[:project_id])
             @proj_obs_errors_obs = current_user.observations.
@@ -1329,7 +1333,7 @@ class ObservationsController < ApplicationController
       end
       
     end
-  rescue Elasticsearch::Transport::Transport::Errors::InternalServerError => e
+  rescue Elastic::Transport::Transport::Errors::InternalServerError => e
     raise e unless e.message =~ /window is too large/
     msg = "Too many results. Try using smaller searches or the id_above parameter."
     response.headers["X-Error"] = msg
@@ -1738,24 +1742,27 @@ class ObservationsController < ApplicationController
 
   def user_stats
     params[:skip_order] = true
-    search_params = Observation.get_search_params(params,
-      current_user: current_user)
+    search_params = Observation.get_search_params(
+      params,
+      current_user: current_user
+    )
     limit = params[:limit].to_i
     limit = 500 if limit > 500 || limit <= 0
-    stats_adequately_scoped?(search_params)
+    stats_adequately_scoped?( search_params )
     # all the HTML view needs to know is stats_adequately_scoped?
     if request.format.json?
-      elastic_user_stats(search_params, limit)
-      @user_ids = @user_counts.map{ |c| c["user_id"] } |
-        @user_taxon_counts.map{ |c| c["user_id"] }
-      @users = User.where(id: @user_ids).
-        select("id, login, name, icon_file_name, icon_updated_at, icon_content_type")
-      @users_by_id = @users.index_by(&:id)
+      elastic_user_stats( search_params, limit )
+      @user_ids = @user_counts.map {| c | c["user_id"] } |
+        @user_taxon_counts.map {| c | c["user_id"] }
+      @users = User.where( id: @user_ids ).select(
+        "id, login, name, icon_file_name, icon_updated_at, icon_content_type, icon_path_version"
+      )
+      @users_by_id = @users.index_by( &:id )
     else
-      @user_counts = [ ]
-      @user_taxon_counts = [ ]
+      @user_counts = []
+      @user_taxon_counts = []
     end
-    respond_to do |format|
+    respond_to do | format |
       format.html do
         @headless = true
         render layout: "bootstrap"
@@ -1796,84 +1803,6 @@ class ObservationsController < ApplicationController
   def compare
     render layout: "bootstrap"
   end
-
-  private
-
-  def observation_params(options = {})
-    p = options.blank? ? params : options
-    p.permit(
-      :captive_flag,
-      :coordinate_system,
-      :description,
-      :force_quality_metrics,
-      :geo_x,
-      :geo_y,
-      :geoprivacy,
-      :iconic_taxon_id,
-      :latitude,
-      :license,
-      :license_code,
-      :location_is_exact,
-      :longitude,
-      :make_license_default,
-      :make_licenses_same,
-      :map_scale,
-      :oauth_application_id,
-      :observed_on_string,
-      :place_guess,
-      :positional_accuracy,
-      :positioning_device,
-      :positioning_method,
-      :prefers_community_taxon,
-      :quality_grade,
-      :species_guess,
-      :tag_list,
-      :taxon_id,
-      :taxon_name,
-      :time_zone,
-      :uuid,
-      :zic_time_zone,
-      :site_id,
-      :owners_identification_from_vision,
-      :owners_identification_from_vision_requested,
-      observation_field_values_attributes: [ :_destroy, :id, :observation_field_id, :value ]
-    )
-  end
-
-  def user_obs_counts(scope, limit = 500)
-    user_counts_sql = <<-SQL
-      SELECT
-        o.user_id,
-        count(*) AS count_all
-      FROM
-        (#{scope.to_sql}) AS o
-      GROUP BY
-        o.user_id
-      ORDER BY count_all desc
-      LIMIT #{limit}
-    SQL
-    ActiveRecord::Base.connection.execute(user_counts_sql)
-  end
-
-  def user_taxon_counts(scope, limit = 500)
-    unique_taxon_users_scope = scope.
-      select("DISTINCT observations.taxon_id, observations.user_id").
-      joins(:taxon).
-      where("taxa.rank_level <= ?", Taxon::SPECIES_LEVEL)
-    user_taxon_counts_sql = <<-SQL
-      SELECT
-        o.user_id,
-        count(*) AS count_all
-      FROM
-        (#{unique_taxon_users_scope.to_sql}) AS o
-      GROUP BY
-        o.user_id
-      ORDER BY count_all desc
-      LIMIT #{limit}
-    SQL
-    ActiveRecord::Base.connection.execute(user_taxon_counts_sql)
-  end
-  public
 
   def viewed_updates
     user_viewed_updates
@@ -1970,6 +1899,81 @@ class ObservationsController < ApplicationController
 ## Protected / private actions ###############################################
   private
 
+  def observation_params(options = {})
+    p = options.blank? ? params : options
+    p.permit(
+      :captive_flag,
+      :coordinate_system,
+      :description,
+      :force_quality_metrics,
+      :geo_x,
+      :geo_y,
+      :geoprivacy,
+      :iconic_taxon_id,
+      :latitude,
+      :license,
+      :license_code,
+      :location_is_exact,
+      :longitude,
+      :make_license_default,
+      :make_licenses_same,
+      :map_scale,
+      :oauth_application_id,
+      :observed_on_string,
+      :place_guess,
+      :positional_accuracy,
+      :positioning_device,
+      :positioning_method,
+      :prefers_community_taxon,
+      :quality_grade,
+      :species_guess,
+      :tag_list,
+      :taxon_id,
+      :taxon_name,
+      :time_zone,
+      :uuid,
+      :zic_time_zone,
+      :site_id,
+      :owners_identification_from_vision,
+      :owners_identification_from_vision_requested,
+      observation_field_values_attributes: [ :_destroy, :id, :observation_field_id, :value ]
+    )
+  end
+
+  def user_obs_counts(scope, limit = 500)
+    user_counts_sql = <<-SQL
+      SELECT
+        o.user_id,
+        count(*) AS count_all
+      FROM
+        (#{scope.to_sql}) AS o
+      GROUP BY
+        o.user_id
+      ORDER BY count_all desc
+      LIMIT #{limit}
+    SQL
+    ActiveRecord::Base.connection.execute(user_counts_sql)
+  end
+
+  def user_taxon_counts(scope, limit = 500)
+    unique_taxon_users_scope = scope.
+      select("DISTINCT observations.taxon_id, observations.user_id").
+      joins(:taxon).
+      where("taxa.rank_level <= ?", Taxon::SPECIES_LEVEL)
+    user_taxon_counts_sql = <<-SQL
+      SELECT
+        o.user_id,
+        count(*) AS count_all
+      FROM
+        (#{unique_taxon_users_scope.to_sql}) AS o
+      GROUP BY
+        o.user_id
+      ORDER BY count_all desc
+      LIMIT #{limit}
+    SQL
+    ActiveRecord::Base.connection.execute(user_taxon_counts_sql)
+  end
+
   def user_viewed_updates(options={})
     return unless logged_in?
     if options[:delay]
@@ -1977,7 +1981,7 @@ class ObservationsController < ApplicationController
         @observation.delay(priority: USER_PRIORITY).user_viewed_updates(current_user.id)
       end
     else
-      @observation.user_viewed_updates(current_user.id)
+      @observation.user_viewed_updates( current_user.id, wait_for_index_refresh: true )
     end
   end
 
@@ -2116,6 +2120,7 @@ class ObservationsController < ApplicationController
     @observations_taxon_id = search_params[:observations_taxon_id]
     @observations_taxon = search_params[:observations_taxon]
     @without_observations_taxon = search_params[:without_observations_taxon]
+    @without_taxon_id = @without_observations_taxon ? nil : search_params[:without_taxon_id]
     @observations_taxon_name = search_params[:taxon_name]
     @observations_taxon_ids = search_params[:taxon_ids] || search_params[:observations_taxon_ids]
     @observations_taxa = search_params[:observations_taxa]
@@ -2140,6 +2145,7 @@ class ObservationsController < ApplicationController
     @observed_on = search_params[:observed_on]
     @observed_on_year = search_params[:observed_on_year]
     @observed_on_month = [ search_params[:observed_on_month] ].flatten.first
+    @observed_on_week = search_params[:observed_on_week]
     @observed_on_day = search_params[:observed_on_day]
     @ofv_params = search_params[:ofv_params]
     @site_uri = params[:site] unless params[:site].blank?
@@ -2174,6 +2180,7 @@ class ObservationsController < ApplicationController
       identified
       term_id
       term_value_id
+      without_term_id
     )
     
     @filters_open = 
@@ -2181,6 +2188,7 @@ class ObservationsController < ApplicationController
       !@observations_taxon_id.blank? ||
       !@observations_taxon_name.blank? ||
       !@without_observations_taxon.blank? ||
+      !@without_taxon_ids.blank? ||
       !@iconic_taxa.blank? ||
       @id_please == true ||
       !@with_photos.blank? ||
@@ -2254,44 +2262,6 @@ class ObservationsController < ApplicationController
       flash.now[:error] = t(:sorry_we_didnt_find_that_photo)
     end
   end
-  
-  def sync_picasa_photo
-    begin
-      api_response = PicasaPhoto.get_api_response(params[:picasa_photo_id], :user => current_user)
-    rescue Timeout::Error => e
-      flash.now[:error] = t(:sorry_picasa_isnt_responding_at_the_moment)
-      Rails.logger.error "[ERROR #{Time.now}] Timeout: #{e}"
-      Logstasher.write_exception(e, request: request, session: session, user: current_user)
-      return
-    end
-    unless api_response
-      Rails.logger.debug "[DEBUG] Failed to find Picasa photo for #{params[:picasa_photo_id]}"
-      return
-    end
-    @picasa_photo = PicasaPhoto.new_from_api_response(api_response, :user => current_user)
-    
-    if @picasa_photo && @picasa_photo.valid?
-      @picasa_observation = @picasa_photo.to_observation
-      sync_attrs = PHOTO_SYNC_ATTRS
-      unless params[:picasa_sync_attrs].blank?
-        sync_attrs = sync_attrs & params[:picasa_sync_attrs]
-      end
-      sync_attrs.each do |sync_attr|
-        @observation.send("#{sync_attr}=", @picasa_observation.send(sync_attr))
-      end
-      photo_already_exists = @observation.observation_photos.detect do |op|
-        op.photo.native_photo_id == @picasa_photo.native_photo_id &&
-        op.photo.subclass == "PicasaPhoto"
-      end
-      unless photo_already_exists
-        @observation.observation_photos.build(:photo => @picasa_photo)
-      end
-      
-      flash.now[:notice] = t(:preview_of_synced_observation, :url => url_for)
-    else
-      flash.now[:error] = t(:sorry_we_didnt_find_that_photo)
-    end
-  end
 
   def sync_local_photo
     unless @local_photo = Photo.find_by_id(params[:local_photo_id])
@@ -2329,7 +2299,6 @@ class ObservationsController < ApplicationController
       return true
     end
     if Rails.env.development?
-      PicasaPhoto
       LocalPhoto
       FlickrPhoto
     end
@@ -2373,12 +2342,7 @@ class ObservationsController < ApplicationController
       provider_name = nil
       provider_type = nil
       if identity.is_a?(ProviderAuthorization)
-        if identity.provider_name =~ /google/i
-          provider_type = "picasa"
-          provider_name = "Google Photos"
-        else
-          provider_type = identity.provider_name
-        end
+        provider_type = identity.provider_name
       else
         provider_type = identity.class.to_s.underscore.split('_').first # e.g. FlickrIdentity=>'flickr'
       end
@@ -2390,16 +2354,6 @@ class ObservationsController < ApplicationController
     @photo_sources = @photo_identities.inject({}) do |memo, ident| 
       if ident.respond_to?(:source_options)
         memo[ident.class.name.underscore.humanize.downcase.split.first] = ident.source_options
-      elsif ident.is_a?(ProviderAuthorization)
-        if ident.provider_name =~ /google/
-          memo[:picasa] = {
-            :title => 'Google Photos', 
-            :url => '/picasa/photo_fields', 
-            :contexts => [
-              ["Your photos", 'user', {:searchable => true}]
-            ]
-          }
-        end
       end
       memo
     end
@@ -2443,7 +2397,19 @@ class ObservationsController < ApplicationController
       uuid_scope = uuid_scope.includes( includes ) unless @skipping_preloading
       @observation = uuid_scope.first
     end
-    render_404 unless @observation
+    handle_missing_observation unless @observation
+  end
+
+  def check_interaction_privilege
+    return unless logged_in?
+
+    UserPrivilege.check( current_user.id, UserPrivilege::INTERACTION )
+  end
+
+  def check_webinar_banner_preference
+    return unless logged_in?
+
+    current_user.set_webinar_banner_default_preference
   end
 
   def search_taxon
@@ -2723,7 +2689,7 @@ class ObservationsController < ApplicationController
       job = Delayed::Job.find_by_id(job_id)
       if job
         # Still working
-      elsif File.exists? path_for_csv
+      elsif File.exist? path_for_csv
         render :file => path_for_csv, :formats => [:csv]
         return
       else
@@ -2942,4 +2908,23 @@ class ObservationsController < ApplicationController
     }.compact
   end
 
+  def handle_missing_observation
+    obs_id = params[:id] || params[:observation_id]
+    deleted_observation = if obs_id.to_s =~ BelongsToWithUuid::UUID_PATTERN
+      DeletedObservation.where( observation_uuid: obs_id ).first
+    else
+      DeletedObservation.where( observation_id: obs_id ).first
+    end
+    if deleted_observation
+      unless Observation.where( id: deleted_observation.observation_id ).exists?
+        Observation.elastic_delete_by_ids!( [deleted_observation.observation_id] )
+      end
+      # Temporary workaround for clients that are hard-coded to expect a 404
+      if request.get?
+        render_410
+        return
+      end
+    end
+    render_404
+  end
 end

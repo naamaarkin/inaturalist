@@ -43,7 +43,9 @@ opts = Optimist.options do
   opt :core,
     "Core type. Options: occurrence, taxon",
     type: :string, short: "-c", default: "occurrence"
-  opt :extensions, "Extensions to include. Options: EolMedia, SimpleMultimedia, ObservationFields, ResourceRelationships, ProjectObservations, User, VernacularNames (taxon core only)",
+  opt :extensions,
+    "Extensions to include. Options: DnaDerivedData, EolMedia, SimpleMultimedia, ObservationFields, " \
+      "ResourceRelationships, ProjectObservations, User, VernacularNames (taxon core only)",
     type: :strings, short: "-x"
   opt :metadata, "
     Path to metadata template. Default: {core}/dwc.eml.erb. \"skip\" will skip EML file generation.
@@ -88,10 +90,14 @@ opts = Optimist.options do
   opt :nelng, "Bounding box right longitude", type: :double
   opt :nelat, "Bounding box top latitude", type: :double
   opt :include_uuid, "Add observation UUIDs as otherCatalogNumbers", type: :boolean, default: false
+  opt :include_county, "Add observation county place name", type: :boolean, default: false
+  opt :include_public_coordinates, "Add observation public coordinates if private coordinates used", type: :boolean, default: false
   opt :with_annotations, "Only include observations with annotations that have occurrence fields", type: :boolean, default: false
   opt :with_controlled_terms, "Only include observations with annotations of this term name", type: :strings
   opt :with_controlled_values, "Only include observations with annotations with this value (must be combined with `with_controlled_terms`)", type: :strings
+  opt :include_humans, "Include observations of humans", type: :boolean, default: false
   opt :processes, "Number of processes to use with the parallel gem", type: :integer
+  opt :log_task_name, "Log with the specified task name", type: :string
 end
 
 if opts.debug
@@ -99,4 +105,16 @@ if opts.debug
 else
   opts[:logger] = Logger.new(STDOUT, level: Logger::INFO)
 end
-DarwinCore::Archive.generate(opts)
+
+if opts.log_task_name
+  task_logger = TaskLogger.new( opts.log_task_name, nil, "export" )
+end
+
+begin
+  task_logger&.start
+  DarwinCore::Archive.generate( opts )
+  task_logger&.end
+rescue => e # rubocop:disable Style/RescueStandardError
+  task_logger&.error( "#{e}\n#{e.backtrace[0..30].join( "\n" )}" )
+  raise e
+end

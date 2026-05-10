@@ -274,6 +274,7 @@ class ObsCardComponent extends Component {
               type="button"
               className="btn-close"
               onClick={confirmRemoveObsCard}
+              aria-label={I18n.t( "remove" )}
             >
               <Glyphicon glyph="remove" />
             </button>
@@ -325,20 +326,21 @@ class ObsCardComponent extends Component {
               config={config}
             />
             <DateTimeFieldWrapper
-              key={`datetime${obsCard.selected_date}`}
-              reactKey={`datetime${obsCard.selected_date}`}
+              key={`datetime${obsCard.selected_date ? "" : "empty"}`}
+              reactKey={`datetime${obsCard.selected_date ? "" : "empty"}`}
               ref="datetime"
               inputFormat={inputFormat}
-              dateTime={obsCard.selected_date
-                ? moment( obsCard.selected_date, inputFormat ).format( "x" )
-                : undefined
+              dateTime={
+                obsCard.selected_date
+                  ? moment( obsCard.selected_date, inputFormat ).format( "x" )
+                  : undefined
               }
-              onChange={dateString => updateObsCard( obsCard, { date: dateString } )}
-              onSelection={
-                dateString => updateObsCard(
-                  obsCard, { date: dateString, selected_date: dateString }
-                )
-              }
+              onChange={dateString => {
+                updateObsCard( obsCard, {
+                  date: dateString,
+                  selected_date: dateString
+                } );
+              }}
             />
             <div
               className={`input-group${dateValidationError ? " has-error" : ""}`}

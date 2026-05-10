@@ -1,4 +1,6 @@
-require File.dirname(__FILE__) + '/../spec_helper.rb'
+# frozen_string_literal: true
+
+require "spec_helper"
 
 describe List do
   elastic_models( Observation, Place )
@@ -74,4 +76,33 @@ describe List do
     end
   end
 
+  describe "legacy life list title" do
+    let(:list) { List.make!(title: "old_user_login's Life List") }
+    let(:localized_title) { I18n.t(:life_list, user: list.owner_name) }
+    it "should display the current list owner name in a legacy life list title" do
+      expect(list.title).to eq localized_title
+      list.title = "old_user_login's Life List of Animalia"
+      expect(list.title).to eq "#{localized_title} of Animalia"
+    end
+    it "should display an unaltered list title if the list is NOT a legacy life list" do
+      list.title = "this is a list title"
+      expect(list.title).to eq "this is a list title"
+    end
+  end
+
+  describe "listed_taxa_editable_by?" do
+    let( :list ) { List.make!( user: User.make! ) }
+
+    it "is not editable by non-users" do
+      expect( list.listed_taxa_editable_by?( nil ) ).to be false
+    end
+
+    it "is editable by owner" do
+      expect( list.listed_taxa_editable_by?( list.user ) ).to be true
+    end
+
+    it "is not editable by curators" do
+      expect( list.listed_taxa_editable_by?( make_curator ) ).to be false
+    end
+  end
 end

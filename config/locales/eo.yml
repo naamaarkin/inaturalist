@@ -14,12 +14,6 @@ eo:
   x_identifications_:
     one: '1 Identigado'
     other: '%{count} Identigadoj'
-  #Number of people who have added identifications
-  x_identifiers_html:
-    #Number of people who have added identifications
-    one: '<span class="count">%{count}</span> Identigisto'
-    #Number of people who have added identifications
-    other: '<span class="count">%{count}</span> Identigistoj'
   x_languages:
     one: "%{count} lingvo"
     other: "%{count} lingvoj"
@@ -47,9 +41,6 @@ eo:
   x_observations_link_html:
     one: "<a href='%{url}'>%{count} observo</a>"
     other: "<a href='%{url}'>%{count} observoj</a>"
-  x_observers_html:
-    one: '<span class="count">%{count}</span> Observanto'
-    other: '<span class="count">%{count}</span> Observantoj'
   x_others:
     one: "1 alio"
     other: "%{count} alioj"
@@ -442,6 +433,8 @@ eo:
   connecting_flickr: "Konektanta Flickr..."
   continue: Daŭrigi
   continue_to_site: Daŭrigi al %{site_name}
+  #e.g. "With iNaturalist, you can contribute to real science"
+  contribute: Kontribui
   contributor_cannot_be_found: Kontribuinto ne troviĝas
   contributors_to_project: "Kontribuintoj al %{project}"
   controlled_term_labels:
@@ -459,6 +452,7 @@ eo:
     no_evidence_of_flowering: Neniu evidenteco de florado
     nymph: Nimfo
     larva: Larvo
+    #Evidence of an egg of an organism
     egg: Ovo
     juvenile: Junulo
   controlled_term_definitions:
@@ -628,7 +622,6 @@ eo:
   edit_your_account_and_profile_html: "Redakti Viajn Konton & Profilon"
   edited_by_name_html: "Redaktita de %{name}"
   editing: Redaktado
-  editing_announcement: Redaktanta anoncon
   editing_project: Redaktante projekton %{project}
   email: Retpoŝta adreso
   end: Fino
@@ -749,6 +742,8 @@ eo:
   id: ID
   identify: Identigi
   identify_title: "Identigi"
+  #e.g. "With iNaturalist, you can identify nature nearby"
+  identify_verb: Identigi
   identification: Identigo
   identification_by_user: Identigo far %{user}
   #Notification when an identification has been deleted
@@ -759,7 +754,6 @@ eo:
   identifications: Identigoj
   identifiers: Identigistoj
   ids: "Identigoj"
-  ids_made_for_others: Identigoj por aliuloj
   ignore_and_continue: Ignori kaj daŭrigi
   import: Enporti
   import_photos: Enporti Fotojn
@@ -796,6 +790,7 @@ eo:
   leaderboard: Ĉampionejo
   leaderboard_for_x: "Ĉampionejo por %{x}"
   leaderboards: Ĉampionejoj
+  #e.g. "With iNaturalist, you can learn from a global community of naturalists"
   learn: Lerni
   learn_more: Lerni Plu
   learn_more_raquo: "Lerni plu &raquo;"
@@ -1504,7 +1499,6 @@ eo:
   rules_types:
     must_be_on_list: devas esti en listo
     must_be_in: devas esti en taksono
-  said: diris
   satellite: satelito
   save: Konservi
   save_all: Konservi Ĉion
@@ -1628,7 +1622,6 @@ eo:
   start_a_new_project: Fondi Novan Projekton
   start_a_project: Fondi Projekton
   start_date_time: Komencaj Dato / Tempo
-  start_one: Fondi
   start_one_now: Fondi Nun!
   start_typing_field_name: Ektajpu nomon de kampo...
   start_typing_place_name: Ektajpu nomon de loko...
@@ -1643,7 +1636,6 @@ eo:
   submitted: Sendita
   subscribe_to_a_taxon: Aboni Taksonon
   subscribe_to_a_place: Aboni Lokon
-  subscribe_to_this: Aboni ĉi tion
   subscriptions: Abonoj
   suggestions: Sugestoj
   summary: Resumo
@@ -1749,11 +1741,14 @@ eo:
   welcome_back!: Rean Bonvenon!
   welcome_to_inat: "Bonvenon al %{site_name}!"
   welcome_to_x_project: "Bonvenon al %{project}"
+  #e.g. "What was observed?"
   what: Kiu
   what_did_you_see: Kion vi vidis?
   what_did_you_see?: <em>Kion</em> vi vidis?
   whats_this?: Kio estas ĉi tio?
+  #e.g. "When was it observed?"
   when: Kiam
+  #e.g. "Where was it observed?"
   where: Kie
   where_were_they?: Kie ili estis?
   where_were_you?: Kie vi estis?
@@ -1823,8 +1818,6 @@ eo:
         well_email_you: "Bone, ni retmesaĝos vin kiam ĝi estas preta."
       field_descriptions:
         time_zone: Horzono de observo
-        latitude: Publike videbla latitudo
-        longitude: Publike videbla longitudo
       import:
         date_column_format: JJJJ-MM-TT HH:MM
     projects:
@@ -1918,6 +1911,11 @@ eo:
         who_uses_site_name: "Kiu Uzas %{site_name}?"
         what_are_you_waiting_for: Kial vi hezitus?
         join_today: Aliĝu Hodiaŭ
+    welcome_v2:
+      index:
+        donate:
+          #Call-to-action button for the donation section
+          cta: Donacu nun
   date:
     abbr_day_names:
       - Dim
@@ -2123,7 +2121,6 @@ eo:
         url: Retadreso
         citation: Citaĵo
       taxon:
-        auto_description: Aŭtomata priskribo
         auto_photos: Aŭtomataj fotoj
         locked: Ŝlosita
         name: Nomo
@@ -2174,10 +2171,6 @@ eo:
             taxon:
               too_many_photos: |
                 ne povas enhavi pli ol %{max} fotoj
-        user:
-          attributes:
-            email:
-              must_look_like_an_email_address: devas ŝajni retpoŝta adreso
   doorkeeper:
     flash:
       applications:

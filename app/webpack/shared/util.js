@@ -1,6 +1,7 @@
 import baseFetch from "cross-fetch";
 import _ from "lodash";
 import moment from "moment-timezone";
+import { heicTo } from "heic-to";
 
 // Light wrapper around fetch to ensure credentials are always passed through
 const fetch = ( url, options = {} ) => baseFetch( url, Object.assign( {}, options, {
@@ -34,7 +35,7 @@ function objectToComparable( object = {} ) {
   } ).sort( ).join( "," );
 }
 
-function resizeUpload( file, opts, callback ) {
+function resizeUploadWithCanvas( file, opts, callback ) {
   const options = opts || { };
   options.quality = options.quality || 0.9;
   const reader = new FileReader( );
@@ -66,6 +67,21 @@ function resizeUpload( file, opts, callback ) {
     image.src = readerEvent.target.result;
   };
   reader.readAsDataURL( file );
+}
+
+function resizeHeic( file, opts, callback ) {
+  return heicTo( { blob: file, type: "image/jpeg" } )
+    .then( blob => resizeUploadWithCanvas( blob, opts, callback ) )
+    .catch( e => {
+      console.error( "Failed to convert heic: ", e );
+    } );
+}
+
+function resizeUpload( file, opts, callback ) {
+  if ( file.type === "image/heic" || file.type === "image/heif" ) {
+    return resizeHeic( file, opts, callback );
+  }
+  return resizeUploadWithCanvas( file, opts, callback );
 }
 
 function isBlank( val ) {
@@ -124,12 +140,11 @@ const formattedDateTimeInTimeZone = ( dateTime, timeZone ) => {
   // For some time zones, moment cannot output something nice like PDT and
   // instead does something like -08. In this situations, we print a full offset
   // like -08:00 instead
-  if ( parseInt( d.format( "z" ), 0 ) && parseInt( d.format( "z" ), 0 ) !== 0 ) {
+  if ( parseInt( d.format( "z" ), 10 ) && parseInt( d.format( "z" ), 10 ) !== 0 ) {
     format = I18n.t( "momentjs.datetime_with_offset" );
   }
   return d.format( format );
 };
-
 
 const inatreact = {
   // Interpolate a translated string with React components as interpolation
@@ -245,6 +260,78 @@ function parseRailsErrorsResponse( text ) {
   return railsErrors;
 }
 
+function controlledTermLabel( termLabel ) {
+  const translationLabel = _.snakeCase( termLabel );
+  const defaults = {
+    defaultValue: termLabel
+  };
+
+  return I18n.t( `controlled_term_labels.${_.snakeCase( translationLabel )}`, defaults );
+}
+
+function controlledTermDefinition( termLabel ) {
+  const translationLabel = _.snakeCase( termLabel );
+  const defaults = {
+    defaultValue: I18n.t( `controlled_term_labels.${_.snakeCase( translationLabel )}`, {
+      defaultValue: termLabel
+    } )
+  };
+
+  return I18n.t( `controlled_term_definitions.${_.snakeCase( translationLabel )}`, defaults );
+}
+
+function isDisagreement( observation, compareTaxon ) {
+  if ( !observation || !( observation.community_taxon || observation.taxon ) ) {
+    return false;
+  }
+  let observationTaxon = observation.taxon;
+  if (
+    observation.preferences.prefers_community_taxon === false
+    || (
+      observation.user.preferences.prefers_community_taxa === false
+      && observation.preferences.prefers_community_taxon === null
+    )
+  ) {
+    observationTaxon = observation.community_taxon || observation.taxon;
+  }
+  return observationTaxon
+    && compareTaxon.id !== observationTaxon.id
+    && _.includes( observationTaxon.ancestor_ids, compareTaxon.id );
+}
+
+const makeLogRequest = ( context, options = {} ) => {
+  if ( !context ) {
+    return;
+  }
+
+  try {
+    const apiURL = $( "meta[name='config:inaturalist_api_url']" )
+      .attr( "content" )
+      .replace( "/v1", "/v2" );
+    const jwt = $( "meta[name='inaturalist-api-token']" ).attr( "content" );
+    if ( _.isEmpty( jwt ) ) {
+      return;
+    }
+
+    const body = {
+      context
+    };
+    if ( _.isObject( options.extra ) ) {
+      body.extra = options.extra;
+    }
+    fetch( `${apiURL}/log`, {
+      method: "POST",
+      headers: {
+        Authorization: jwt,
+        "Content-Type": "application/json"
+      },
+      body: JSON.stringify( body )
+    } );
+  } catch {
+    // do nothing
+  }
+};
+
 // Duplicating stylesheets/colors
 const COLORS = {
   inatGreen: "#74ac00",
@@ -291,6 +378,8 @@ const COLORS = {
 export {
   addImplicitDisagreementsToActivity,
   COLORS,
+  controlledTermDefinition,
+  controlledTermLabel,
   fetch,
   formattedDateTimeInTimeZone,
   inatreact,
@@ -302,5 +391,7 @@ export {
   shortFormattedNumber,
   stripTags,
   translateWithConsistentCase,
-  updateSession
+  updateSession,
+  isDisagreement,
+  makeLogRequest
 };

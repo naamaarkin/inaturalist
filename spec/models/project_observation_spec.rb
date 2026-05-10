@@ -300,10 +300,11 @@ describe ProjectObservation, "creation" do
 
   it "should set curator ID if observer is not a curator but a curator has identified the observation", :with_setup do
     o = Observation.make!
+    po = without_delay { make_project_observation( observation: o, project: @project ) }
     i = Identification.make!( observation: o, user: @project.user )
     expect( @project ).to be_curated_by i.user
     expect( i.project_observations.count ).to eq 0
-    po = without_delay { make_project_observation( observation: o, project: @project ) }
+    Delayed::Worker.new.work_off
     i.reload
     expect( i.project_observations.first ).to eq po
   end
@@ -685,11 +686,11 @@ describe ProjectObservation, "elastic indexing" do
   # db commits (e.g. no transations) and manually create indices
   #
   before(:all) do
-    try_and_try_again( Elasticsearch::Transport::Transport::Errors::Conflict, sleep: 0.1, tries: 20 ) do
+    try_and_try_again( Elastic::Transport::Transport::Errors::Conflict, sleep: 0.1, tries: 20 ) do
       Observation.__elasticsearch__.client.delete_by_query(
         index: Observation.index_name, body: { query: { match_all: { } } })
     end
-    try_and_try_again( Elasticsearch::Transport::Transport::Errors::Conflict, sleep: 0.1, tries: 20 ) do
+    try_and_try_again( Elastic::Transport::Transport::Errors::Conflict, sleep: 0.1, tries: 20 ) do
       Identification.__elasticsearch__.client.delete_by_query(
         index: Identification.index_name, body: { query: { match_all: { } } })
     end

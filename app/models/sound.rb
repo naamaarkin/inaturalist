@@ -1,15 +1,20 @@
+# frozen_string_literal: true
+
 class Sound < ApplicationRecord
   belongs_to :user
   has_many :observation_sounds, :dependent => :destroy
   has_many :observations, :through => :observation_sounds
 
-  has_moderator_actions %w(hide unhide)
+  has_moderator_actions [
+    ModeratorAction::HIDE,
+    ModeratorAction::UNHIDE
+  ]
 
   serialize :native_response
 
   include Shared::LicenseModule
   acts_as_flaggable
-  # include ActsAsUUIDable
+  include ActsAsUUIDable
   before_validation :set_uuid
   def set_uuid
     self.uuid ||= SecureRandom.uuid
@@ -182,6 +187,7 @@ class Sound < ApplicationRecord
     if flag_is_copyright && !other_unresolved_copyright_flags_exist
       # TODO this is copypasta from photo.rb, but we should do something to
       # replace sounds with something equivalent to the copyright infringement
+      # or artificially generated content
       # notice
       # if options[:action] == "created"
       #   styles = %w(original large medium small thumb square)

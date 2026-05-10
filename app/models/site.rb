@@ -269,15 +269,22 @@ class Site < ApplicationRecord
   preference :developers_url, :string, default: "/pages/developers"
   preference :community_guidelines_url, :string, default: "/pages/community+guidelines"
   preference :jobs_url, :string, default: "/pages/jobs"
-  preference :twitter_url, :string
   preference :iphone_app_url, :string
   preference :android_app_url, :string
-  preference :facebook_url, :string
-  preference :twitter_url, :string
-  preference :instagram_url, :string
-  preference :blog_url, :string
 
-  preference :twitter_username, :string
+  # social media
+  preference :facebook_url, :string
+  preference :x_url, :string
+  preference :instagram_url, :string
+  preference :bluesky_url, :string
+
+  preference :blog_url, :string
+  preference :understanding_projects_url, :string
+  preference :educators_guide_url, :string
+  preference :video_tutorials_url, :string
+  preference :curator_guide_url, :string
+
+  preference :x_username, :string
 
   # Title of wiki page to use as the home page. Default will be the normal view in app/views/welcome/index
   preference :home_page_wiki_path, :string
@@ -318,10 +325,6 @@ class Site < ApplicationRecord
   preference :google_recaptcha_key, :string
   preference :google_recaptcha_secret, :string
 
-  # We have a limited number of callback URLs we're allowed on twitter, and
-  # we've used them all
-  preference :twitter_sign_in, :boolean, default: false
-
   # fathom analytics, https://usefathom.com/
   preference :fathom_analytics_tracker_id, :string
 
@@ -349,13 +352,14 @@ class Site < ApplicationRecord
 
   STAFF_ONLY_PREFERENCES = [
     :google_webmaster_dns_verification,
-    :google_webmaster_dns_verified,
-    :twitter_sign_in
+    :google_webmaster_dns_verified
   ].freeze
 
   after_save :refresh_default_site
 
   def self.default( options = {} )
+    return Site.find_by_name( CONFIG.default_site_name ) if CONFIG.default_site_name
+
     if options[:refresh]
       Rails.cache.delete( "sites_default" )
     end
@@ -553,6 +557,70 @@ class Site < ApplicationRecord
         end
       end
       observations
+    end
+  end
+
+  def users_index_recent_activity
+    Rails.cache.fetch( "Site::#{id}::users_index_recent_activity", expires_in: 1.hour ) do
+      updates = []
+      [Observation, Identification, Post, Comment].each do | klass |
+        scope = klass.limit( 30 ).
+          order( "#{klass.table_name}.id DESC" ).
+          includes( :user )
+        if prefers_site_only_users?
+          scope = scope.joins( :user )
+          scope = scope.where( "users.site_id = ?", id )
+        end
+        updates += scope.all
+      end
+      Observation.preload_associations( updates, :user )
+      updates.delete_if do | u |
+        u.user.blank? ||
+          ( u.is_a?( Post ) && u.draft? ) ||
+          ( u.is_a?( Identification ) && u.taxon_change_id ) ||
+          ( u.is_a?( Identification ) && u.observation.user_id == u.user_id )
+      end
+      user_activity_hash = {}
+      updates.sort_by( &:created_at ).each do | record |
+        user_activity_hash[record.user_id] = record
+      end
+      user_activity_hash.values.sort_by( &:created_at ).reverse[0..11]
+    end
+  end
+
+  def inat_next_app_url
+    "https://apps.apple.com/us/app/inaturalist-next/id6475737561"
+  end
+
+  def self.homepage_observation_data( options = {} )
+    if options[:refresh]
+      Rails.cache.delete( "sites_homepage_observation_data" )
+    end
+    Rails.cache.fetch( "sites_homepage_observation_data" ) do
+      JSON.parse(
+        File.read( Rails.root.join( "config/homepage_observations.json" ) )
+      ).freeze
+    end
+  end
+
+  HOMEPAGE_STORY_DATA = [
+    ["moth_heading",      "moth_body",        "pav_johnsson", "New Zealand",   "Frosted Phoenix", "frosted_phoenix", "https://tr.ee/FYNsVb"],
+    ["mantis_heading",    "mantis_body_html", "glendawalter", "Australia",     nil,               "inat",            "https://tr.ee/j29kgK"],
+    ["amphibian_heading", "amphibian_body",   "tcuriel",      "United States", nil,               "california_newt", "https://tr.ee/hQZIFH"]
+  ].freeze
+
+  # TODO: Ideally we'd use common_name to make this more generic,
+  # but the translations are already using moth_common_name.
+  def self.homepage_story_data( locale_key:, locale_base: )
+    story_common_names = homepage_observation_data["stories"] || {}
+    HOMEPAGE_STORY_DATA.map do |heading, body, user, place, en_name, img, url|
+      interp = if en_name
+        names = story_common_names[en_name]
+        { moth_common_name: names&.dig( locale_key ) || names&.dig( locale_base ) || names&.dig( "en" ) || en_name }
+      else
+        {}
+      end
+      [heading, body, user, place, img, interp, url]
     end
   end
 end

@@ -39,7 +39,12 @@ class ActivityCreatePanel extends React.Component {
   }
 
   postIdentification( ) {
-    const { addID, content, updateEditorContent } = this.props;
+    const {
+      addID,
+      content,
+      updateEditorContent,
+      setNominateOnSubmit
+    } = this.props;
     const input = $( ".id_tab input[name='taxon_name']" );
     const selectedTaxon = input.data( "uiAutocomplete" ).selectedItem;
     if ( selectedTaxon ) {
@@ -49,32 +54,31 @@ class ActivityCreatePanel extends React.Component {
       input.data( "uiAutocomplete" ).selectedItem = null;
 
       updateEditorContent( "activity", "" );
+      setNominateOnSubmit( false );
     }
   }
 
-  render( ) {
+  commentContent( ) {
     const {
-      observation,
       config,
+      observation,
       content,
-      activeTab,
-      setActiveTab,
-      updateEditorContent
+      updateEditorContent,
+      confirmResendConfirmation
     } = this.props;
-    if ( !observation ) { return ( <div /> ); }
-    const loggedIn = config && config.currentUser;
-    // attempting to match the logic in the computervision/score_observation endpoint
-    // so we don't attempt to fetch vision results for obs which will have no results
-    const visionEligiblePhotos = _.compact( _.map( observation.photos, p => {
-      if ( !p.url || p.preview ) { return null; }
-      const mediumUrl = p.photoUrl( "medium" );
-      if ( mediumUrl && mediumUrl.match( /\/medium[./]/i ) ) {
-        return p;
-      }
-      return null;
-    } ) );
-    const commentContent = loggedIn
-      ? (
+    if ( !config?.currentUser ) {
+      return (
+        <span
+          className="log-in"
+          // eslint-disable-next-line react/no-danger
+          dangerouslySetInnerHTML={{
+            __html: I18n.t( "log_in_or_sign_up_to_add_comments_html" )
+          }}
+        />
+      );
+    }
+    if ( config?.currentUserCanInteractWithResource( observation ) ) {
+      return (
         <div className="form-group">
           <TextEditor
             key={`comment-editor-${observation.id}-${_.size( observation.comments )}`}
@@ -86,16 +90,65 @@ class ActivityCreatePanel extends React.Component {
             onBlur={e => updateEditorContent( "activity", e.target.value )}
           />
         </div>
-      ) : (
+      );
+    }
+    return (
+      <div className="confirm-to-interact">
+        <div className="confirm-message">
+          { I18n.t( "views.email_confirmation.please_confirm_to_interact" ) }
+        </div>
+        <div className="confirm-button">
+          <a
+            href="/users/edit"
+            onClick={e => {
+              confirmResendConfirmation( );
+              e.preventDefault( );
+              e.stopPropagation( );
+            }}
+          >
+            <button type="button" className="btn btn-primary emailConfirmationModalTrigger">
+              { I18n.t( "send_confirmation_email" ) }
+            </button>
+          </a>
+        </div>
+      </div>
+    );
+  }
+
+  idContent( ) {
+    const {
+      config,
+      observation,
+      content,
+      updateEditorContent,
+      confirmResendConfirmation,
+      setNominateOnSubmit,
+      nominate
+    } = this.props;
+    if ( !( config && config.currentUser ) ) {
+      return (
         <span
           className="log-in"
+          // eslint-disable-next-line react/no-danger
           dangerouslySetInnerHTML={{
-            __html: I18n.t( "log_in_or_sign_up_to_add_comments_html" )
+            __html: I18n.t( "log_in_or_sign_up_to_add_identifications_html" )
           }}
         />
       );
-    const idContent = loggedIn
-      ? (
+    }
+    const { currentUser } = config;
+    if ( config?.currentUserCanInteractWithResource( observation ) ) {
+      // attempting to match the logic in the computervision/score_observation endpoint
+      // so we don't attempt to fetch vision results for obs which will have no results
+      const visionEligiblePhotos = _.compact( _.map( observation.photos, p => {
+        if ( !p.url || p.preview ) { return null; }
+        const mediumUrl = p.photoUrl( "medium" );
+        if ( mediumUrl && mediumUrl.match( /\/medium[./]/i ) ) {
+          return p;
+        }
+        return null;
+      } ) );
+      return (
         <div>
           <TaxonAutocomplete
             bootstrap
@@ -122,20 +175,73 @@ class ActivityCreatePanel extends React.Component {
               className="upstacked"
               textareaClassName="form-control"
               onBlur={e => updateEditorContent( "activity", e.target.value )}
+              onChange={e => {
+                const textLength = _.size( e.target.value );
+                if ( textLength === 0 ) {
+                  // TODO: fingure out a better way to avoid the React controlled input error
+                  $( ".nomination input[type='checkbox']" ).prop( "checked", false );
+                  setNominateOnSubmit( false );
+                }
+                $( ".nomination input[type='checkbox']" ).prop( "disabled", textLength === 0 );
+              }}
               content={content}
               maxLength={5000}
               showCharsRemainingAt={4000}
             />
+            { currentUser?.canViewHelpfulIDTips( ) && (
+              <div className="nomination">
+                <input
+                  type="checkbox"
+                  id="nominate-id"
+                  defaultChecked={nominate}
+                  disabled={_.size( content ) === 0}
+                  onChange={e => {
+                    setNominateOnSubmit( e.target.checked );
+                  }}
+                />
+                <label
+                  className="identificationNomination"
+                  htmlFor="nominate-id"
+                >
+                  Nominate as an ID Tip (diagnostic characteristics that teach others to identify this organism)
+                </label>
+              </div>
+            ) }
           </div>
         </div>
-      ) : (
-        <span
-          className="log-in"
-          dangerouslySetInnerHTML={{
-            __html: I18n.t( "log_in_or_sign_up_to_add_identifications_html" )
-          }}
-        />
       );
+    }
+    return (
+      // eslint-disable-next-line jsx-a11y/control-has-associated-label
+      <div className="confirm-to-interact">
+        <div className="confirm-message">
+          { I18n.t( "views.email_confirmation.please_confirm_to_interact" ) }
+        </div>
+        <div className="confirm-button">
+          <a
+            href="/users/edit"
+            onClick={e => {
+              confirmResendConfirmation( );
+              e.preventDefault( );
+              e.stopPropagation( );
+            }}
+          >
+            <button type="button" className="btn btn-primary emailConfirmationModalTrigger">
+              { I18n.t( "send_confirmation_email" ) }
+            </button>
+          </a>
+        </div>
+      </div>
+    );
+  }
+
+  render( ) {
+    const {
+      observation,
+      activeTab,
+      setActiveTab
+    } = this.props;
+    if ( !observation ) { return ( <div /> ); }
     const tabs = (
       <Tabs
         id="comment-id-tabs"
@@ -145,10 +251,10 @@ class ActivityCreatePanel extends React.Component {
         }}
       >
         <Tab eventKey="comment" title={I18n.t( "comment_" )} className="comment_tab">
-          { commentContent }
+          { this.commentContent( ) }
         </Tab>
         <Tab eventKey="add_id" title={I18n.t( "suggest_an_identification" )} className="id_tab">
-          { idContent }
+          { this.idContent( ) }
         </Tab>
       </Tabs>
     );
@@ -164,10 +270,13 @@ ActivityCreatePanel.propTypes = {
   observation: PropTypes.object,
   config: PropTypes.object,
   activeTab: PropTypes.string,
+  nominate: PropTypes.bool,
   addID: PropTypes.func,
   content: PropTypes.string,
   setActiveTab: PropTypes.func,
-  updateEditorContent: PropTypes.func
+  setNominateOnSubmit: PropTypes.func,
+  updateEditorContent: PropTypes.func,
+  confirmResendConfirmation: PropTypes.func
 };
 
 export default ActivityCreatePanel;

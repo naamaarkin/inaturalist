@@ -24,12 +24,6 @@ fr-CA:
   x_identifications_:
     one: '%{count} Identification'
     other: '%{count} Identifications'
-  #Number of people who have added identifications
-  x_identifiers_html:
-    #Number of people who have added identifications
-    one: '<span class="count">%{count}</span> identificateur'
-    #Number of people who have added identifications
-    other: '<span class="count">%{count}</span> Identificateurs'
   x_languages:
     one: "%{count} langue"
     other: "%{count} langues"
@@ -74,9 +68,6 @@ fr-CA:
   x_observations_reviewed_html:
     one: "<span class='count'>%{count}</span> observation vérifiée"
     other: "<span class='count'>%{count}</span> observations vérifiées"
-  x_observers_html:
-    one: '<span class="count">%{count}</span> Observateur'
-    other: '<span class="count">%{count}</span> Observateurs'
   x_others:
     one: "%{count} autre"
     other: "%{count} autres"
@@ -168,8 +159,6 @@ fr-CA:
   about_this_bioblitz: À propos de ce bioblitz
   about_this_map: À propos de cette carte
   about_this_project: À propos de ce projet
-  about_trips_html: |
-    <h4>Les voyages permettent la collecte de données de présence/absence en ajoutant un contexte à vos observations</h4><p><strong>Pourquoi</strong> Les données de présence/absence incluent des informations sur l’effort d’échantillonnage, qui est utile pour les analyses scientifiques comme les modèles de répartition (les observations brutes de iNaturalist sont des données de 'présence uniquement').</p> <p><strong>Comment</strong> Un voyage ajoute un contexte à vos observations en enregistrant :</p> <ul> <li><strong>Ce que</strong> vous avez cherché (liste cible)</li> <li><strong>Où</strong> vous l'avez cherché (zone de recherche)</li> <li><strong>Quand</strong> vous l'avez cherché (période de recherche)</li> </ul> <p>Les espèces de votre liste cible que vous aurez pu observer dans la zone de recherche sont interprétées comme des présences. Alors que les espèces de votre liste cible que vous n’aurez pas pu observer seront interprétées comme des absences. Cliquez sur « Données tabulées de présence/absence pour les voyages » pour générer un tableau d’enregistrements de présence/absence pour les espèces des voyages et les observations associées. <a href='%{url}'>En savoir plus</a></p>
   #Abbreviated form of "accuracy in meters", where "accuracy" is the
   #positional_accuracy attribute of an observation, which is really more like
   #positional uncertainty
@@ -316,8 +305,14 @@ fr-CA:
   check_this_box_if_html: |
     Cochez cette case si vous voulez appliquer une
     <a href='http://creativecommons.org/licenses/by-nc/4.0/' target='_blank'>licence Creative Commons d’attribution non commerciale</a> au contenu téléversé. Ceci veut dire que quiconque peut copier et réutiliser vos photos ou vos observations sans demander la permission, du moment qu’ils vous en donnent le crédit et n'utilisent pas les œuvres commercialement. Vous pouvez choisir une autre licence ou supprimer la licence plus tard, mais il s'agit de la meilleure licence pour échanger avec les chercheurs.
+  community: Communauté
+  community_guidelines: Directives communautaires
   configure_a_widget_to_show: "Configurez un widget pour afficher les observations\nd’%{site_name} sur votre site Web ou votre blogue. Vous devrez peut-être inclure\nle CSS intégré dans le <code>&lt;head&gt;</code> de votre HTML. N’hésitez pas\nà réécrire le CSS."
+  #e.g. "With iNaturalist, you can contribute to real science"
+  contribute: Contribuer
   copy_and_paste_the_following_code_to: Copiez et collez le code suivant pour inclure cette évaluation dans une autre page Web.
+  #Label for a menu item linking to a help page aimed at curators
+  curator_guide: Guide du conservateur
   devise:
     failure:
       invalid: 'Courriel ou mot de passe invalide.'
@@ -334,6 +329,10 @@ fr-CA:
         subject: Instructions de confirmation
       reset_password_instructions:
         subject: 'Instructions de réinitialisation de mot de passe'
+  #message informing the user the must confirm their email address to interact with other users
+  devise_confirmation_instructions_please_click2: |
+    Veuillez cliquer sur le lien ci-dessous pour confirmer votre adresse courriel. Si vous ne confirmez pas votre courriel
+    adresse, vous ne pourrez pas interagir avec le contenu des autres utilisateurs.
   devise_reset_password_instructions_hello_email: Bonjour %{email}
   devise_reset_password_instructions_if_you_didnt_request_this: |
     Si vous n'avez pas fait cette demande, veuillez ignorer ce courriel.
@@ -346,6 +345,14 @@ fr-CA:
   devise_unlock_instructions_click_the_link: |
     Cliquez sur le lien ci-dessous pour débloquer votre compte :
   devise_unlock_instructions_unlock: Déverrouiller votre compte
+  #e.g. "With iNaturalist, you can discover nature nearby"
+  discover: Découvrir
+  documentation_for_developers_html: Documentation pour <a href="/pages/developers">Développeurs</a>
+  #Button text to donate to iNaturalist. Please try to keep translations as
+  #short as possible
+  donate: FAIRE DON
+  #Imperative verb; link to a page where a user can donate money to iNaturalist
+  donate_: Faire un don
   #Prompt shown when you are dragging a file somewhere and should release it to
   #add the file as, for example, a new photo in the Uploader
   drop_it: Le déposer
@@ -358,15 +365,28 @@ fr-CA:
   #name, and the gender is unknown. @vow_or_con should work.
   email_dear_user: Cher/chère %{user},
   embed_widget_project: Intégrer un widget pour ce projet sur votre site Web
+  explore: Explorer
+  facebook: Facebook
+  feedback: Retour d’information
+  forum: Forum
   forum_categories:
     bug_reports: Signalements de bogue
   forum_desc: |
     Le forum est un endroit pour discuter de iNat lui-même, y compris pour l’aide et le soutien, les demandes de fonctionnalité, les rapports de bogues, les annonces, et autres.
   #E.g GENERATE YOUR 2023 YEAR IN REVIEW
   generate_your_year_in_review_caps: GÉNÉRER VOTRE RÉTROSPECTIVE DE L'ANNÉE %{year}
+  #Label for a menu item linking to a help page about how to get started using iNaturalist
+  getting_started: Commencer
+  guides: Guides
+  help: À l’aide
   #Option to hide data series that show "No Annotation" data, i.e. records that
   #have no annotation
   hide_no_annotation: Masquer « Pas d'annotation »
+  #e.g. "With iNaturalist, you can identify nature nearby"
+  identify_verb: Identifier
+  #e.g. "Identify using iNaturalist"
+  identify_cta: Identifier
+  instagram: Instagram
   #Tool tip for a button that inserts quoted text into a text area
   insert_a_quote: Insérer une citation
   it_can_now_be_used_for_research: Elle peut maintenant être utilisée pour la recherche et mise en vedette sur d’autres sites Web
@@ -378,39 +398,72 @@ fr-CA:
     responsable du site. Si vous pensez que c’est une erreur, veuillez
     <a href="mailto:%{help_email}" class="contact">nous contacter</a>.
     <a href="%{manage_flags_path}">Gérer les signalements</a>
+  jobs: Emplois
+  journal_posts: Publications dans la revue
+  #e.g. "With iNaturalist, you can learn from a global community of naturalists"
+  learn: Apprendre
   legacy_authentication_notice_html: |
     Il semble que vous utilisez un mot de passe d'une ancienne version de ce site Web.
     Souvenez-vous de <a href="%{url}">modifier votre mot de passe</a> aux fins de la nouvelle version.
   #Text inserted into a textarea when the link button is clicked but no text was selected
   linked_text: texte lié
+  log_in: Connexion
   log_in_or_sign_up_to_add_comments_html: |
     <a href="/login">Connectez-vous</a> ou <a href="/signup">inscrivez-vous</a> pour ajouter des commentaires.
   log_in_or_sign_up_to_add_identifications_html: |
     <a href="/login">Connectez-vous</a> ou <a href="/signup">inscrivez-vous</a> pour ajouter des identifications.
+  member_of_the_inaturalist_network_html: |
+    Membre de la <a href="%{url}">Réseau iNaturalist</a>
   #Label shown when a date has not been entered
   missing_date: Date manquante
+  more: Plus
   no_more_mail_from_site: "Vous ne voulez pas recevoir de courriel d’%{site_name}?  Modifiez vos paramètres de courriel à"
   note_you_can_modify_the_height_attribute: "Remarque : Vous pouvez modifier l'attribut 'height' pour l’adapter à l'espace disponible sur votre page Web."
+  #verb, call to action, e.g. "Observe nature nearby"
+  observe: Observez
   official_blog: Blogue officiel
+  or: ou
   our_blog: Notre blogue
   parental_consent:
     must_specify_email: Vous devez spécifier une adresse courriel
     invalid_email: Format de courriel invalide
+  people: Population
+  people_added:
+    identification:
+      #Text shown on /people when the person has added an observation. Follows a header with the username, so the text looks like
+      #kueda
+      #added an ID to an observation by loarie
+      with_observation: a ajouté une <strong>identification</strong> à une %{observation_link} de %{user_link}
+  places: Lieux
+  powered_by_inaturalist_open_source_software_html: 'Propulsé par <a href="https://github.com/inaturalist/inaturalist" target="_new" >Logiciel open source iNaturalist</a>'
+  press: Presse
+  privacy: Vie privée
   project_x_was_delete: "%{project} a été supprimé (merci d'attendre quelques minutes pour qu'il soit supprimé du site Web)"
+  projects: Projets
+  search: Recherche
   search_by_name_or_email: Rechercher par nom ou par courriel
   #Option to show data series that show "No Annotation" data, i.e. records that
   #have no annotation
   show_no_annotation: Afficher « Pas d'annotation »
   show_off_your_recent_observations: Mettez en valeur vos observations récentes sur votre propre blogue ou site Web!
+  sign_up: Inscrivez-vous
+  sign_up_sentence_case: Inscrivez-vous
+  site_stats: Statistiques du site
   some_observations_are_missing_media_or_identifications: |
     Certaines observations n'ont pas de photo/son ou d'identification
   some_observations_are_missing_media_or_identifications_desc: |
     Les observations sans média ne seront pas visibles par défaut dans les recherches, et celles sans identifications pourraient ne pas être vues par des experts qui recherchent des taxons spécifiques. Même une identification très approximative comme "Plantes" peut aider les experts à trouver votre observation.
+  #As in a place to purchase things. We use it as a link to a place where you
+  #can buy merchandise. Please try to keep translations as short as possible
+  store: Magasin
+  store_caps: MAGASIN
   subscribe_to_comments_on_this_taxon_stage_html: "%{tag_start}Abonnez-vous%{tag_end} aux commentaires sur l'activation de ce taxon."
   subscribe_to_comments_on_this_taxon_swap_html: "%{tag_start}Abonnez-vous%{tag_end} aux commentaires sur le remplacement de ce taxon."
   subscribe_to_comments_on_this_taxon_merge_html: "%{tag_start}Abonnez-vous%{tag_end} aux commentaires sur cette fusion de taxons."
   subscribe_to_comments_on_this_taxon_split_html: "%{tag_start}Abonnez-vous%{tag_end} aux commentaires sur la division de ce taxon."
   subscribe_to_comments_on_this_taxon_drop_html: "%{tag_start}Abonnez-vous%{tag_end} aux commentaires sur l'élimination de ce taxon."
+  taxa_info: Infos sur les taxons
+  terms_service: Conditions d’utilisation
   these_are_items_people_on: |
     Il y a des articles que les personnes membres de ce site ont signalés aux fins d’organisation. Le pourriel doit être supprimé et les utilisateurs responsables doivent être suspendus (allez sur leur page de profil et cliquez sur « Suspendez l’utilisateur » en bas à droite pour les empêcher de se connecter). Les autres articles qui font l’objet d’un drapeau doivent seulement être supprimés s’ils sont clairement haineux, illégaux, etc. La grossièreté, les insultes, etc., doivent être gérées au moyen d’un commentaire poli. Les récidivistes doivent être signalés à un administrateur du site ou %{email}
   these_observations_have_not_been_uploaded_yet: |
@@ -420,6 +473,10 @@ fr-CA:
     Si c’est votre compte et que vous pensez que ceci a été fait par erreur, veuillez <a href="mailto:%{email}">nous contacter</a>.
   #As in the title of a book or a blog post
   title: titre
+  #e.g. "With iNaturalist, you can track species you've seen worldwide"
+  track: Piste
+  #Label for a menu item linking to a help page describing how iNaturalist Projects work
+  understanding_projects: Comprendre les projets
   updates_notification_email_subject: "%{prefix} Nouvelles mises à jour du %{date}"
   updates_suspension_email_subject: "%{prefix} Vos abonnements sont en attente"
   unsubscribe_from_emails_like_this: Se désabonner des courriels comme celui-ci
@@ -434,7 +491,6 @@ fr-CA:
   uploader:
     errors:
       file_too_big: Le fichier ne doit pas dépasser %{megabytes} Mo
-      unsupported_file_type: 'Type de fichier non pris en charge. Sont acceptés : JPG, PNG, GIF, WAV, AAC, MP3, et MP4 (seulement audio)'
     resize_tip: |
       Les fichiers de photos sont trop grands, essayez de les réduire à un maximum de 2048 × 2048 pixels. Ceci concerne toutes les photos du serveur et fera un téléversement plus rapide.
     tooltips:
@@ -453,9 +509,20 @@ fr-CA:
   url_of_this_taxon_on_the_source_website: URL de ce taxon sur le site Web de la source
   use_unique_file_names_for_separate_uploads: Utilisez des noms de fichier uniques pour les téléversements séparés
   username_or_email: Nom d’utilisateur ou courriel
+  video_tutorials: Tutoriels vidéo
   view_inaturalist_global_year_in_review_caps: VOIR LA RÉTROSPECTIVE DE L'ANNÉE %{year} DE LA COMMUNAUTÉ MONDIALE D'INATURALIST
   we_couldnt_find_a_user: Nous n’avons pas pu trouver d’utilisateur avec cette adresse courriel.
   website: Site Web
+  #e.g. "What was observed?"
+  what: Quoi
+  #e.g. "When was it observed?"
+  when: Quand
+  #e.g. "Where was it observed?"
+  where: Où
+  #e.g. "Who observed it?"
+  who: Qui
+  #Question mark added to the end of the word "Why" to make it a question. e.g. "Why should I use iNaturalist?"
+  why_question: Pourquoi?
   x_blog: "Blogue de %{x}"
   #This might be shown if there is a character limit in a text field, in which
   #it would mean "x of y characters remaining"
@@ -504,6 +571,31 @@ fr-CA:
             <a href="%{url}">Regardez les lignes directrices de la communauté</a> pour des conseils sur la manière de garder iNaturalist comme un endroit amical et convivial.
           please_read_the_teachers_guide_html: |
             Si c’est le cas, veuillez lire notre <a href="%{url}">Guide de l’enseignant</a> pour des conseils sur l’utilisation de %{site_name} avec des étudiants.
+    email_confirmation:
+      click_here_to_resend_a_confirmation_email: Cliquez ici pour renvoyer un courriel de confirmation
+      #message displayed after users trigger sending a email to confirm their email address
+      confirmation_email_sent: Courriel de confirmation envoyé
+      #text displayed before showing a user the email address that we will
+      #resend a confirmation email to
+      here_is_the_email_colon: |
+        Voici l’adresse courriel à laquelle nous enverrons la confirmation :
+      #statement introducing suggestions for users that do no receive confirmation emails
+      if_you_do_not_receive_the_email_here_are_tips_colon: |
+        Si vous ne recevez pas le courriel, voici quelques conseils :
+      #statement telling users to contact us if they are not receiving confirmation emails
+      if_you_are_still_not_receiving_email_contact_us_html: 'Si vous ne recevez toujours pas le courriel de confirmation, veuillez communiquer avec nous à l’adresse suivante : <a href="mailto:help+confirmation@inaturalist.org">help@inaturalist.org</a> afin que nous puissions vous aider.'
+      please_add_an_email_and_password: Veuillez ajouter un courriel et un mot de passe pour ne pas perdre l’accès à votre compte
+      please_click_the_link_sent_to_email_to_confirm_html: Veuillez cliquer sur le lien envoyé à <span class="email">%{email}</span> pour confirmer votre adresse courriel.
+      please_confirm_that_email_is_the_best_contact_html: Veuillez confirmer que <span class="email">%{email}</span> est la meilleure façon de vous contacter. #message requesting users confirm their email address to be able to engage with other users
+      please_confirm_to_interact_and_access: Veuillez confirmer votre adresse courriel pour interagir avec le contenu d’autres utilisateurs et accéder à certaines pages. #message requesting that a user confirm their email address, displaying the email to confirm
+      please_confirm_your_email_address_html: Veuillez confirmer votre adresse courriel <span class="email">%{email}</span>. #statement used in areas that might contain a form allowing users to add comments, etc. This # informs users they must confirm their email address if they want to be able to interact
+      please_confirm_to_interact: Veuillez confirmer votre adresse courriel pour interagir avec le contenu des autres utilisateurs
+      #statement used on pages that are not functional unless a user has confirmed their email address
+      please_confirm_to_use_this_page: Veuillez confirmer votre adresse courriel pour utiliser cette page
+      #tip for users who do not receive confirmation emails to check if their email view is filtered
+      tips_check_email_filters: Vérifiez les filtres que vous avez créés et qui pourraient supprimer nos courriels de votre boîte de réception #tip for users who do not receive confirmation emails to check their email spam folder
+      tips_check_your_spam_folder: Vérifiez votre dossier de pourriels
+      your_site_account_has_no_email: Votre %{site_name} n’a pas d’adresse courriel associée.
     guides:
       edit:
         import_tags_from_csv_help_html: |
@@ -535,6 +627,18 @@ fr-CA:
           <p>
           La première ligne commence par « Nom », suivi par l’étiquette des prédicats de catégories. Chaque ligne suivante commence par le nom du taxon, suivi par les contenus correspondant au prédicat de catégorie de la colonne. Dans cet exemple, <i>Homo sapiens</i> contient le prédicat suivant : <code>Nombre de mains=2</code>, plus la mention complémentaire (colonne sans étiquette) <code>bipède</code> ; et <i>Vulpes vulpes</i> est défini par les mentions : <code>Couleur=rouge</code>, <code>Couleur=noir</code>, <code>Nombre de mains=0</code>, ainsi que la mention complémentaire <code>quadrupède</code>. Les espaces (caractères « blancs ») seront ignorées. Vous pouvez ajouter plusieurs lignes par taxon. Vous pouvez également ajouter plusieurs valeurs par cellule, séparées par le caractère '|' (« ligne verticale »).</p>
     messages:
+      index:
+        #Users cannot create messages if they lack the criteria for
+        #earning interaction privilege
+        interaction_privilege_notice: |
+          Vous pourrez envoyer de nouveaux messages après avoir confirmé votre courriel
+          adresse. Pour l’instant, vous pouvez lire et répondre aux messages que d’autres personnes vous envoient.
+        #Users cannot create messages if they lack the criteria for
+        #earning interaction or speech privilege
+        privilege_notice: |
+          Vous pourrez envoyer de nouveaux messages après avoir confirmé votre courriel
+          et a ajouté trois observations vérifiables ou trois identifications
+          pour d’autres. Pour l’instant, vous pouvez lire et répondre aux messages que d’autres personnes vous envoient.
       show:
         privacy_notice_html: |
           Alors que les messages sont privés entre vous et le destinataire, l'équipe d'iNaturalist
@@ -549,24 +653,7 @@ fr-CA:
         receive_an_email_with_your_data: Recevoir un courriel avec vos données
         receive_an_email_with_your_data_help: Vous recevrez un courriel avec votre exportation en pièce jointe.
         well_email_you: "D'accord, nous vous enverrons un courriel quand ce sera prêt."
-      field_descriptions:
-        sound_url: URL pour le son par défaut. Notez que cela ne fonctionnera que pour les téléversements directs, non pour les sons hébergés sur des services tiers
       import:
-        google_photos_notice_html: |
-          En février 2019, Google a modifié son API, nous empêchant
-          d’accéder aux coordonnées GPS, à l’information de licence et à quasiment
-          toute information que nous pourrions utiliser pour ajouter une identification (comme les balises). Il
-          a aussi supprimé la recherche textuelle et la pagination numérique. De plus,
-          ils demandent que tous les comptes connectés aient un droit en plus,
-          et avant qu’un tiers puisse demander ce droit pour les utilisateurs, le
-          tiers doit être vérifié. Nous attendons la vérification, mais
-          avant que cela n'arrive, vous ne pourrez pas importer de photos de Google.
-          Si nous sommes acceptés, vous pourrez importer des photos, mais elles 
-          n’incluront aucune information de localisation ni de licence que vous pourriez 
-          voir sur Google Photos. Vous pouvez lire davantage là-dessus à
-          <a href="https://developers.google.com/picasa-web">https://developers.google.com/picasa-web</a>.
-          Télécharger des fichiers d’origine et les ajouter en utilisant
-          <a href="/observations/upload">Téléverseur</a> est le meilleur contournement.
         soundcloud_notice_html: |
           En 2018, Soundcloud a modifié son API et nous a empêché de
           faire de nouveaux liens avec votre compte Soundcloud. Si Soundcloud réactive
@@ -738,7 +825,7 @@ fr-CA:
           Veuillez vous connecter au compte à partir de l'application Seek de votre enfant en tapant sur le bouton « iNaturalist » du menu puis sur « Se connecter avec iNaturalist » en bas de l'écran.
           </p>
           <p>
-          Votre enfant pourra ensuite poster les observations sur son compte iNaturalist en utilisant l'application Seek afin qu'elles soient visibles sur iNaturalist.org. 
+          Votre enfant pourra ensuite poster les observations sur son compte iNaturalist en utilisant l'application Seek afin qu'elles soient visibles sur iNaturalist.org.
           </p>
       users_updates_suspended:
         message: |
@@ -776,11 +863,6 @@ fr-CA:
           Êtes-vous prêt·e à sortir de cette page pour dupliquer ce projet? Veuillez noter que l'icône du projet
           et sa bannière ne seront pas dupliqués, et devront être rechargés dans le projet
           dupliqué.
-        you_can_learn_more_html: |
-          Vous pouvez en savoir plus sur la gestion des projets
-          <a href="https://www.inaturalist.org/pages/managing-projects">ici</a>
-          ou lire l’historique des projets sur
-          <a href="https://www.inaturalist.org/blog/15450-announcing-changes-to-projects-on-inaturalist">notre blogue</a>.
       show:
         bioblitz_results_desc_html: |
           <p>
@@ -870,41 +952,6 @@ fr-CA:
           <a href="/users/edit">les rendre muets</a> au lieu de supprimer votre
           compte.
       edit:
-        blocking_desc_html: |
-          <p>
-          Bloquer quelqu'un l'empêche de vous envoyer des
-          messages, de commenter vos  observations, d'identifier vos observations
-          et d'interagir autrement  avec vous sur %{site_name}. Cela supprime également
-          ses observations de vos  résultats de recherche et supprime vos observations
-          ses résultats de   recherche. Cependant, cela ne vous rend pas invisible
-          pour lui. Il peut toujours   trouver vos observations et regardez votre
-          profil, il ne peut tout simplement pas  interagir avec vous.
-          </p>
-          <p>
-          Le blocage est pour des situations où vous ne pouvez simplement pas vous
-          entendre  avec quelqu'un et il ne vous laissera pas seul, malgré vos efforts
-          pour  régler les différends d'une manière civilisée. Ce n'est pas un moyen
-          pour se cacher de  personnes, pour empêcher les identifications de personnes
-          dont vous ne partagez pas les opinions, ou de retirer votre identifiant
-          de la communauté (il y en a un autre moyen de régler cela). Ainsi, le
-          blocage fonctionne dans les deux sens: si vous bloquez  quelqu'un, ils
-          ne peuvent pas interagir avec vous, mais vous ne pouvez pas non plus interagir
-          avec eux. Si vous l'utilisez mal pour empêcher quelqu'un d'identifier
-          vos  observations, vous vous empêchez également d'identifier ses  observations.
-          </p>
-          <p>
-          Vous ne pouvez bloquer que trois personnes. Nous pensons que
-          c'est un nombre raisonnable  qui accueille les personnes qui ont besoin
-          de bloquer et  prévenir les abus de blocage. Si vous sentez que vous devez
-          bloquer plus  <a href="mailto:%{help_email}"> contactez-nous </a>.
-          </p>
-          <p>
-          Si quelqu'un vous harcèle ou vous traque sur %{site_name},
-          <a href="mailto:%{help_email}"> merci de nous le faire savoir </a>.
-          Si cela représente une violation de nos conditions d'utilisation ou représente
-          autre comportement que nous considérons inapproprié pour notre site, nous
-          enquêterons.
-          </p>
         inaturalist_network_affiliation_desc_html: |
           <p> Le <a href="%{url}" target="_blank">Réseau iNaturalist</a> est une collection de sites web localisés liés à la communauté mondiale de iNaturalist. Les sites du réseau sont pris en charge par les institutions locales qui ont signé un accord avec iNaturalist pour promouvoir l'utilisation locale et bénéficier de la biodiversité locale. Elles ont accès aux coordonnées réelles à partir de leur pays qui sont automatiquement cachées de la vue du public dans le but de protéger les espèces menacées. </p>
           <p> Votre nom d'utilisateur et votre mot de passe sont valides sur tous les sites qui font partie du réseau iNaturalist. Si vous choisissez de vous rattacher à un site du réseau, les institutions locales qui opèrent sur chaque site auront aussi accès à votre adresse courriel (seulement pour communiquer avec vous pour ce qui concerne les activités du site) et aux coordonnées réelles des observations qui sont masquées au public ou qui sont privées.</p>
@@ -939,9 +986,6 @@ fr-CA:
           Adresses IP (qui peuvent être utilisées pour déterminer votre ville et vous traquer sur différents sites Web et services; notez que vous avons activé
           l'<a href="https://support.google.com/analytics/answer/2763052">anonymisation IP</a> dans Google Analytics ; Firebase Crashlytics
           <a href="https://firebase.google.com/support/privacy"> peut stocker les adresses IP</a> temporairement)
-        this_only_applies_to_traditional_projects: |
-          Ceci ne s'applique qu'aux projets traditionnels. Vous ne pouvez pas exclure les observations des collections ni des projets chapeau, qui sont essentiellement des recherches sauvegardées.
-          Davantage d'informations <a href="/blog/15450-announcing-changes-to-projects-on-inaturalist">ici</a>.
     user_parents:
       confirm:
         we_will_send_you_an_email: |
@@ -960,6 +1004,190 @@ fr-CA:
           comme « courriel du parent », nous activerons le compte de l’enfant et enverrons
           au parent un courriel avec les instructions de connexion. Ceci peut prendre 24
           heures.
+    welcome_v2:
+      index:
+        hero:
+          #Main hero headline on the home page
+          headline: Où votre curiosité contribue à la science.
+          #Hero subheadline describing the core value proposition
+          subheadline: >
+            Identifiez les plantes, les animaux, les champignons et plus encore tout en contribuant à un atlas vivant de la vie sur Terre.
+          #Primary call-to-action button in the hero section
+          cta_join: Joignez-vous à la communauté
+          #Tagline displayed beneath the hero CTA, emphasising the app's accessibility
+          tagline: Gratuit, sans but lucratif, alimenté par la communauté.
+        features:
+          #Section label introducing the three core user actions
+          intro: "Avec iNaturalist, vous pouvez :"
+          #Description of what users can Identify
+          #Read as "{Identify} plants, animals, fungi, & more"
+          identify_desc: Plantes, animaux, champignons, et plus encore
+          #Description of what users can Track
+          #Read as "{Track} species you've seen worldwide"
+          track_desc: Espèces que vous avez vues dans le monde entier
+          #Description of where users can Contribute
+          #Read as "{Contribute} to real science"
+          contribute_desc: à la vraie science
+          #Description of what users can Discover
+          #Read as "{Discover} nature nearby"
+          discover_desc: Nature à proximité
+          #Description of what users can Learn
+          #Read as "{Learn} from a global community of naturalists"
+          learn_desc: D’une communauté mondiale de naturalistes
+        stories:
+          #Section heading for real-world stories powered by community science
+          heading: Le pouvoir de la science communautaire
+          #Photo credit for each community-science story card; %{user} = observer login, %{place} = display place name
+          observation_credit: Vu par %{user} dans %{place}
+          #Heading for the story about rediscovering an extinct moth species
+          moth_heading: Redécouverte d’espèces disparues depuis longtemps
+          #Body text for the moth rediscovery story; %{moth_common_name} = common name of the moth from JSON
+          moth_body: >
+            Le %{moth_common_name} Le papillon de nuit n’avait pas été aperçu depuis des décennies et on croyait autrefois éteint — jusqu’à ce qu’un touriste en Nouvelle-Zélande le repère par hasard.
+          #Heading for the story about a new-to-science mantis species
+          mantis_heading: Découverte d’espèces nouvelles pour la science
+          #Body text for the mantis discovery story
+          mantis_body_html: >
+            <span class="italic">Inimia nat</span> — abrégé en <span class="italic">I. nat</span> — est une espèce de mante mante nouvellement connue pour la science, trouvée par une femme en Australie qui marchait dans son quartier.
+          #Heading for the story about volunteers protecting amphibians
+          amphibian_heading: Protection des écosystèmes locaux
+          #Body text for the amphibian protection story
+          amphibian_body: >
+            Un groupe de bénévoles locaux en Californie s’est réuni via iNaturalist pour protéger les amphibiens migrateurs traversant une route très fréquentée.
+          #Link below the stories to read more community science stories
+          read_more: Lire plus d’histoires
+        observation:
+          #Heading for the sample observation section
+          heading: Chaque observation raconte une histoire
+        stats:
+          #Description label for the observations statistic
+          #Prepended by count, e.g. "350M+ observations contributing to biodiversity science"
+          observations_label: Observations contribuant à la science de la biodiversité
+          #Description label for the species statistic
+          #Prepended by count, e.g. "550,000+ species documented across the globe"
+          species_label: Espèces documentées à travers le monde
+          #Description label for the papers statistic
+          #Prepended by count, e.g. "7,000+ papers citing iNaturalist data"
+          papers_label: articles citant des données d’iNaturalist
+          #Description label for the discoveries statistic
+          #Prepended by count, e.g. "500+ species discovered or rediscovered by community scientists"
+          discoveries_label: Espèces découvertes ou redécouvertes par des scientifiques communautaires
+        how:
+          #Step 1 description — instructing users to photograph any organism
+          step1_body: >
+            Ouvrez l’application et photographiez n’importe quelle plante, animal, champignon ou autre organisme sauvage — de votre quartier ou de n’importe où dans le monde.
+          #Step 2 description — explaining AI and community identification
+          step2_body: >
+            L’application suggère une identification instantanée, et une communauté mondiale de naturalistes la confirme ou la peaufine.
+          #Step 3 description — explaining how observations become open scientific data
+          step3_body: >
+            Votre observation devient des données ouvertes — utilisées par des scientifiques, des conservationnistes et des chercheurs partout dans le monde.
+          #Explanatory note below the three steps giving the "why" behind contributing
+          why_note_html: >
+            La nature change plus vite que jamais, alors nous avons besoin <span class="underline">toi</span> pour aider à enregistrer ce qui vit où.
+        testimonials:
+          #Quote from the testimonial author (last name Gube)
+          gube_quote: >
+            Cela m’a vraiment aidé à identifier les espèces, en plus de me donner l’occasion d’interagir avec différentes personnes à travers le monde.
+          #Job title and location of the testimonial author (last name Gube)
+          gube_title: Conservationniste marine et photographe sous-marin, Kenya
+          #Quote from the testimonial author (last name Kratzer)
+          kratzer_quote: >
+            iNaturalist ouvre la porte à tellement de recherches nouvelles et passionnantes sur des taxons peu étudiés. À mon avis, cette plateforme est à la pointe de la science écologique.
+          #Job title and location of the testimonial author (last name Kratzer)
+          kratzer_title: Auteur du guide de terrain chez Owlfly LLC, États-Unis
+          #Quote from the testimonial author (last name Sumanapala)
+          sumanapala_quote: >
+            iNaturalist et sa communauté dévouée d’identifiants sont devenus une ressource inestimable dans mes explorations. Cela a aidé à poser les bases de mon travail actuel.
+          #Job title and location of the testimonial author (last name Sumanapala)
+          sumanapala_title: Chercheur en biodiversité, Sri Lanka
+          #Quote from the testimonial author (last name Fachetti)
+          fachetti_quote: >
+            iNaturalist est un outil puissant qui relie les gens, la nature et le savoir. Je peux photographier une espèce rare, ou même une qui n’a pas encore été décrite, tout en contribuant à la conservation de notre patrimoine naturel.
+          #Job title and location of the testimonial author (last name Fachetti)
+          fachetti_title: Technicien en environnement et photographe amateur, Brésil
+          #Quote from the testimonial author (last name Velazco)
+          velazco_quote: >
+            Peu importe où vous êtes dans le monde, que vous ayez un doctorat ou que vous aimiez simplement le plein air, iNaturalist vous rapprochera de la nature et de nombreux autres naturalistes.
+          #Job title and location of the testimonial author (last name Velazco)
+          velazco_title: Biologiste, Mexique
+        everyone:
+          #Heading for the broad audience section
+          heading: Tout le monde est naturaliste
+          #Description inviting anyone who has been curious about a living thing
+          body: >
+            Si vous avez déjà regardé de près quelque chose de vivant et vous êtes demandé ce que c’était, iNaturalist est fait pour vous.
+          #Heading for the impact sub-section
+          impact_heading: Tu peux avoir un impact
+          #Description of how each photo contributes to the global scientific record
+          impact_body: >
+            Chaque photo que vous partagez fait partie d’un dossier scientifique mondial sur lequel les chercheurs du monde entier comptent.
+          #Heading for the community reputation sub-section
+          community_heading: '« Le plus bel endroit en ligne »'
+          #Description of the welcoming community aspect
+          community_body: >
+            Venez pour les identifications, restez pour la communauté et pour avoir un impact sur la science.
+        download:
+          #Heading prompting users to download the mobile app
+          heading: Téléchargez l’application iNaturalist
+          #Subheading describing the two core benefits of the app
+          subheading: Obtenez des identifications en temps réel et contribuez à la science
+          #Social proof label showing total app downloads
+          #%{count} = formatted and rounded number of downloads. The plus (+) reflects there being more than that number.
+          count_label: "%{count}+ Téléchargements"
+        explore:
+          #Heading for the explore species section; species cards generated from static JSON exported from iNat
+          heading: Explorer des espèces à travers le monde
+          #Button / link to browse species without downloading
+          button: Explorez maintenant
+        seek:
+          #Heading for the Seek app section, aimed at users under 13
+          heading: "Moins de 13 ans? Téléchargez Seek!"
+          #Description of Seek's badge and challenge features
+          body: Gagnez des badges et participez à des défis pour observer des espèces!
+          #Review count social proof label for the app
+          #%{count} = formatted and rounded number of 5-star reviews. The plus (+) reflects there being more than that number.
+          review_tagline: "%{count}+ Critiques 5 étoiles"
+        newsletter:
+          #Heading inviting users to subscribe to the monthly newsletter
+          heading: Recevez notre infolettre mensuelle!
+          #Description of the newsletter's content
+          body: Restez connecté aux histoires et aux découvertes de la communauté iNaturalist.
+        donate:
+          #Heading describing iNaturalist's nonprofit status
+          heading: iNaturalist est un organisme à but non lucratif qui soutient la science et la conservation.
+          #Supporting line connecting the user's donation to iNaturalist's mission of supporting science and conservation.
+          subheading: Votre soutien rend cela possible.
+          #Call-to-action button for the donation section
+          cta: Faites un don maintenant
+        faq:
+          #Section heading for the Frequently Asked Questions block
+          heading: FAQ
+          #FAQ: uploading existing photos — question
+          upload_existing_question: Puis-je télécharger des photos que j’ai déjà?
+          #FAQ: uploading existing photos — answer
+          upload_existing_answer: >
+            Oui! Tant que vous savez à peu près quand et où une photo a été prise, les photos plus anciennes sont les bienvenues.
+          #FAQ: who can use iNaturalist data — question
+          who_can_use_question: Qui peut faire de la science avec des observations iNaturalist?
+          #FAQ: who can use iNaturalist data — answer
+          who_can_use_answer: >
+            N’importe qui! Toutes les observations d’iNaturalist sont ouvertes et librement accessibles — pour les chercheurs, les praticiens de la conservation et les curieux.
+          #FAQ: research grade definition — question
+          research_grade_question: Que signifie « niveau de recherche »?
+          #FAQ: research grade definition — answer
+          research_grade_answer: >
+            Lorsque la communauté s’entend sur une identification, une observation devient de « qualité recherche » et entre dans les archives scientifiques mondiales. Chaque identification peut aider à y arriver.
+          #FAQ: whether prior knowledge is needed — question
+          no_knowledge_question: Est-ce que je dois savoir ce que je regarde?
+          #FAQ: whether prior knowledge is needed — answer
+          no_knowledge_answer: >
+            Pas du tout! Partagez une photo, et une communauté mondiale de naturalistes pourra vous aider à l’identifier.
+          #FAQ: whether the app is required — question
+          need_app_question: Dois-je utiliser l’application?
+          #FAQ: whether the app is required — answer; references both the website and mobile app
+          need_app_answer: >
+            Sur un ordinateur de bureau, iNaturalist.org fonctionne très bien. Sur un appareil mobile, l’application vous offre la meilleure expérience — surtout pour identifier les espèces en déplacement.
   number:
     format:
       significant: false
@@ -978,6 +1206,8 @@ fr-CA:
       user:
         email: Courriel
     errors:
+      messages:
+        requires_privilege_interaction: doit avoir une adresse courriel confirmée pour le faire
       models:
         taxon_name:
           attributes:
@@ -989,11 +1219,6 @@ fr-CA:
               should_be_in_english: devrait être en anglais
             name:
               already_exists: existe déjà pour ce taxon dans ce lexique
-        user:
-          attributes:
-            email:
-              must_look_like_an_email_address: doit ressembler à une adresse courriel
-              domain_is_not_supported: ce domaine n'est pas pris en charge
         user_parent:
           attributes:
             email:

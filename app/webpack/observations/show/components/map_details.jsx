@@ -1,6 +1,7 @@
 import _ from "lodash";
 import React from "react";
 import PropTypes from "prop-types";
+import { OverlayTrigger, Tooltip } from "react-bootstrap";
 
 class MapDetails extends React.Component {
   static placeList( places ) {
@@ -30,10 +31,19 @@ class MapDetails extends React.Component {
     } );
   }
 
+  static sliceFloat( num ) {
+    if ( !num ) { return ""; }
+    const str = num.toString( );
+    const arr = str.split( "." );
+    if ( arr.length === 1 ) { return str; }
+    return `${arr[0]}.${arr[1].slice( 0, 5 )}`;
+  }
+
   constructor( ) {
     super( );
     this.state = {
-      showAllPlaces: false
+      showAllPlaces: false,
+      latLngCopied: false
     };
   }
 
@@ -108,18 +118,67 @@ class MapDetails extends React.Component {
         { I18n.t( "geoprivacy_is_obscured_desc" ) }
       </li>
     );
+    const hasCoords = (
+      ( observation.latitude || observation.latitude === 0 )
+      && ( observation.longitude || observation.longitude === 0 )
+    );
+    const clipboardButton = hasCoords ? (
+      <OverlayTrigger
+        key={`clipboard-tooltip-${this.state.latLngCopied}`}
+        delayShow={this.state.latLngCopied ? 0 : 1000}
+        placement="top"
+        container={$( ".MapDetails" ).get( 0 )}
+        ref={c => { this.clipboardOverlay = c; }}
+        overlay={(
+          <Tooltip id="clipboard-tooltip">
+            { this.state.latLngCopied
+              ? I18n.t( "copied!" )
+              : I18n.t( "copy_to_clipboard" ) }
+          </Tooltip>
+        )}
+      >
+        <button
+          type="button"
+          className="btn btn-xs btn-default clipboard-copy"
+          onMouseLeave={() => {
+            setTimeout( ( ) => {
+              this.setState( { latLngCopied: false } );
+            }, 200 );
+          }}
+          onBlur={() => {
+            setTimeout( ( ) => {
+              this.setState( { latLngCopied: false } );
+            }, 200 );
+          }}
+          onClick={() => {
+            navigator.clipboard.writeText( [
+              observation.latitude, observation.longitude
+            ].join( ", " ) );
+            this.setState( { latLngCopied: true } );
+            setTimeout( ( ) => {
+              this.clipboardOverlay.show( );
+            } );
+          }}
+        >
+          <i
+            className="fa fa-clipboard"
+          />
+        </button>
+      </OverlayTrigger>
+    ) : null;
     return (
       <div className="MapDetails">
         <div className="top_info">
           <div className="info">
-            <span className="attr">{ I18n.t( "label_colon", { label: I18n.t( "lat" ) } ) }</span>
+            <span className="attr">{ I18n.t( "label_colon", { label: I18n.t( "latlon" ) } ) }</span>
             { " " }
-            <span className="value">{ _.round( observation.latitude, 6 ) || "" }</span>
-          </div>
-          <div className="info">
-            <span className="attr">{ I18n.t( "label_colon", { label: I18n.t( "long" ) } ) }</span>
-            { " " }
-            <span className="value">{ _.round( observation.longitude, 6 ) || "" }</span>
+            <span id="latlng" className="value">
+              { hasCoords ? ( [
+                MapDetails.sliceFloat( observation.latitude ),
+                MapDetails.sliceFloat( observation.longitude )
+              ].join( ", " ) ) : ""}
+            </span>
+            { clipboardButton }
           </div>
           <div className="info">
             <span className="attr">{ I18n.t( "label_colon", { label: I18n.t( "accuracy" ) } ) }</span>

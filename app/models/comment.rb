@@ -1,7 +1,8 @@
-class Comment < ApplicationRecord
+# frozen_string_literal: true
 
-  acts_as_spammable fields: [ :body ],
-                    comment_type: "comment"
+class Comment < ApplicationRecord
+  acts_as_spammable fields: [:body],
+    comment_type: "comment"
   acts_as_votable
   has_moderator_actions %w(hide unhide)
   SUBSCRIBABLE = false
@@ -10,6 +11,11 @@ class Comment < ApplicationRecord
   # than your own content
   # requires_privilege :speech, if: Proc.new {|c|
   #   c.parent.respond_to?(:user) && c.parent.user.id != user.id
+  # }
+
+  # TODO: uncomment to strictly enforce email confirmation for interaction
+  # requires_privilege :interaction, unless: proc {| comment |
+  #   comment.parent.respond_to?( :user ) && comment.parent.user.id == comment.user_id
   # }
 
   belongs_to_with_uuid :parent, polymorphic: true
@@ -31,18 +37,27 @@ class Comment < ApplicationRecord
     on: :save,
     delay: false,
     notification: "mention",
-    if: lambda {|u| u.prefers_receive_mentions? }
-  auto_subscribes :user, to: :parent
-  blockable_by lambda {|comment| comment.parent.try(:user_id) }
+    if: lambda( &:prefers_receive_mentions? )
+  auto_subscribes :user, to: :parent, unsubscribe_enabled: :parent_unsubscribe_enabled?
 
-  scope :by, lambda {|user| where("comments.user_id = ?", user)}
-  scope :for_observer, lambda {|user| 
-    joins("JOIN observations o ON o.id = comments.parent_id").
-    where("comments.parent_type = 'Observation'").
-    where("o.user_id = ?", user)
+  blockable_by proc {| comment |
+    should_bypass_block = comment.parent.is_a?( TaxonChange ) ||
+      ( comment.parent.is_a?( Flag ) && comment.parent.flaggable_type == "Taxon" )
+    if should_bypass_block
+      nil
+    else
+      comment.parent.try( :user_id )
+    end
   }
-  scope :since, lambda {|datetime| where("comments.created_at > DATE(?)", datetime)}
-  scope :dbsearch, lambda {|q| where("comments.body ILIKE ?", "%#{q}%")}
+
+  scope :by, ->( user ) { where( "comments.user_id = ?", user ) }
+  scope :for_observer, lambda {| user |
+    joins( "JOIN observations o ON o.id = comments.parent_id" ).
+      where( "comments.parent_type = 'Observation'" ).
+      where( "o.user_id = ?", user )
+  }
+  scope :since, ->( datetime ) { where( "comments.created_at > DATE(?)", datetime ) }
+  scope :dbsearch, ->( q ) { where( "comments.body ILIKE ?", "%#{q}%" ) }
 
   include ActsAsUUIDable
 
@@ -54,25 +69,26 @@ class Comment < ApplicationRecord
 
   def as_indexed_json
     return unless user
+
     {
       id: id,
       uuid: uuid,
-      user: user.as_indexed_json(no_details: true),
+      user: user.as_indexed_json( no_details: true ),
       created_at: created_at,
-      created_at_details: ElasticModel.date_details(created_at),
+      created_at_details: ElasticModel.date_details( created_at ),
       body: body,
-      flags: flags.map(&:as_indexed_json),
-      moderator_actions: moderator_actions.map(&:as_indexed_json),
+      flags: flags.map( &:as_indexed_json ),
+      moderator_actions: moderator_actions.map( &:as_indexed_json ),
       hidden: hidden?
     }
   end
 
   def update_parent_counter_cache
-    if parent && parent.class.column_names.include?("comments_count")
-      if parent.class.column_names.include?("updated_at")
-        parent.class.where(id: parent_id).update_all(comments_count: parent.comments.count, updated_at: Time.now)
+    if parent && parent.class.column_names.include?( "comments_count" )
+      if parent.class.column_names.include?( "updated_at" )
+        parent.class.where( id: parent_id ).update_all( comments_count: parent.comments.count, updated_at: Time.now )
       else
-        parent.class.where(id: parent_id).update_all(comments_count: parent.comments.count)
+        parent.class.where( id: parent_id ).update_all( comments_count: parent.comments.count )
       end
     end
     true
@@ -81,40 +97,53 @@ class Comment < ApplicationRecord
   def deletable_by?( deleting_user )
     return false if deleting_user.blank?
     return true if deleting_user.id == user_id
-    return true if deleting_user.id == parent.try_methods( :user_id )
+    return true if deleting_user.id == parent.try_methods( :user_id ) &&
+      !( parent.is_a?( Flag ) || parent.is_a?( TaxonChange ) )
     return true if deleting_user.is_admin?
 
     false
   end
 
   def mentioned_users
-    return [ ] unless body
+    return [] unless body
+
     body.mentioned_users
   end
 
   def index_parent
     return if @parent_indexed
     return if bulk_delete
-    if parent && parent.respond_to?(:elastic_index!)
-      if parent.is_a?( Observation )
-        parent.wait_for_index_refresh = !!wait_for_obs_index_refresh
-      end
-      parent.elastic_index!
-      @parent_indexed = true
+
+    return unless parent.respond_to?( :elastic_index! )
+
+    if parent.is_a?( Observation )
+      parent.wait_for_index_refresh = !wait_for_obs_index_refresh.nil?
     end
+    parent.elastic_index!
+    @parent_indexed = true
   end
 
-  def flagged_with(flag, options)
+  def flagged_with( flag, _options )
     parent&.touch
-    evaluate_new_flag_for_spam(flag)
+    evaluate_new_flag_for_spam( flag )
     index_parent
   end
 
   def parent_prefers_comments
-    if parent && parent.respond_to?( :prefers_no_comments? ) && parent.prefers_no_comments?
+    if parent.respond_to?( :prefers_no_comments? ) && parent.prefers_no_comments?
       errors.add( :parent, :prefers_no_comments )
     end
     true
   end
 
+  def parent_unsubscribe_enabled?
+    return false if Comment.where( parent: parent, user_id: user_id ).where.not( id: id ).any?
+
+    if parent.is_a?( Observation )
+      return false if Identification.where( observation: parent, user_id: user_id ).any?
+      return false if ObservationFieldValue.where( observation: parent, user_id: user_id ).any?
+    end
+
+    true
+  end
 end

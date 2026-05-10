@@ -1,23 +1,27 @@
-#encoding: utf-8
+# frozen_string_literal: true
+
 class LocalPhoto < Photo
   include LogsDestruction
   after_create :set_urls
   after_update :change_photo_bucket_if_needed
-  
+
   # only perform EXIF-based rotation on mobile app contributions
   image_convert_options = Proc.new {|record|
     record.rotation.blank? ? "-auto-orient" : nil
   }
-  
+
   FILE_OPTIONS = {
     preserve_files: true,
-    styles: {
-      original: { geometry: "2048x2048>", auto_orient: false, processors: [ :rotator, :metadata_filter ] },
-      large:    { geometry: "1024x1024>", auto_orient: false },
-      medium:   { geometry: "500x500>",   auto_orient: false },
-      small:    { geometry: "240x240>",   auto_orient: false, processors: [ :deanimator ] },
-      thumb:    { geometry: "100x100>",   auto_orient: false, processors: [ :deanimator ] },
-      square:   { geometry: "75x75#",     auto_orient: false, processors: [ :deanimator ] }
+    styles: proc {| record |
+      fmt = record.content_type == "image/gif" ? :gif : :jpg
+      {
+        original: { geometry: "2048x2048>", auto_orient: false, format: fmt, processors: [:rotator, :metadata_filter] },
+        large:    { geometry: "1024x1024>", auto_orient: false, format: fmt },
+        medium:   { geometry: "500x500>",   auto_orient: false, format: fmt },
+        small:    { geometry: "240x240>",   auto_orient: false, format: fmt, processors: [:deanimator] },
+        thumb:    { geometry: "100x100>",   auto_orient: false, format: fmt, processors: [:deanimator] },
+        square:   { geometry: "75x75#",     auto_orient: false, format: fmt, processors: [:deanimator] }
+      }
     },
     convert_options: {
       original: image_convert_options,
@@ -29,6 +33,8 @@ class LocalPhoto < Photo
     },
     default_url: "/attachment_defaults/:class/:style.png"
   }
+
+  SIZES = FILE_OPTIONS[:convert_options].keys
 
   if CONFIG.usingS3
 
@@ -93,7 +99,7 @@ class LocalPhoto < Photo
   # is the former subclass. Those subclasses don't validate :user
   validates_presence_of :user, unless: :subtype
   validates_attachment_content_type :file, content_type: Photo::MIME_PATTERNS,
-    :message => "must be JPG, PNG, or GIF"
+    :message => "must be JPG, PNG, GIF, HEIC, or HEIF"
 
   attr_accessor :rotation, :skip_delay, :skip_cloudfront_invalidation
 
@@ -198,22 +204,23 @@ class LocalPhoto < Photo
   # I think this may be impossible using delayed_paperclip
   # validates_attachment_presence :file
   # validates_attachment_size :file, :less_than => 5.megabytes
-  
-  def file=(data)
-    self.file.assign(data)
+
+  def file=( data )
+    self.file.assign( data )
     # uploaded photos need metadata immediately in order to
     # "Sync obs. w/ photo metadata"
-    if data.is_a?(ActionDispatch::Http::UploadedFile)
-      extract_metadata(data.path)
-    end
+    return unless data.is_a?( ActionDispatch::Http::UploadedFile )
+
+    extract_metadata( data.path, data.content_type )
   end
 
-  def extract_metadata(path = nil)
-    return unless file && (path || !file.queued_for_write.blank?)
+  def extract_metadata( path = nil, content_type = nil )
+    return unless file && ( path || !file.queued_for_write.blank? )
+
     extracted_metadata = metadata.to_h.clone || {}
     begin
-      if ( file_path = ( path || file.queued_for_write[:original].path ) )
-        exif_data = ExifMetadata.new( path: file_path, type: file_content_type ).extract
+      if ( file_path = path || file.queued_for_write[:original].path )
+        exif_data = ExifMetadata.new( path: file_path, type: content_type || file_content_type ).extract
         extracted_metadata.merge!( exif_data )
       end
     rescue EXIFR::MalformedImage, EOFError => e
@@ -353,7 +360,11 @@ class LocalPhoto < Photo
       if o.georeferenced?
         o.place_guess = o.system_places.sort_by{|p| p.bbox_area || 0}.map(&:name).join(', ')
       end
-      if capture_time = (metadata[:date_time_original] || metadata[:date_time_digitized])
+      if ( capture_time = metadata[:date_time_original] || metadata[:date_time_digitized] )
+        # Sometimes this value has colon-separated date parts that Ruby won't parse
+        if capture_time.is_a?( String )
+          capture_time.sub!( /(\d{4}):(\d{2}):(\d{2})/, "\\1-\\2-\\3" )
+        end
         o.set_time_zone
         o.time_observed_at = capture_time
         # Force the time to be in the time zone, b/c the value from EXIFR will
@@ -362,7 +373,9 @@ class LocalPhoto < Photo
         # https://github.com/MikeKovarik/exifr/issues/84#issuecomment-1004691190
         o.set_time_in_time_zone
         if o.time_observed_at
-          o.observed_on_string = o.time_observed_at.in_time_zone( o.time_zone || user.time_zone ).strftime("%Y-%m-%d %H:%M:%S")
+          o.observed_on_string = o.time_observed_at.
+            in_time_zone( o.time_zone || user.time_zone ).
+            strftime( "%Y-%m-%d %H:%M:%S" )
           o.observed_on = o.time_observed_at.to_date
         end
       end
@@ -417,7 +430,7 @@ class LocalPhoto < Photo
       # still a high chance of encoding weirdness happening
       words = file.original_filename.scan( /[\p{L}\p{M}'\’]+/ ).map( &:downcase ).uniq
       words = words.reject do | word |
-        word.size < 4 || word =~ /^original|img|inat|dsc.?|jpe?g|png|gif|open-uri$/i
+        word.size < 4 || word =~ /^(original|img|inat|dsc.?|jpe?g|png|gif|open-uri)$/i
       end
       # Collect all combinations of these words from 1-word combinations up to
       # 3-word combinations (median word length for taxon names is 2, avg
@@ -432,10 +445,11 @@ class LocalPhoto < Photo
     tags.uniq
   end
 
-  def to_taxa(options = {})
+  def to_taxa( options = {} )
     tags = to_tags( with_title: true, with_file_name: true )
     return [] if tags.blank?
-    Taxon.tags_to_taxa(tags, options).compact
+
+    Taxon.tags_to_taxa( tags, options ).compact
   end
 
   def rotate!(degrees = 90)

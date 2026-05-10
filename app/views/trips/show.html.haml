@@ -6,6 +6,13 @@
   :javascript
     $('.observationcontrols').observationControls()
     $("#comment_body").textcompleteUsers( );
+    $( ".emailConfirmationModalTrigger, #flag_this, a.flaglink" ).click( function( e ) {
+      if ( $( "#emailConfirmationModalButton.lacking-interaction" ).length === 1 ) {
+        $( "#emailConfirmationModalButton.lacking-interaction" ).click( );
+        e.preventDefault( );
+        e.stopPropagation( );
+      }
+    } );
 - content_for :extrahead do
   %meta{:property => "og:image", :content => html_attributize(@shareable_image_url)}
   %meta{:property => "twitter:image", :content => html_attributize(@shareable_image_url)}
@@ -24,7 +31,7 @@
     %li
       - if @trip.parent.is_a?(Project)
         - if @trip.parent.is_new_project?
-          = link_to t( :x_project_journal, project: strip_tags( @parent.title ), name: t( :journal ) ), project_journal_path(@trip.parent)
+          = link_to t( :x_project_journal, project: @trip.parent.title, name: t( :journal ) ), project_journal_path(@trip.parent)
         - else
           = link_to t(:x_journal, :user => @trip.parent.title), project_journal_path(@trip.parent)
       - elsif @trip.parent.is_a?(Site)

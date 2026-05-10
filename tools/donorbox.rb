@@ -17,7 +17,14 @@ opts = Optimist.options do
   opt :dry, "Dry run, don't actually change anything", type: :boolean
   opt :email, "Filter results by Donorbox donor email", type: :string
   opt :donor_id, "Filter results by Donorbox donor ID", type: :string
+  opt :log_task_name, "Log with the specified task name", type: :string
 end
+
+if opts.log_task_name
+  task_logger = TaskLogger.new( opts.log_task_name, nil, "sync" )
+end
+
+task_logger&.start
 
 start = Time.now
 if !CONFIG.donorbox || !CONFIG.donorbox.email || !CONFIG.donorbox.key
@@ -35,13 +42,22 @@ new_verified_user_parents = 0
 failed_users = 0
 failed_parents = 0
 donors = {}
+potential_errors = [
+  Timeout::Error,
+  RestClient::ServiceUnavailable,
+  RestClient::GatewayTimeout,
+  RestClient::TooManyRequests,
+  RestClient::InternalServerError
+]
 loop do
   url = "https://donorbox.org/api/v1/donors?page=#{page}&per_page=#{per_page}"
   puts url if opts.debug
-  response = RestClient.get( url, {
-    "Authorization" => "Basic #{Base64.strict_encode64( "#{donorbox_email}:#{donorbox_key}" ).strip}",
-    "User-Agent" => "iNaturalist/Donorbox"
-  } )
+  response = try_and_try_again( potential_errors, exponential_backoff: true, sleep: 3 ) do
+    RestClient.get( url, {
+      "Authorization" => "Basic #{Base64.strict_encode64( "#{donorbox_email}:#{donorbox_key}" ).strip}",
+      "User-Agent" => "iNaturalist/Donorbox"
+    } )
+  end
   json = JSON.parse( response )
   break if json.size.zero?
 
@@ -59,7 +75,7 @@ loop do
     if opts.debug
       puts donor
     end
-    if ( user = User.find_by_email( donor["email"] ) )
+    if ( user = User.find_by_email( donor["email"].downcase ) )
       puts "\tDonor: #{user.donor?}" if opts.debug
       unless user.donor?
         if opts.dry || user.update( donorbox_donor_id: donor["id"] )
@@ -72,7 +88,7 @@ loop do
       end
       total_verified_users += 1
     end
-    user_parent = UserParent.find_by_email( donor["email"] )
+    user_parent = UserParent.find_by_email( donor["email"].downcase )
     # Sometimes the parent enters the same email on Donorobox as they use for
     # their iNat account, but they entered a different email address when
     # filling out the UserParent form. This should make sure that if we know the
@@ -107,3 +123,5 @@ puts "#{donors.size} donors, #{total_verified_users} donor users, " \
   "donor parents, #{failed_users} failed users, #{failed_parents} failed " \
   "parents in #{Time.now - start}s"
 puts
+
+task_logger&.end

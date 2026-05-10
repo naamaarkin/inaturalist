@@ -1,3 +1,5 @@
+# frozen_string_literal: true
+
 # Filters added to this controller will be run for all controllers in the application.
 # Likewise, all the methods added will be available for all controllers.
 class ApplicationController < ActionController::Base
@@ -10,6 +12,7 @@ class ApplicationController < ActionController::Base
 
   helper :all # include all helpers, all the time
   protect_from_forgery with: :exception, if: -> { request.headers["Authorization"].blank? }
+  prepend_before_action :reject_invalid_signed_in_traffic_cookie
   before_action :permit_params
   around_action :set_time_zone
   around_action :logstash_catchall
@@ -26,6 +29,7 @@ class ApplicationController < ActionController::Base
   before_action :draft_site_requires_admin
   before_action :set_ga_trackers
   before_action :set_request_locale
+  before_action :set_testing_responsive
   before_action :check_preferred_place
   before_action :check_preferred_site
   before_action :sign_out_spammers
@@ -34,10 +38,29 @@ class ApplicationController < ActionController::Base
   # /ping should skip all before filters and just render
   skip_before_action *_process_action_callbacks.map(&:filter), only: :ping, raise: false
 
-  PER_PAGES = [10,30,50,100,200]
+  PER_PAGES = [10, 30, 50, 100, 200]
   HEADER_VERSION = 21
-  
+  SIGNED_IN_TRAFFIC_COOKIE_KEY = "_inaturalist_signed_in"
+  SIGNED_IN_TRAFFIC_COOKIE_TTL = 2.weeks
+  TAMPERED_SIGNED_IN_TRAFFIC_COOKIE_SEC_RULE = "signed_in_cookie_tampered_signature"
+  INVALID_SIGNED_IN_TRAFFIC_COOKIE_SEC_RULE = "signed_in_cookie_invalid_payload"
+  UNAUTHENTICATED_SIGNED_IN_TRAFFIC_COOKIE_SEC_RULE = "signed_in_cookie_without_authenticated_session"
+  MISMATCHED_SIGNED_IN_TRAFFIC_COOKIE_SEC_RULE = "signed_in_cookie_user_mismatch"
+
   alias :logged_in? :user_signed_in?
+
+  def sign_in( resource_or_scope, *args )
+    result = super
+    options = args.last.is_a?( Hash ) ? args.last : {}
+    set_signed_in_traffic_cookie( current_user ) if options[:store] != false && current_user
+    result
+  end
+
+  def sign_out( resource_or_scope = nil )
+    result = super
+    clear_signed_in_traffic_cookie
+    result
+  end
 
   # set the locale for the current session. If the user is
   # logged in, also update their preferred locale in the DB
@@ -56,6 +79,85 @@ class ApplicationController < ActionController::Base
   end
 
   private
+
+  def reject_invalid_signed_in_traffic_cookie
+    # No marker cookie: let anonymous traffic pass, recreate for authenticated users.
+    if cookies[SIGNED_IN_TRAFFIC_COOKIE_KEY].blank?
+      set_signed_in_traffic_cookie( current_user ) if user_signed_in?
+      return
+    end
+
+    signed_cookie_value = cookies.signed[SIGNED_IN_TRAFFIC_COOKIE_KEY]
+
+    # Signature invalid: suspicious marker. Clear and log.
+    unless signed_cookie_value
+      clear_signed_in_traffic_cookie
+      return log_signed_in_traffic_cookie_issue( TAMPERED_SIGNED_IN_TRAFFIC_COOKIE_SEC_RULE )
+    end
+
+    # Marker payload invalid: suspicious marker. Clear and log.
+    uid = signed_in_traffic_cookie_uid( signed_cookie_value )
+    unless uid
+      clear_signed_in_traffic_cookie
+      return log_signed_in_traffic_cookie_issue( INVALID_SIGNED_IN_TRAFFIC_COOKIE_SEC_RULE )
+    end
+
+    # Marker on anonymous request: likely stale session or replay attempt. Clear and log.
+    unless user_signed_in?
+      clear_signed_in_traffic_cookie
+      return log_signed_in_traffic_cookie_issue(
+        UNAUTHENTICATED_SIGNED_IN_TRAFFIC_COOKIE_SEC_RULE,
+        marker_uid: uid
+      )
+    end
+
+    # Marker uid mismatch while authenticated: suspicious marker. Clear and log.
+    if uid != current_user.id
+      clear_signed_in_traffic_cookie
+      return log_signed_in_traffic_cookie_issue(
+        MISMATCHED_SIGNED_IN_TRAFFIC_COOKIE_SEC_RULE,
+        marker_uid: uid
+      )
+    end
+
+    # Sliding expiration for active authenticated users.
+    set_signed_in_traffic_cookie( current_user )
+  end
+
+  def set_signed_in_traffic_cookie( user )
+    cookies.signed[SIGNED_IN_TRAFFIC_COOKIE_KEY] =
+      signed_in_traffic_cookie_options.merge( value: { uid: user.id } )
+  end
+
+  def clear_signed_in_traffic_cookie
+    cookies.delete( SIGNED_IN_TRAFFIC_COOKIE_KEY, signed_in_traffic_cookie_options( include_expires: false ) )
+  end
+
+  def signed_in_traffic_cookie_options( include_expires: true )
+    options = {
+      path: "/",
+      secure: request.ssl?,
+      httponly: true
+    }
+    options[:expires] = SIGNED_IN_TRAFFIC_COOKIE_TTL.from_now if include_expires
+    options
+  end
+
+  def signed_in_traffic_cookie_uid( signed_cookie_value )
+    return nil unless signed_cookie_value.is_a?( Hash )
+
+    uid = signed_cookie_value[:uid] || signed_cookie_value["uid"]
+    return nil unless uid.present?
+
+    uid.to_i
+  end
+
+  def log_signed_in_traffic_cookie_issue( rule, **_metadata )
+    marker_uid = _metadata[:marker_uid]
+    response.set_header( "X-Sec-Rule", rule )
+    response.set_header( "X-Sec-Rule-Marker-Uid", marker_uid ) if marker_uid
+    nil
+  end
 
   def default_url_options
     return @default_url_options if @default_url_options
@@ -349,14 +451,14 @@ class ApplicationController < ActionController::Base
     return unless current_user&.persisted?
 
     request_ip = Logstasher.ip_from_request_env( request.env )
-    # updating last_ip can trigger callbacks, so attept to update via the model first
-    current_user.update( last_ip: request_ip )
 
-    # the remaining columns should be updated even if there are potential validation
+    # updating last_ip can trigger callbacks, so attept to update via the model first.
+    # The remaining columns should be updated even if there are potential validation
     # errors on the user model that would prevent these atttributes from being
     # saved. Update these directly with update_columns
     update_columns = {}
     if request_ip != current_user.last_ip
+      current_user.update( last_ip: request_ip )
       update_columns[:last_ip] = request_ip
     end
     if current_user.subscriptions_suspended_at?
@@ -377,12 +479,25 @@ class ApplicationController < ActionController::Base
     unless request.format.json?
       request.format = "html"
     end
-    respond_to do |format|
-      format.json { render json: { error: t(:not_found) }, status: 404 }
+    respond_to do | format |
+      format.json { render json: { error: t( :not_found ) }, status: 404 }
       format.all { render template: "errors/error_404", status: 404, layout: "application" }
     end
   end
-  
+
+  #
+  # Return a 410 response with our default 404 page
+  #
+  def render_410
+    unless request.format.json?
+      request.format = "html"
+    end
+    respond_to do | format |
+      format.json { render json: { error: t( :not_found ) }, status: 410 }
+      format.all { render template: "errors/error_404", status: 410, layout: "application" }
+    end
+  end
+
   #
   # Redirect user to front page when they do something naughty.
   #
@@ -607,13 +722,45 @@ class ApplicationController < ActionController::Base
     throw :abort
   end
 
+  def cannot_have_content_creation_restrictions
+    return unless !current_user || current_user&.content_creation_restrictions?
+
+    error_message = t( :you_dont_have_permission_to_do_that )
+    respond_to do | format |
+      format.html do
+        flash[:notice] = error_message
+        redirect_back_or_default( root_url )
+        return
+      end
+      format.js do
+        render status: :forbidden, json: {
+          error: error_message
+        }
+        return
+      end
+      format.json do
+        render status: :forbidden, json: {
+          error: error_message
+        }
+        return
+      end
+      format.all do
+        render status: :forbidden, plain: error_message
+        return
+      end
+    end
+    throw :abort
+  end
+
   def remove_header_and_footer_for_apps
-    return true unless is_android_app? || is_iphone_app?
+    return true unless is_android_app? || is_iphone_app? || is_inatrn_app?
+
     @headless = true
     @footless = true
+    @responsive = true if is_inatrn_app?
     true
   end
-  
+
   # http://blog.serendeputy.com/posts/how-to-prevent-browsers-from-caching-a-page-in-rails/
   def prevent_caching
     response.headers["Cache-Control"] = "no-cache, no-store, max-age=0, must-revalidate"
@@ -759,8 +906,12 @@ class ApplicationController < ActionController::Base
     end
   end
 
-  def allow_external_iframes
-    response.headers["X-Frame-Options"] = "ALLOWALL"
+  def self.allow_external_iframes( options )
+    # modify the content security policy for the actions specified in options to
+    # disable the frame_ancestors policy, thus allowing iframes to request these actions
+    content_security_policy( **options ) do |p|
+      p.frame_ancestors "https:"
+    end
   end
 
   def allow_cors
@@ -781,6 +932,14 @@ class ApplicationController < ActionController::Base
     super
     payload.merge!(Logstasher.payload_from_request( request ))
     payload.merge!( { session: session } )
+    sec_rule = response.get_header( "X-Sec-Rule" )
+    sec_rule_uid = response.get_header( "X-Sec-Rule-Marker-Uid" )
+    payload[:sec_rule] = sec_rule if sec_rule.present?
+    payload[:sec_rule_uid] = sec_rule_uid if sec_rule_uid.present?
+    payload[:signed_in_traffic_cookie_incoming] =
+      request.cookies[SIGNED_IN_TRAFFIC_COOKIE_KEY].present?
+    payload[:signed_in_traffic_cookie_outgoing] =
+      cookies[SIGNED_IN_TRAFFIC_COOKIE_KEY].present?
     if logged_in?
       payload.merge!(Logstasher.payload_from_user( current_user ))
     end
@@ -804,6 +963,11 @@ class ApplicationController < ActionController::Base
     end
   end
 
+  def set_testing_responsive
+    if current_user&.in_test_group?( "responsive-header" )
+      @responsive = true
+    end
+  end
 end
 
 # Override the Google Analytics insertion code so it won't track admins

@@ -6,12 +6,12 @@ import {
   handlePlaceAutocomplete,
   handleCustomDropdownSelect
 } from "../ducks/user_settings";
-import { setModalState } from "../ducks/third_party_tracking_modal";
+import { toggleGroup } from "../../../shared/actions/test_groups";
 
 function mapStateToProps( state ) {
   return {
     config: state.config,
-    profile: state.profile,
+    userSettings: state.userSettings,
     sites: state.sites.sites
   };
 }
@@ -25,7 +25,7 @@ function mapDispatchToProps( dispatch ) {
     handleCustomDropdownSelect: ( eventKey, name ) => {
       dispatch( handleCustomDropdownSelect( eventKey, name ) );
     },
-    setModalState: newState => { dispatch( setModalState( newState ) ); }
+    toggleGroup: group => dispatch( toggleGroup( group ) )
   };
 }
 

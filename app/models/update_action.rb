@@ -1,6 +1,6 @@
 class UpdateAction < ApplicationRecord
 
-  include ActsAsElasticModel
+  acts_as_elastic_model
 
   belongs_to :resource, polymorphic: true
   belongs_to :notifier, polymorphic: true
@@ -27,13 +27,16 @@ class UpdateAction < ApplicationRecord
 
   def user_ids_without_blocked_and_muted( user_ids )
     notifier_user = notifier if notifier.is_a?( User )
-    notifier_user ||= notifier.try(:user)
+    if !notifier_user && notifier.respond_to?( :updater ) && notifier.updater.is_a?( User )
+      notifier_user = notifier.updater
+    end
+    notifier_user ||= notifier.try( :user )
     if notifier_user
       excepted_user_ids = UserBlock.
         where( "user_id = ?", notifier_user.id ).pluck( :blocked_user_id )
       excepted_user_ids += UserBlock.
         where( "blocked_user_id = ?", notifier_user.id ).pluck( :user_id )
-      excepted_user_ids += UserMute.where( muted_user_id: notifier_user.id ).pluck(:user_id)
+      excepted_user_ids += UserMute.where( muted_user_id: notifier_user.id ).pluck( :user_id )
       return user_ids -= excepted_user_ids.uniq
     end
     user_ids
@@ -86,7 +89,7 @@ class UpdateAction < ApplicationRecord
     puts "[INFO] UpdateAction.email_updates queing #{user_ids.size} jobs..."
     user_ids.each do |subscriber_id|
       UpdateAction.delay(
-        priority: INTEGRITY_PRIORITY,
+        priority: NOTIFICATION_PRIORITY,
         queue: "slow",
         unique_hash: {
           "UpdateAction::email_updates_to_user": subscriber_id,
@@ -143,7 +146,9 @@ class UpdateAction < ApplicationRecord
     Rails.logger.debug "email_updates_to_user: #{subscriber} finished"
   end
 
-  def self.load_additional_activity_updates(updates, user_id)
+  # For a collection of UpdateActions, load all the additional UpdateActions
+  # associated with those resources that the user is subscribed to
+  def self.load_all_update_actions_for_updated_resources_for_user( updates, user_id )
     # fetch all other activity updates for the loaded resources
     activity_updates = updates.select{ |u| u.notification == "activity" }
     return updates if activity_updates.blank?
@@ -176,48 +181,75 @@ class UpdateAction < ApplicationRecord
     updates
   end
 
-  def self.group_and_sort(updates, options = {})
+  def self.stub_update_actions_for_all_activity_on_resource( resource, existing_update_actions )
+    # get the associations on that resource that generate activity updates
+    activity_assocs = resource.class.notifying_associations.select do | _assoc, assoc_options |
+      assoc_options[:notification] == "activity"
+    end
+
+    past_actions = []
+    # create pseudo updates for all activity objects
+    activity_assocs.each_key do | assoc |
+      # this is going to lazy load assoc's of the associate (e.g. a comment's user) which might not be ideal
+      resource.send( assoc ).each do | associate |
+        existing_action_on_resource = existing_update_actions.detect do | ua |
+          ua.notifier_type == associate.class.name && ua.notifier_id == associate.id
+        end
+        unless existing_action_on_resource
+          past_actions << UpdateAction.new( resource: resource, notifier: associate, notification: "activity" )
+        end
+      end
+    end
+    past_actions
+  end
+
+  def self.group_and_sort( updates, options = {} )
     grouped_updates = []
-    updates.group_by{|u| [u.resource_type, u.resource_id, u.notification]}.each do |key, batch|
+    updates.group_by {| u | [u.resource_type, u.resource_id, u.notification] }.each do | key, batch |
       resource_type, resource_id, notification = key
-      batch = batch.sort_by{|u| u.sort_by_date}
-      if options[:hour_groups] && "created_observations new_observations".include?(notification.to_s) && batch.size > 1
-        batch.group_by{|u| u.created_at.strftime("%Y-%m-%d %H")}.each do |hour, hour_updates|
+      batch = batch.sort_by( &:sort_by_date )
+      if options[:hour_groups] &&
+          "created_observations new_observations".include?( notification.to_s ) &&
+          batch.size > 1
+        batch.group_by {| u | u.created_at.strftime( "%Y-%m-%d %H" ) }.each_value do | hour_updates |
           grouped_updates << [key, hour_updates]
         end
       elsif notification == "activity" && !options[:skip_past_activity]
         # get the resource that has all this activity
         resource = batch.first.resource
         if resource.blank?
-          Rails.logger.error "[ERROR #{Time.now}] couldn't find resource #{resource_type} #{resource_id}, first update: #{batch.first}"
+          Rails.logger.error "[ERROR #{Time.now}] couldn't find resource #{resource_type} #{resource_id}, " \
+            "first update: #{batch.first}"
           next
         end
 
-        # get the associations on that resource that generate activity updates
-        activity_assocs = resource.class.notifying_associations.select do |assoc, assoc_options|
-          assoc_options[:notification] == "activity"
+        # If the viewer is no longer subscribed to the resource, do not load additional activity updates
+        if !options[:viewer] || options[:viewer].subscribed_to?( resource )
+          batch += stub_update_actions_for_all_activity_on_resource( resource, batch )
         end
 
-        # create pseudo updates for all activity objects
-        activity_assocs.each do |assoc, assoc_options|
-          # this is going to lazy load assoc's of the associate (e.g. a comment's user) which might not be ideal
-          resource.send(assoc).each do |associate|
-            unless batch.detect{|u| u.notifier_type == associate.class.name && u.notifier_id == associate.id}
-              batch << UpdateAction.new(:resource => resource, :notifier => associate, :notification => "activity")
-            end
-          end
-        end
-        grouped_updates << [key, batch.sort_by{|u| u.sort_by_date}]
+        grouped_updates << [key, batch.sort_by( &:sort_by_date )]
       else
         grouped_updates << [key, batch]
       end
     end
-    grouped_updates.sort_by {|key, updates| updates.last.sort_by_date.to_i * -1}
+    grouped_updates.sort_by {| _key, grp_updates | grp_updates.last.sort_by_date.to_i * -1 }
   end
 
-  def self.user_viewed_updates(updates, user_id)
+  def self.user_viewed_updates( updates, user_id, options = {} )
     updates = updates.to_a.compact
     return if updates.blank?
+
+    # fetch these updates from Elasticsearch which
+    # will include the array of viewed_subscriber_ids
+    es_actions = UpdateAction.elastic_mget( updates.map( &:id ) )
+    update_actions_to_index = es_actions.reject do | es_action |
+      !es_action["subscriber_ids"]&.include?( user_id ) ||
+        es_action["viewed_subscriber_ids"]&.include?( user_id )
+    end
+    # return if this user is not subscribed, or has already viewed all updates
+    return if update_actions_to_index.empty?
+
     update_script = {
       script: {
         source: "
@@ -233,11 +265,11 @@ class UpdateAction < ApplicationRecord
     }
     UpdateAction.__elasticsearch__.client.bulk(
       index: UpdateAction.index_name,
-      refresh: Rails.env.test?,
-      body: updates.map do |update|
+      refresh: options[:wait_for_index_refresh] ? "wait_for" : Rails.env.test?,
+      body: update_actions_to_index.map do | update_action |
         [{
           update: {
-            _id: update.id,
+            _id: update_action["id"],
             retry_on_conflict: 10
           }
         }, update_script]
@@ -255,12 +287,43 @@ class UpdateAction < ApplicationRecord
     UpdateAction.where(*args).delete_all
   end
 
-  def self.first_with_attributes( attrs, options = { } )
+  def self.for_notifier( notifier )
+    update_actions = UpdateAction.elastic_paginate(
+      page: 1,
+      per_page: 100,
+      filters: [
+        { term: { notifier_type: notifier.class.to_s } },
+        { term: { notifier_id: notifier.id } }
+      ],
+      sort: { id: :desc },
+      keep_es_source: true
+    )
+    UpdateAction.preload_associations( update_actions, :notifier )
+    update_actions
+  end
+
+  def self.first_with_attributes( attrs, options = {} )
     return if CONFIG.has_subscribers == :disabled
     skip_validations = options.delete( :skip_validations )
+
+    options[:candidate_update_actions]&.each do | candidate |
+      is_match = attrs.all? do | k, v |
+        if k.to_sym == :resource
+          candidate.resource_id == v.id &&
+            candidate.resource_type == v.class.base_class.name
+        elsif k.to_sym == :notifier
+          candidate.notifier_id == v.id &&
+            candidate.notifier_type == v.class.base_class.name
+        else
+          candidate[k] == ( v.try( :id ) || v )
+        end
+      end
+      return candidate if is_match
+    end
+
     filters = UpdateAction.arel_attributes_to_es_filters( attrs )
     # first search for a doc in Elasticsearch with these attributes
-    if es_action = UpdateAction.elastic_paginate( filters: filters, keep_es_source: true ).first
+    if ( es_action = UpdateAction.elastic_paginate( filters: filters, keep_es_source: true ).first )
       return es_action
     end
     # if none are found, see if one exists in the DB
@@ -274,7 +337,8 @@ class UpdateAction < ApplicationRecord
     end
     # no match was found in Elasticsearch or the DB, so attempt to create it
     begin
-      action = UpdateAction.new( attrs.merge(created_at: Time.now, skip_indexing: true ).merge( options ) )
+      action = UpdateAction.new( attrs.merge( created_at: Time.now, skip_indexing: true ).
+        merge( options.except( :candidate_update_actions ) ) )
       if !action.save( validate: !skip_validations )
         return
       end
@@ -315,7 +379,12 @@ class UpdateAction < ApplicationRecord
 
   def append_subscribers( user_ids )
     raise "UpdateAction cannot append_subscribers" unless created_but_not_indexed || es_source
+
     if es_source
+      user_ids_to_append = user_ids_without_blocked_and_muted( user_ids )
+      # return if all users are already subscribed
+      return if ( user_ids_to_append - es_source["subscriber_ids"] ).empty?
+
       UpdateAction.__elasticsearch__.client.bulk(
         index: UpdateAction.index_name,
         refresh: Rails.env.test?,
@@ -338,7 +407,7 @@ class UpdateAction < ApplicationRecord
                 ctx.op = 'none';
               }",
             params: {
-              user_ids: user_ids_without_blocked_and_muted( user_ids )
+              user_ids: user_ids_to_append
             }
           }
         }]

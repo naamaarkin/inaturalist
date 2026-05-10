@@ -20,7 +20,11 @@ class Emailer < ActionMailer::Base
     return if user.email_suppressed_in_group?( EmailSuppression::TRANSACTIONAL_EMAILS )
 
     @user = user
-    @grouped_updates = UpdateAction.group_and_sort( updates, skip_past_activity: true )
+    @grouped_updates = UpdateAction.group_and_sort(
+      updates,
+      skip_past_activity: true,
+      viewer: @user
+    )
     mail_with_defaults(
       to: user.email,
       subject: [:updates_notification_email_subject, { prefix: subject_prefix, date: Date.today }]
@@ -112,6 +116,23 @@ class Emailer < ActionMailer::Base
     )
   end
 
+  def user_unsuspended( user, reason = nil )
+    return if user.blank?
+    return if user.suspended?
+
+    @user = user
+    return if @user.email.blank?
+    return if @user.prefers_no_email?
+    return if @user.email_suppressed_in_group?( EmailSuppression::TRANSACTIONAL_EMAILS )
+
+    @reason = reason
+    @site_name = site_name
+    mail_with_defaults(
+      to: @user.email,
+      subject: [:user_unsuspended_email_subject, { prefix: subject_prefix }]
+    )
+  end
+
   # Send the user an email saying the bulk observation import encountered
   # an error.
   def bulk_observation_error( user, filename, error_details )
@@ -192,32 +213,6 @@ class Emailer < ActionMailer::Base
       subject: [
         "views.emailer.collection_project_changed_for_trusting_member.subject",
         { project: @project.title }
-      ]
-    )
-  end
-
-  def observation_accuracy_validator_contact( validator, validator_deadline_date )
-    return unless ( @user = User.where( id: validator.user_id ).first )
-
-    return if @user&.email&.blank?
-
-    return if @user.email_suppressed_in_group?( EmailSuppression::ACCURACY_EXPERIMENT_EMAILS )
-
-    @x_smtpapi_headers[:asm_group_id] = CONFIG&.sendgrid&.asm_group_ids&.accuracy
-    obs_ids = validator.observation_accuracy_samples.pluck( :observation_id )
-    @num_obs = obs_ids.count
-    @sample_url = FakeView.
-      identify_observations_url(
-        place_id: "any",
-        reviewed: "any",
-        quality_grade: "needs_id,research,casual",
-        id: obs_ids.join( "," )
-      )
-    @blog_url = FakeView.site_post_url( 88_501 )
-    @validator_deadline_date = validator_deadline_date
-    mail_with_defaults(
-      subject: [
-        :observation_accuracy_validator_email_subject
       ]
     )
   end
@@ -308,6 +303,106 @@ class Emailer < ActionMailer::Base
     reset_locale
   end
 
+  def observer_appeal( user, options = {} )
+    @user = user
+
+    geoip_latitude = options[:latitude]
+    geoip_longitude = options[:longitude]
+    return false unless geoip_latitude && geoip_longitude
+
+    # Fetch species data
+    current_month = Time.now.month
+    filtered_species = get_filtered_species( geoip_latitude, geoip_longitude, current_month )
+
+    # Return false if there are not enough filtered species
+    return false if filtered_species.count < 4
+
+    # Fetch nearby species and set month name
+    filtered_species_ids = filtered_species.first( 4 ).map {| t | t["taxon"]["id"] }
+    @nearby_species = Taxon.where( id: filtered_species_ids ).index_by( &:id ).values_at( *filtered_species_ids )
+
+    # Mail settings
+    set_locale
+    mail(
+      to: user.email,
+      subject: "Can you find these species and share them on #{site_name}?",
+      site_name: site_name
+    )
+    reset_locale
+  end
+
+  def error_observation( user, observation, options = {} )
+    @user = user
+    @observation = observation
+    @errors = options[:errors]
+
+    # Mail settings
+    subject = "Will you improve your #{site_name} observation's value for science?"
+    set_locale
+    mail(
+      to: user.email,
+      subject: subject,
+      site_name: site_name
+    )
+    reset_locale
+  end
+
+  def captive_observation( user, observation )
+    @user = user
+    @observation = observation
+
+    # Fetch species data
+    latitude = observation.latitude || observation.private_latitude || nil
+    longitude = observation.longitude || observation.private_longitude || nil
+    return false unless latitude
+
+    current_month = Time.now.month
+    tid = Taxon::ICONIC_TAXA.find {| t | t.name == "Plantae" }&.id
+    filtered_species = get_filtered_species( latitude, longitude, current_month, taxon_id: tid )
+
+    # Return false if there are not enough filtered species
+    return false if filtered_species.count < 4
+
+    # Fetch nearby species and set month name
+    filtered_species_ids = filtered_species.first( 4 ).map {| t | t["taxon"]["id"] }
+    @nearby_species = Taxon.where( id: filtered_species_ids ).index_by( &:id ).values_at( *filtered_species_ids )
+
+    # Mail settings
+    subject = "Will you try observing a wild species to share with #{site_name}?"
+    set_locale
+    mail(
+      to: user.email,
+      subject: subject,
+      site_name: site_name
+    )
+    reset_locale
+  end
+
+  def first_observation( user, observation )
+    @user = user
+    @observation = observation
+
+    most_recent_post = Post.where(
+      parent_id: 1,
+      parent_type: "Site"
+    ).where( "title LIKE ?", "% News Highlights" ).
+      order( published_at: :desc ).first
+    url = @user.site&.url || Site.default.url
+    @post_url = if most_recent_post
+      FakeView.post_url( most_recent_post, host: url )
+    end
+
+    # Mail settings
+    subject = "Congratulations on posting a Research Grade observation to #{site_name}!"
+    set_locale
+    mail(
+      to: user.email,
+      subject: subject,
+      site_name: site_name
+    )
+    reset_locale
+  end
+
   private
 
   def mail_with_defaults( defaults = {} )
@@ -390,5 +485,49 @@ class Emailer < ActionMailer::Base
       # riskier emails from another
       ip_pool: CONFIG&.sendgrid&.primary_ip_pool
     }
+  end
+
+  def get_filtered_species( latitude, longitude, current_month, taxon_id: nil )
+    dangerous_taxa = CONFIG.dangerous_taxa_list_id.blank? ? nil : CONFIG.dangerous_taxa_list_id
+    query_params = {
+      verifiable: true,
+      lat: latitude,
+      lng: longitude,
+      month: current_month,
+      radius: 50,
+      not_in_list_id: dangerous_taxa
+    }
+    query_params[:taxon_id] = taxon_id if taxon_id
+    species = INatAPIService.observations_species_counts( query_params ).results
+
+    # Filter species based on criteria
+    iconic_taxon_names = ["Aves", "Plantae", "Insecta", "Mammalia"]
+    filtered_species = iconic_taxon_names.map do | iconic_taxon_name |
+      preferred_species = species.find do | s |
+        s["taxon"]["iconic_taxon_name"] == iconic_taxon_name &&
+          s["taxon"]["rank"] == "species" &&
+          s["taxon"]["preferred_common_name"].present?
+      end
+      preferred_species ||= species.find do | s |
+        s["taxon"]["iconic_taxon_name"] == iconic_taxon_name &&
+          s["taxon"]["rank"] == "species"
+      end
+      preferred_species ||= species.find do | s |
+        s["taxon"]["iconic_taxon_name"] == iconic_taxon_name
+      end
+      preferred_species
+    end.compact
+
+    # If there are not enough species, fill in with additional species
+    if species.count > 4 && filtered_species.count < 4
+      species.each do | s |
+        break if filtered_species.length >= 4
+
+        unless filtered_species.any? {| fs | fs["taxon"]["id"] == s["taxon"]["id"] }
+          filtered_species << s
+        end
+      end
+    end
+    filtered_species
   end
 end

@@ -90,15 +90,7 @@ class FiltersButton extends React.Component {
         config.currentUser.curator_projects,
         p => [p.id, p.slug].includes( params.project_id )
       );
-    const FilterCheckboxWrapper = checkbox => (
-      <FilterCheckbox
-        {...Object.assign( {}, checkbox, {
-          defaultParams,
-          params,
-          updateSearchParams
-        } )}
-      />
-    );
+
     const visibleRanks = [
       "kingdom",
       "phylum",
@@ -140,7 +132,8 @@ class FiltersButton extends React.Component {
       { value: "observed_on", label: "date_observed_" },
       { value: "updated_at", label: "date_updated" },
       { value: "votes", label: "faves" },
-      { value: "random", label: "random" }
+      { value: "random", label: "random" },
+      { value: "geo_score", label: "geo_score" }
     ];
     const canShowObservationFields = ( ) => (
       params.observationFields && _.size( params.observationFields ) > 0
@@ -184,6 +177,7 @@ class FiltersButton extends React.Component {
       "CC-BY-NC-SA",
       "CC-BY-NC-ND"
     ];
+
     const mainLeftCol = (
       <Col xs="4">
         <Row>
@@ -199,23 +193,32 @@ class FiltersButton extends React.Component {
         </Row>
         <Row>
           <Col className="quality-filters" xs="12">
-            <FilterCheckboxWrapper
-              param="quality_grade"
-              label={I18n.t( "casual_" )}
+            <FilterCheckbox
               checked="casual"
+              defaultParams={defaultParams}
+              label={I18n.t( "casual_" )}
               noBlank
-            />
-            <FilterCheckboxWrapper
               param="quality_grade"
-              label={I18n.t( "needs_id_" )}
+              params={params}
+              updateSearchParams={updateSearchParams}
+            />
+            <FilterCheckbox
               checked="needs_id"
+              defaultParams={defaultParams}
+              label={I18n.t( "needs_id_" )}
               noBlank
-            />
-            <FilterCheckboxWrapper
               param="quality_grade"
-              label={I18n.t( "research_grade" )}
+              params={params}
+              updateSearchParams={updateSearchParams}
+            />
+            <FilterCheckbox
               checked="research"
+              defaultParams={defaultParams}
+              label={I18n.t( "research_grade" )}
               noBlank
+              param="quality_grade"
+              params={params}
+              updateSearchParams={updateSearchParams}
             />
           </Col>
         </Row>
@@ -232,20 +235,50 @@ class FiltersButton extends React.Component {
               { param: "captive", key: "show-filter-captive" },
               { param: "threatened", key: "show-filter-threatened" },
               { param: "introduced", key: "show-filter-introduced" },
-              { param: "popular", key: "show-filter-popular" }
-            ].map( FilterCheckboxWrapper ) }
+              { param: "popular", key: "show-filter-popular", title: I18n.t( "has_one_or_more_faves" ) }
+            ].map( props => (
+              <FilterCheckbox
+                checked={props.checked}
+                defaultParams={defaultParams}
+                key={props.key}
+                label={props.label}
+                param={props.param}
+                params={params}
+                title={props.title}
+                updateSearchParams={updateSearchParams}
+              />
+            ) ) }
           </Col>
           <Col className="filters-left-col" xs="6">
             { [
               { param: "sounds", key: "show-filter-sounds", label: I18n.t( "has_sounds" ) },
               { param: "photos", key: "show-filter-photos", label: I18n.t( "has_photos" ) },
               {
+                param: "disagreements",
+                key: "show-filter-disagreements",
+                label: I18n.t( "disagreements" ),
+                title: I18n.t( "disagreements_show_observations_that" )
+              },
+              {
                 param: "user_id",
                 key: "show-filter-user_id",
                 label: I18n.t( "your_observations" ),
                 checked: CURRENT_USER.id
               }
-            ].map( FilterCheckboxWrapper ) }
+            ].map( props => (
+              <FilterCheckbox
+                checked={props.checked}
+                className={props.className}
+                defaultParams={defaultParams}
+                key={props.key}
+                label={props.label}
+                param={props.param}
+                params={params}
+                tipText={props.tipText}
+                title={props.title}
+                updateSearchParams={updateSearchParams}
+              />
+            ) ) }
           </Col>
         </Row>
         <Row>
@@ -257,7 +290,7 @@ class FiltersButton extends React.Component {
               <input
                 className="params-q form-control"
                 placeholder={I18n.t( "blue_butterfly_etc" )}
-                value={params.q}
+                value={params.q || ""}
                 onChange={e => {
                   updateSearchParams( { q: e.target.value } );
                 }}
@@ -354,19 +387,19 @@ class FiltersButton extends React.Component {
             >
               { orderByFields.map( field => (
                 <option value={field.value} key={`params-order-by-${field.value}`}>
-                  { I18n.t( field.label ) }
+                  { I18n.t( field.label, { defaultValue: field.label } ) }
                 </option>
               ) ) }
             </select>
           </Col>
           <Col xs="6">
             <select
-              defaultValue="desc"
               className={
                 "params-order form-control"
                 + ` ${params.order !== defaultParams.order ? "filter-changed" : ""}`
               }
               onChange={e => updateSearchParams( { order: e.target.value } )}
+              value={params.order}
             >
               <option value="asc">
                 { I18n.t( "ascending" ) }
@@ -521,6 +554,7 @@ class FiltersButton extends React.Component {
           <div className="input-group">
             <span className="input-group-addon fa fa-briefcase" />
             <ProjectAutocomplete
+              config={config}
               resetOnChange={false}
               initialProjectID={params.project_id}
               bootstrapClear
@@ -532,14 +566,17 @@ class FiltersButton extends React.Component {
                 updateSearchParams( { project_id: null } );
               }}
             />
-            <input value={params.project_id} type="hidden" name="project_id" />
+            <input type="hidden" name="project_id" />
           </div>
           { params.project_id && viewerCuratesProject && (
-            <FilterCheckboxWrapper
-              param="coords_viewable_for_proj"
-              label={I18n.t( "coords_viewable_for_proj_label" )}
-              tipText={I18n.t( "coords_viewable_for_proj_desc" )}
+            <FilterCheckbox
               checked="true"
+              defaultParams={defaultParams}
+              label={I18n.t( "coords_viewable_for_proj_label" )}
+              param="coords_viewable_for_proj"
+              params={params}
+              tipText={I18n.t( "coords_viewable_for_proj_desc" )}
+              updateSearchParams={updateSearchParams}
             />
           ) }
         </div>
@@ -550,6 +587,7 @@ class FiltersButton extends React.Component {
           <div className="input-group">
             <span className="input-group-addon fa fa-globe" />
             <PlaceAutocomplete
+              config={config}
               resetOnChange={false}
               initialPlaceID={
                 params.place_id && params.place_id !== "any" ? params.place_id : null
@@ -558,7 +596,7 @@ class FiltersButton extends React.Component {
               className={params.place_id ? "filter-changed" : ""}
               afterSelect={result => {
                 updateSearchParams( {
-                  place_id: config.testingApiV2 ? result.item.uuid : result.item.id
+                  place_id: result.item.id,
                 } );
               }}
               afterUnselect={( ) => {
@@ -651,7 +689,7 @@ class FiltersButton extends React.Component {
             <div className="term-value">
               <big>=</big>
               <select
-                id="params-term-value-id"
+                id="params-without-term-value-id"
                 className={`form-control ${params.without_term_value_id ? "filter-changed" : ""}`}
                 defaultValue={params.without_term_value_id}
                 onChange={e => updateSearchParams( { without_term_value_id: e.target.value } )}
@@ -707,6 +745,38 @@ class FiltersButton extends React.Component {
           updateSearchParams={updateSearchParams}
           prefix="created"
         />
+        <label className="sectionlabel">
+          { I18n.t( "geospatial" ) }
+        </label>
+        <FilterCheckbox
+          checked="false"
+          defaultParams={defaultParams}
+          label={I18n.t( "hide_observations_with_private_locations" )}
+          param="with_private_location"
+          params={params}
+          updateSearchParams={updateSearchParams}
+        />
+        <FilterCheckbox
+          checked="false"
+          defaultParams={defaultParams}
+          label={I18n.t( "not_expected_nearby" )}
+          param="expected_nearby"
+          params={params}
+          updateSearchParams={updateSearchParams}
+        />
+        <div className="form-group">
+          <div className="input-group accuracy" title={I18n.t( "accuracy_meters" )}>
+            <span className="input-group-addon fa fa-dot-circle-o" />
+            <input
+              className="params-q form-control"
+              placeholder={I18n.t( "maximum_positional_accuracy" )}
+              value={params.acc_below_or_unknown || ""}
+              onChange={e => {
+                updateSearchParams( { acc_below_or_unknown: e.target.value } );
+              }}
+            />
+          </div>
+        </div>
       </Col>
     );
     const moreFilters = (

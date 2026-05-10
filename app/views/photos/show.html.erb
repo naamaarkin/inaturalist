@@ -5,7 +5,7 @@
   <%= stylesheet_link_tag "photos/show" %>
 <%- end -%>
 <%- content_for( :extrajs ) do -%>
-  <%= javascript_include_tag "photos/show" %>
+  <%= javascript_include_tag "media/show" %>
 <%- end -%>
 <%-
   photo_hidden = @photo.hidden?
@@ -21,7 +21,7 @@
     <% if logged_in? && current_user.is_curator? -%>
       <h4 class="upstacked"><%=t :curators %></h4>
       <p class="ui">
-        <%=t 'views.photos.show.view_original_html', :url => @photo.is_a?(LocalPhoto) ? @photo.file.url(:original) : @photo.native_page_url %>
+        <%=t 'views.photos.show.view_original_html', :url => @photo.is_a?(LocalPhoto) ? @photo.original_url( bypass_flags: true ) : @photo.native_page_url %>
       </p>
     <% end -%>
   </div>
@@ -29,7 +29,7 @@
 
 <table>
   <tr>
-    <td class="photocell">
+    <td class="mediacell">
       <% if photo_hidden -%>
         <h3 class="content-hidden">
           <span
@@ -131,7 +131,7 @@
                   <%- next if @photo.send("#{size}_url").blank? -%>
                   <li>
                     <% if photo_hidden -%>
-                      <a href="" class="hidden-image" data-size=<%= size %> data-moderator-action-id=<%= last_moderator_action.id %>>
+                      <a href="" class="hidden-media-link" data-size=<%= size %> data-moderator-action-id=<%= last_moderator_action.id %>>
                         <%= t( "photos_size.#{size}", default: t( size ) ) %>
                       </a>
                     <% else -%>
@@ -183,11 +183,13 @@
         <div id="flaggings_heads_up" class="description">
           <%=t :heads_up_this_photo_has_been_flagged %>
           <%= link_to t(:view_flags), photo_flags_path(@photo) %>
-          |
-          <%= link_to t(:add_another_flag), new_photo_flag_path(@photo),
-                      :id => "flag_this", :rel => "nofollow", :class => "flaglink" %>
+          <% if logged_in? && current_user&.privileged_with?( UserPrivilege::INTERACTION ) %>
+            |
+            <%= link_to t(:add_another_flag), new_photo_flag_path(@photo),
+                        :id => "flag_this", :rel => "nofollow", :class => "flaglink" %>
+          <% end %>
         </div>
-      <% elsif logged_in? %>
+      <% elsif logged_in? && current_user&.privileged_with?( UserPrivilege::INTERACTION ) %>
         <p class="description ui">
           <%= link_to t(:flag_this_photo), new_photo_flag_path(@photo), :id => "flag_this", :rel => "nofollow", :class => "flaglink" %>
         </p>

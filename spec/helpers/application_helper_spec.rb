@@ -76,6 +76,189 @@ describe ApplicationHelper do
         expect( formatted_user_text( "<p>@#{user.login}</p>" ) ).to include( ">@#{user.login}</a>" )
       end
     end
+    it "should not break with nested lists" do
+      expect(
+        formatted_user_text( "<ul><li><ul><li>foo</li></ul></li></ul>" )
+      ).to eq "<ul><li><ul><li>foo</li></ul></li></ul>"
+    end
+    it "should format text between lists" do
+      txt = <<~TESTTEXT
+        List 1
+        1. point 1a
+        2. point 2a
+
+        In between Paragraph 1
+
+        In between Paragraph 2
+
+        List 2
+        1. point 2a
+        1. point 2b
+
+        Extra paragraph 1
+
+        Extra paragraph 2
+      TESTTEXT
+      expected_output_txt = <<~TESTTEXT
+        <p>List 1</p>
+
+        <ol>
+        <li>point 1a</li>
+        <li>point 2a</li>
+        </ol>
+
+        <p>In between Paragraph 1</p>
+
+        <p>In between Paragraph 2</p>
+
+        <p>List 2</p>
+
+        <ol>
+        <li>point 2a</li>
+        <li>point 2b</li>
+        </ol>
+
+        <p>Extra paragraph 1</p>
+
+        <p>Extra paragraph 2</p>
+      TESTTEXT
+      expect( formatted_user_text( txt ) ).to eq expected_output_txt.strip
+    end
+    it "should not add extranous tags to HTML" do
+      html = <<~HTML
+        <table>
+          <tr>
+            <th>Sambucus nigra (sensu stricto)</th>
+            <th>Sambucus canadensis</th>
+          </tr>
+          <tr>
+            <td>Larger, can be a small tree up to 10 m tall</td>
+            <td>Smaller, shrub up to 2.5 m tall</td>
+          </tr>
+          <tr>
+            <td>Branchlets with abundant lenticels</td>
+            <td>Branchlets with sparse lenticels</td>
+          </tr>
+          <tr>
+            <td>etc</td>
+            <td>etc</td>
+          </tr>
+        </table>
+      HTML
+      formatted_html = <<~HTML
+        <table class="table">
+          <tr>
+            <th>Sambucus nigra (sensu stricto)</th>
+            <th>Sambucus canadensis</th>
+          </tr>
+          <tr>
+            <td>Larger, can be a small tree up to 10 m tall</td>
+            <td>Smaller, shrub up to 2.5 m tall</td>
+          </tr>
+          <tr>
+            <td>Branchlets with abundant lenticels</td>
+            <td>Branchlets with sparse lenticels</td>
+          </tr>
+          <tr>
+            <td>etc</td>
+            <td>etc</td>
+          </tr>
+        </table>
+      HTML
+      expect( formatted_user_text( html ) ).to eq formatted_html.strip
+      expect( formatted_user_text( html, skip_simple_formatting: true ) ).to eq formatted_html.strip
+    end
+    it "should add the table class to tables" do
+      expect(
+        formatted_user_text( "<table><tr><td>foo</td></tr></table>" )
+      ).to eq( '<table class="table"><tr><td>foo</td></tr></table>' )
+    end
+    it "should return valid HTML from poorly-indented markdown" do
+      bad_markdown = <<~MKDN
+        - foo
+        bar
+         - baz
+      MKDN
+      formatted = formatted_user_text( bad_markdown )
+      expected_html = <<~HTML
+        <ul>
+        <li>foo
+        bar
+
+        <ul>
+        <li>baz</li>
+        </ul>
+        </li>
+        </ul>
+      HTML
+      expect( formatted ).to eq expected_html.strip
+    end
+    it "should handle nested lists in html" do
+      text = <<~HTML
+        <ul>
+           <li>Foo</li>
+           <li>Bar
+             <ul>
+               <li>Baz</li>
+            </ul>
+           </li>
+        </ul>
+      HTML
+      expected_html = <<~HTML
+        <ul>
+           <li>Foo</li>
+           <li>Bar
+             <ul>
+               <li>Baz</li>
+            </ul>
+           </li>
+        </ul>
+      HTML
+      expect( formatted_user_text( text ) ).to eq expected_html.strip
+    end
+
+    it "should handle nested lists in markdown" do
+      text = <<~MKDN
+        - Foo
+        - Bar
+          - Baz
+      MKDN
+      expected_html = <<~HTML
+        <ul>
+        <li>Foo</li>
+        <li>Bar
+
+        <ul>
+        <li>Baz</li>
+        </ul>
+        </li>
+        </ul>
+      HTML
+      expect( formatted_user_text( text ) ).to eq expected_html.strip
+    end
+
+    it "should insert linebreaks for newlines" do
+      text = <<~MKDN
+        this
+        is my
+        poem
+      MKDN
+      expected = <<~HTML
+        <p>this<br>
+        is my<br>
+        poem</p>
+      HTML
+      expect( formatted_user_text( text ) ).to eq expected.strip
+    end
+
+    it "should not insert linebreaks inside of img tags" do
+      text = <<~MKDN
+        <img
+        src="https://some.where/nice.jpg"
+        width="500">
+      MKDN
+      expect( formatted_user_text( text ) ).not_to match( /<br/ )
+    end
   end
 
   describe "#image_url" do
@@ -193,5 +376,126 @@ describe ApplicationHelper do
     #     end
     #   end
     # end
+  end
+
+  describe "update_tagline_for" do
+    include UsersHelper
+    before { enable_has_subscribers }
+    after { disable_has_subscribers }
+
+    it "states an observation field value was added" do
+      without_delay do
+        o = Observation.make!
+        ofv = ObservationFieldValue.make!( observation: o, user: User.make! )
+        expect( update_tagline_for( UpdateAction.last, skip_links: true ) ).to match(
+          "#{ofv.user.login} added a value for .* to an observation by #{o.user.login}"
+        )
+      end
+    end
+
+    it "states an observation field value was updated" do
+      without_delay do
+        o = Observation.make!
+        ofv = ObservationFieldValue.make!( observation: o, user: o.user )
+        ofv.updater = User.make!
+        ofv.save
+        expect( update_tagline_for( UpdateAction.last, skip_links: true ) ).to match(
+          "#{ofv.updater.login} updated a value for .* on an observation by #{o.user.login}"
+        )
+      end
+    end
+  end
+
+  describe "create_announcement_impression" do
+    let( :ip ) { "127.0.0.1" }
+    let( :request ) do
+      double(
+        "request",
+        env: { "REMOTE_ADDR" => ip }
+      )
+    end
+
+    it "creates announcement impressions for the logged-in user" do
+      user = User.make!
+      allow_any_instance_of( ApplicationHelper ).to receive( :user_signed_in? ).and_return( true )
+      allow_any_instance_of( ApplicationHelper ).to receive( :current_user ).and_return( user )
+      allow_any_instance_of( ApplicationHelper ).to receive( :request ).and_return( request )
+
+      announcement = Announcement.make!
+      expect( AnnouncementImpression.count ).to eq 0
+      create_announcement_impression( announcement )
+
+      expect( AnnouncementImpression.count ).to eq 1
+      impression = AnnouncementImpression.first
+      expect( impression.announcement ).to eq announcement
+      expect( impression.user ).to eq user
+      expect( impression.request_ip ).to eq ip
+      expect( impression.impressions_count ).to eq 1
+    end
+
+    it "creates announcement impressions for the request_ip" do
+      allow_any_instance_of( ApplicationHelper ).to receive( :user_signed_in? ).and_return( false )
+      allow_any_instance_of( ApplicationHelper ).to receive( :current_user ).and_return( nil )
+      allow_any_instance_of( ApplicationHelper ).to receive( :request ).and_return( request )
+
+      announcement = Announcement.make!
+      expect( AnnouncementImpression.count ).to eq 0
+      create_announcement_impression( announcement )
+
+      expect( AnnouncementImpression.count ).to eq 1
+      impression = AnnouncementImpression.first
+      expect( impression.announcement ).to eq announcement
+      expect( impression.user ).to be_nil
+      expect( impression.request_ip ).to eq ip
+      expect( impression.impressions_count ).to eq 1
+    end
+  end
+
+  describe "t_with_fallback" do
+    it "returns the new key translation when both keys exist" do
+      allow( I18n ).to receive( :has_t? ).with( :old_key ).and_return( true )
+      allow( I18n ).to receive( :has_t? ).with( :new_key ).and_return( true )
+      allow( I18n ).to receive( :t ).with( :new_key ).and_return( "new translation" )
+      expect( t_with_fallback( :new_key, :old_key ) ).to eq "new translation"
+    end
+
+    it "returns the old key translation when only the old key exists" do
+      allow( I18n ).to receive( :has_t? ).with( :old_key ).and_return( true )
+      allow( I18n ).to receive( :has_t? ).with( :new_key ).and_return( false )
+      allow( I18n ).to receive( :t ).with( :old_key ).and_return( "old translation" )
+      expect( t_with_fallback( :new_key, :old_key ) ).to eq "old translation"
+    end
+
+    it "returns the new key translation when neither key exists" do
+      allow( I18n ).to receive( :has_t? ).with( :old_key ).and_return( false )
+      allow( I18n ).to receive( :has_t? ).with( :new_key ).and_return( false )
+      allow( I18n ).to receive( :t ).with( :new_key ).and_return( "translation missing: en.new_key" )
+      expect( t_with_fallback( :new_key, :old_key ) ).to eq "translation missing: en.new_key"
+    end
+
+    it "returns the new key translation when only the new key exists" do
+      allow( I18n ).to receive( :has_t? ).with( :old_key ).and_return( false )
+      allow( I18n ).to receive( :has_t? ).with( :new_key ).and_return( true )
+      allow( I18n ).to receive( :t ).with( :new_key ).and_return( "new translation" )
+      expect( t_with_fallback( :new_key, :old_key ) ).to eq "new translation"
+    end
+  end
+
+  describe "absolute_url_or_relative_to_site" do
+    let( :site ) do
+      Site.make!
+    end
+
+    it "returns absolute urls" do
+      url = "https://help.inaturalist.org/en/support/home"
+      expect( absolute_url_or_relative_to_site( site: site, url: url ) ).to eq url
+    end
+
+    it "generates urls with paths relative to site url" do
+      path = "/pages/terms"
+      expect( absolute_url_or_relative_to_site( site: site, url: path ) ).to eq(
+        URI.join( site.url.to_s, path ).to_s
+      )
+    end
   end
 end

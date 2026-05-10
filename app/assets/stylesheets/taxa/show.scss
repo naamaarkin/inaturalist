@@ -10,6 +10,8 @@
 @import "../shared/taxonomic_branch";
 @import "../shared/full_screen_modal";
 @import "../shared/flash_message";
+@import "../users/user_popover";
+@import "./shared/loading_spinner";
 
 #app {
   min-height: 600px;
@@ -24,6 +26,13 @@
   min-width: 980px;
 }
 
+body.skip-min-width {
+  #TaxonDetail .container-fluid,
+  #TaxonDetail .container {
+    min-width: auto;
+  }
+}
+
 #TaxonHeader .inner {
   display: flex;
   justify-content: space-between;
@@ -32,7 +41,7 @@
 #TaxonHeader h1 {
   margin-top: 10px;
   font-size: 32px;
-  font-weight: 300;
+  font-weight: 200;
 
   .btn-flags {
     margin-left: 10px;
@@ -43,6 +52,7 @@
 
 #TaxonHeader .taxon .display-name {
   color: black;
+  font-weight: 200;
 }
 
 #TaxonHeader .has-com-name {
@@ -62,50 +72,94 @@
 #charts {
   background-color: transparent;
   border-radius: 4px 4px 0 0;
+  height: 392px;
+  display: flex;
+  flex-direction: column;
+  .item-label {
+    color: #4a4a4a;
+    font-size: 13px;
+    line-height: 1;
+    margin-bottom: 10px;
+  }
+  a {
+    color: #333;
+  }
+  .nav-tabs {
+    margin-bottom: 0;
+    margin-top: -1px;
+  }
+  .no-content {
+    position: absolute;
+    width: 100%;
+    top: 50%;
+    margin-top: -20px;
+    margin-left: 20px;
+  }
+  .tab-content {
+    background-color: white;
+    padding: 20px 20px 5px 5px;
+    border: 1px solid #ddd;
+    position: relative;
+    flex-grow: 1;
+    .tab-pane-container {
+      height: 100%;
+      .tab-pane {
+        position: relative;
+        height: 100%;
+        display: none;
+        &.active {
+          display: block;
+        }
+      }
+    }
+  }
+  a, a:focus, a:active {
+    outline: 0 none;
+    text-decoration: none;
+  }
+  .nav-tabs {
+    border: none;
+    li {
+      list-style: none;
+      a {
+        border: 1px solid #ddd;
+        border-radius: 4px;
+        background-color: white;
+        padding: 5px 12px;
+        margin: 0px 8px 8px 0px;
+      }
+      &.active a {
+        background-color: $inat-green;
+        border-color: $inat-green;
+        color: white;
+      }
+    }
+  }
+  .help-btn i {
+    font-size: 20px;
+    line-height: 25px;
+    color: #999;
+  }
+  .chart-controls {
+    position: absolute;
+    top: 0;
+    right: 0;
+    z-index: 10;
+    background: #f8f8f8;
+    border-bottom: 1px solid #ddd;
+    border-left: 1px solid #ddd;
+    .btn {
+      padding: 6px 8px;
+    }
+  }
 }
 
-#charts a {
-  color: #333;
+#main-tabs-content {
+  & [role="tabpanel"] {
+    scroll-margin-top: 80px; // add some spacing at the top to prevent anchor behavior to hide the tabs
+  }
 }
 
-#charts .nav-tabs {
-  margin-bottom: 0;
-  margin-top: -1px;
-}
-#charts .tab-pane {
-  position: relative;
-}
-#charts .no-content {
-  position: absolute;
-  width: 100%;
-  top: 50%;
-  margin-top: -20px;
-  margin-left: 20px;
-}
-#charts .tab-content {
-  background-color: white;
-  padding: 20px;
-  border-left: 1px solid #ddd;
-  border-bottom: 1px solid #ddd;
-  border-right: 1px solid #ddd;
-}
-
-#charts a[role="tab"]:hover {
-  background-color: white;
-  opacity: 1;
-}
-#charts a,
-#charts a:focus,
-#charts a:active {   
-  border-color: none;
-  box-shadow: none;
-  outline: 0 none;
-}
-#charts .help-btn i {
-  font-size: 20px;
-  line-height: 25px;
-  color: #999;
-}
 #ChartsHelpModal .modal-title {
   line-height: 1;
   padding: 0;
@@ -114,7 +168,8 @@
   stroke-width: 2px;
 }
 .FrequencyChart {
-  height: 300px;
+  height: 100%;
+  max-height: 100%;
 }
 .FrequencyChart .bb-axis line,
 .FrequencyChart .bb-axis path {
@@ -314,8 +369,8 @@ $leaderItemImageDim: 56px;
   .item-label {
     color: #4a4a4a;
     font-size: 13px;
-    line-height: 1;
-    margin-bottom: 10px;
+    line-height: 1.2;
+    margin-bottom: 8px;
   }
   h4 {
     text-transform: none;
@@ -323,7 +378,7 @@ $leaderItemImageDim: 56px;
     font-size: 18px;
   }
   .name {
-    font-weight: bold;
+    font-weight: 600;
     white-space: nowrap;
     a {
       color: black;
@@ -364,7 +419,7 @@ $photoPreviewThumbGutterTop: 3px;
 .PhotoPreview {
   position: relative;
   overflow: hidden;
-  height: 580px;
+  height: 590px;
 }
 .PhotoPreview .photo-bg {
   position: absolute;
@@ -419,14 +474,14 @@ $photoPreviewThumbGutterTop: 3px;
 }
 .PhotoPreview .viewmore {
   text-align: center;
-  font-weight: bold;
+  font-weight: 600;
 }
 .PhotoPreview .viewmore a {
   display: block;
 }
 .PhotoPreview.grid .viewmore a {
   background-color: #333;
-  font-weight: 100;
+  font-weight: 400;
   font-size: 20px;
   display: block;
   position: relative;
@@ -595,7 +650,7 @@ $introducedColor: #E4007C;
 
 .TaxonPageTabs .nav-tabs > li > a {
   color: #555;
-  font-weight: bold;
+  font-weight: 600;
   font-size: 18px;
   padding: 20px 30px 16px;
 }
@@ -625,6 +680,11 @@ $introducedColor: #E4007C;
     font-style: italic;
     margin-top: 20px;
   }
+  &.conabio_description {
+    .form-group.row {
+      display: none;
+    }
+  }
 }
 .ArticlesTab .taxon_description_header {
   display: none;
@@ -650,7 +710,7 @@ $introducedColor: #E4007C;
 }
 .HighlightsTab .readmore {
   font-size: 18px;
-  font-weight: 100;
+  font-weight: 400;
   margin-left: 10px;
 }
 
@@ -736,6 +796,7 @@ $nav-btn-dim: 40px;
   line-height: 30px;
   text-align: center;
   left: -100px;
+  padding-bottom: 11px;
 }
 .PhotoModal .nav-button.next {
   left: auto;
@@ -844,7 +905,7 @@ $nav-btn-dim: 40px;
 .TaxonThumbnail .taxon .display-names {
   display: block;
   font-size: 120%;
-  font-weight: bold;
+  font-weight: 600;
 }
 
 .TaxonThumbnail .taxon .secondary-name {
@@ -907,6 +968,233 @@ $nav-btn-dim: 40px;
 .SimilarTab .TaxonThumbnail {
   margin: 5px;
   width: 18.9%;
+}
+
+.IdentificationsTab {
+  .loading {
+    text-align: center;
+    .loading_spinner {
+      margin-top: 20px;
+      width: 40px;
+      height: 40px;
+      border: 7px solid #DDD;
+      border-top: 7px solid #74ac00;
+    }
+  }
+  .search-container {
+    &.disabled {
+      opacity: 0.5;
+      pointer-events: none;
+    }
+  }
+  .btn-group.identification-categories {
+    margin-bottom: 10px;
+  }
+  .search {
+    margin-bottom: 40px;
+    select.form-control {
+      width: 120px;
+      &.order {
+        width: 80px;
+      }
+    }
+    .search-input {
+      position: relative;
+      .searchclear {
+        position: absolute;
+        right: 10px;
+        top: 10px;
+        padding-left: 5px;
+        color: #ddd;
+        background: inherit;
+        z-index: 3;
+      }
+    }
+    select[name="sort"] {
+      margin-left: 10px;
+      min-width: 195px;
+    }
+  }
+  .annotation-search {
+    margin-top: 10px;
+    button {
+      margin-right: 3px;
+      margin-bottom: 3px;
+    }
+  }
+  .TaxonMap {
+    height: 300px;
+  }
+  .taxon-map-container {
+    position: sticky;
+    top: 0;
+    padding-top: 1px;
+  }
+  & > .row {
+    display: flex;
+    & > .col-xs-4 {
+      display: flex;
+      & > .row {
+        flex: 1;
+      }
+    }
+  }
+  .Identification {
+    display: flex;
+    flex-direction: column;
+    margin-bottom: 25px;
+    .contents {
+      display: flex;
+    }
+    .preview {
+      width: 120px;
+      .image {
+        height: 125px;
+        background-size: cover;
+        background-position: center;
+        border-radius: 3px;
+      }
+      i.icon {
+        font-size: 100px;
+        color: #ccc;
+      }
+    }
+    .content {
+      flex: 1;
+      padding-left: 10px;
+    }
+    .panel {
+      margin-bottom: 0px;
+    }
+    .panel-heading {
+      .menu {
+        border-inline-start: 1px solid #DDD;
+        .dropdown.btn-group button {
+          margin-bottom: 2px;
+          margin-inline-start: 12px;
+          padding: 0;
+          border: none !important;
+          background: none !important;
+          box-shadow: none !important;
+        }
+      }
+    }
+    .panel-body {
+      display: flex;
+      .body {
+        flex: 1;
+        .id_body .content {
+          padding-left: 0px;
+        }
+        .UserText .content {
+          overflow-wrap: anywhere;
+        }
+      }
+    }
+    .panel-heading, .panel-footer {
+      padding: 8px 15px;
+    }
+    .panel-title, .panel-footer {
+      font-size: 14px;
+      display: flex;
+      align-items: flex-start;
+      a {
+        color: inherit;
+      }
+      .title-text, .footer-text {
+        flex: 2;
+        margin-inline-end: 20px;
+      }
+      .time {
+        margin-inline-end: 12px;
+        color: #999999;
+      }
+      .userlink a {
+        font-weight: 600;
+        color: black;
+      }
+    }
+    .panel-footer {
+      background: none;
+      .votes {
+        white-space: nowrap;
+        border-inline-start: 1px solid #ddd;
+        align-content: center;
+        width: 65px;
+        text-align: right;
+        .fa-thumbs-up,
+        .fa-thumbs-o-up,
+        .fa-thumbs-down,
+        .fa-thumbs-o-down {
+          font-size: 18px;
+          color: #BBBBBB;
+          margin-right: 3px;
+        }
+        .vote-count {
+          margin-left: 3px;
+        }
+        & button {
+          margin-left: 10px;
+        }
+      }
+    }
+    .annotations-conversation {
+      padding-top: 8px;
+      display: flex;
+      align-items: center;
+      .annotations {
+        flex-grow: 1,
+      }
+      .conversation {
+        white-space: nowrap;
+        a {
+          text-decoration: underline;
+        }
+      }
+    }
+    .btn-sm {
+      margin-right: 3px;
+      margin-bottom: 3px;
+    }
+  }
+
+  .rc-pagination {
+    padding: 0;
+    margin-bottom: 30px;
+    text-align: center;
+  }
+  .rc-pagination li,
+  .rc-pagination li a {
+    display: inline-block;
+  }
+  .rc-pagination li a {
+    border: 1px solid #aaa;
+    background-color: white;
+    padding: 3px 5px;
+    text-align: center;
+    min-width: 2em;
+    margin: 0 5px;
+    cursor: pointer;
+  }
+  .rc-pagination-next a:before {
+    content: "\2192"
+  }
+  .rc-pagination-prev a:before {
+    content: "\2190"
+  }
+  .rc-pagination-disabled a,
+  .rc-pagination-disabled:hover a {
+    opacity: 0.5;
+    cursor: default;
+  }
+  .rc-pagination-jump-prev a:after,
+  .rc-pagination-jump-next a:after {
+    content: "...";
+  }
+  li.rc-pagination-item-active a {
+    border-color: black;
+  }
+
 }
 
 .DraggablePhoto {
@@ -1173,4 +1461,14 @@ body > [role="dialog"] .PhotoChooserModal {
 
 table.regional-names {
   margin-top: 15px;
+}
+
+.SeasonalityChart {
+  .tick.current text {
+    font-weight: bold;
+  }
+  // In case we wanted to do a dashed line instead of a region
+  // .bb-xgrid-line line {
+  //   stroke-dasharray: 1 2;
+  // }
 }

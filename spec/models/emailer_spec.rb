@@ -17,7 +17,7 @@ describe Emailer, "updates_notification" do
   after { disable_has_subscribers }
 
   it "should include a fave" do
-    without_delay { @observation.vote_by voter: create( :user ) }
+    without_delay { @observation.vote_by voter: make_user_with_privilege( UserPrivilege::INTERACTION ) }
     mail = Emailer.updates_notification( @user, @user.recent_notifications )
     expect( mail.body ).to match( /faved/ )
   end
@@ -131,6 +131,7 @@ describe Emailer, "new_message" do
 
   it "should not deliver flagged messages" do
     from_user = make_user_with_privilege( UserPrivilege::SPEECH )
+    UserPrivilege.make!( user: from_user, privilege: UserPrivilege::INTERACTION )
     to_user = User.make!
     m = make_message( from_user: from_user, to_user: to_user, user: from_user )
     m.send_message
@@ -162,6 +163,37 @@ describe Emailer, "project_user_invitation" do
     expect( pui.user ).to be_blank
     mail = Emailer.project_user_invitation( pui )
     expect( mail.body ).not_to be_blank
+  end
+end
+
+describe Emailer, "user_unsuspended" do
+  let( :user ) { User.make! }
+
+  it "should work" do
+    mail = Emailer.user_unsuspended( user )
+    expect( mail.body ).not_to be_blank
+  end
+
+  it "should not deliver to a user with no email" do
+    user.update( email: "" )
+    mail = Emailer.user_unsuspended( user )
+    expect( mail.body ).to be_blank
+  end
+
+  it "should not deliver to a user who prefers no email" do
+    user.update( prefers_no_email: true )
+    mail = Emailer.user_unsuspended( user )
+    expect( mail.body ).to be_blank
+  end
+
+  it "should include reason when provided" do
+    mail = Emailer.user_unsuspended( user, "spamming" )
+    expect( mail.body ).to match( /spamming/ )
+  end
+
+  it "should not include reason when not provided" do
+    mail = Emailer.user_unsuspended( user )
+    expect( mail.body ).not_to match( /Reason/ )
   end
 end
 

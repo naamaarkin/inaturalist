@@ -1,4 +1,7 @@
 ko:
+  #Plural form of the noun, as in "3 changes occurred since 23 May 2020"
+  x_changes:
+    other: "%{count}개 변경"
   x_comments:
     other: '댓글 %{count} 개'
   x_comments_html:
@@ -13,10 +16,10 @@ ko:
     other: '동정 <span class="count">%{count}</span> 개'
   x_identifications_:
     other: '동정 %{count} 개'
-  #Number of people who have added identifications
-  x_identifiers_html:
-    #Number of people who have added identifications
-    other: '동정한 사용자 <span class="count">%{count}</span>'
+  x_identifications_caps_html:
+    other: '<span class="count">%{count}</span>번의 동정'
+  x_languages:
+    other: "%{count}개의 언어"
   x_journal_posts_html:
     other: '일지 포스팅 <span class="count">%{count}</span> 개'
   x_matching_taxa:
@@ -25,6 +28,8 @@ ko:
     other: '<span class="count">%{count}</span> 일치하는 분류군'
   x_misidentifications_of_this_species:
     other: "이 종의 오동정 %{count} 개"
+  x_misidentifications_of_species_in_this_genus:
+    other: "이 속에 속하는 종의 오동정 %{count}개"
   #This is a fallback. Most of the time we'll use
   #x_misidentifications_of_species_in_this_genus
   x_misidentifications_of_species_in_this_rank:
@@ -39,8 +44,6 @@ ko:
     other: "<a href='%{url}'>관찰 %{count} 개</a>"
   x_observations_reviewed_html:
     other: "검토한 관찰 <span class='count'>%{count}</span> 개"
-  x_observers_html:
-    other: '관찰자 <span class="count">%{count}</span>'
   x_others:
     other: "외 %{count} 명"
   x_people:
@@ -68,6 +71,8 @@ ko:
     other: "<span class='count'>%{count}</span> 연구 자료 등급 관찰"
   x_research_grade_observations_to_species_html:
     other: "종 수준 이상으로 동정된 연구 자료 등급 관찰 <span class='count'>%{count}</span> 개"
+  x_sounds:
+    other: "소리 %{count}개"
   x_taxa_curated_html:
     other: "분류군 <span class='count'>%{count}</span>개를 큐레이션함"
   x_taxa_matching_current_filters:
@@ -75,6 +80,7 @@ ko:
   x_taxon_changes_added_html:
     other: "분류군 변경사항 <span class='count'>%{count}</span>개를 추가함"
   _100_day_trends: 지난 100일간 동향
+  _percent_ID_d: "동정 완료됨"
   a_community_for_naturalist: 자연을 연구하는 사람들을 위한 공동체
   a_default_taxon_name_will_automatically_created: |
     학명을 입력하면 분류군은 자동으로 생성됩니다. 새로운 분류군을 저장한 후 다른 이름(일반명, 더 이상 사용되지 않는 학명 등)을 추가할 수 있습니다.
@@ -107,7 +113,12 @@ ko:
   about_this_bioblitz: 이 바이오블리츠에 대하여
   about_this_map: 이 지도에 대하여
   about_this_project: 이 프로젝트에 대하여
+  about_trusting_projects: 프로젝트 신뢰에 대해
   about_trusting_projects_options_any: 당신이 이 프로젝트에서 관찰한 모든 것들
+  about_trusting_projects_options_any_desc: |-
+    위치정보 보호를 '위치 숨김' 혹은 '혼자 보기'로 설정한 관찰을 포함합니다. 예를 들어, 집 뒷마당에서 한 관찰이나, 다른 사람이 알지 않았으면 하는 위치에서 한 관찰을 말합니다.
+  about_trusting_projects_options_taxon: |-
+    이 프로젝트에서 절멸 위기에 놓인 분류군 때문에 위치를 숨김 처리한 관찰만 포함합니다.
   #Abbreviated form of "accuracy in meters", where "accuracy" is the
   #positional_accuracy attribute of an observation, which is really more like
   #positional uncertainty
@@ -128,6 +139,8 @@ ko:
   add: 추가
   add_a_batch_of_observations: 관찰을 여러 개 추가하기
   add_a_batch_of_taxa: 분류군을 여러 개 추가하기
+  #Tool tip for a button that adds a bulleted list to a text area
+  add_a_bulleted_list: 글머리 기호 목록 추가하기
   add_a_comment: 댓글 추가
   add_a_field: 필드 추가
   add_a_flag: 플래그 달기
@@ -136,6 +149,10 @@ ko:
   add_a_name: 이름 추가하기
   add_a_note: 설명 추가
   add_a_new_change_group: 새로운 변화 그룹 추가하기
+  #Tool tip for a button that adds a numbered list to a text area
+  add_a_numbered_list: 번호가 매겨진 목록 추가하기
+  #Placeholder for a project autocomplete field
+  add_a_project: 프로젝트 추가
   add_a_single_observation: 관찰 하나를 추가합니다.
   add_a_taxon: 분류군 추가하기
   add_a_taxon_swap_if_you_want_to_change_the_name_html: |
@@ -144,6 +161,11 @@ ko:
   add_an_identification: 동정 추가하기
   add_an_observation: 관찰 추가하기
   add_an_observation_of: "%{taxon} 관찰을 추가하기"
+  add_an_observation_to_project_html: '%{project}에 관찰 추가하기'
+  add_annotations_for_x: '''%{x}''에 관한 주석 달기'
+  add_annotations_for_controlled_attribute:
+    sex: '''성별''에 관한 주석 달기'
+    plant_phenology: '''식물계절학''에 관한 주석 달기'
   add_another_flag: 다른 플래그 달기
   add_another_photo: 다른 사진 추가하기
   add_another_section: 다른 구역 추가하기
@@ -151,6 +173,8 @@ ko:
   #Project assets are files associated with projects, e.g. image files for a custom header
   add_asset: 자산 추가하기
   add_batch: 여러 개 추가하기
+  #Tool tip for a button that adds bold text to a text area
+  add_bold_text: 굵은 글씨 추가하기
   add_comma_separated_tags: "쉼표로 구분된 태그 추가하기"
   add_comment: 댓글 추가
   add_conservation_status: 보전 상태 추가하기
@@ -162,6 +186,8 @@ ko:
   add_link: 링크 추가
   add_higher_level_taxon: '상위 계층 분류군 추가하기 (예: "새")'
   add_id: 동정 추가하기
+  #Tool tip for a button that adds italic text to a text area
+  add_italic_text: 기울임꼴 추가하기
   add_new_lexicon: 새로운 언어 추가하기
   add_new_photos_by_their_ids: 플리커 ID를 이용해 새로운 사진 추가하기 (크리에이티브 커먼즈에 속해야 함!)
   add_new_place: 새로운 장소 추가하기
@@ -188,11 +214,23 @@ ko:
   add_life_stage_larva_annotation: '성장 단계: 애벌레'
   add_life_stage_juvenile_annotation: '성장 단계: 아성체'
   add_life_stage_egg_annotation: '성장 단계: 알'
+  add_evidence_of_presence_organism_annotation: '이 발견에 "개체를 발견했다"는 주석을 답니다.'
+  add_evidence_of_presence_feather_annotation: '이 발견에 "깃털을 발견했다"는 주석을 답니다.'
+  add_evidence_of_presence_gall_annotation: '이 발견에 "충영을 발견했다"는 주석을 답니다.'
+  add_evidence_of_presence_scat_annotation: '이 발견에 "배설물을 발견했다"는 주석을 답니다.'
+  add_evidence_of_presence_track_annotation: '이 발견에 "발자국을 발견했다"는 주석을 답니다.'
+  add_evidence_of_presence_bone_annotation: '이 발견에 "뼈를 발견했다"는 주석을 답니다.'
+  add_evidence_of_presence_molt_annotation: '이 발견에 "허물을 발견했다"는 주석을 답니다.'
+  add_evidence_of_presence_leafmine_annotation: '이 발견에 "벌레 먹은 잎을 발견했다"는 주석을 답니다.'
+  add_evidence_of_presence_hair_annotation: '이 발견에 "털을 발견했다"는 주석을 답니다.'
+  add_evidence_of_presence_egg_annotation: '이 발견에 "알을 발견했다"는 주석을 답니다.'
+  add_evidence_of_presence_construction_annotation: '이 발견에 "구조물을 발견했다"는 주석을 답니다.'
   #As in a Taxon Framework Relationship
   add_relationship: '관계 추가'
   add_several_observations_at_once: 한 번에 관찰 여러 개 추가하기
   add_sex_female_annotation: '성별: 암컷'
   add_sex_male_annotation: '성별: 수컷'
+  add_sex_cannot_be_determined_annotation: '성별: 확인할 수 없음'
   add_some_now: 지금 추가하기
   add_tag: 태그 추가
   add_tags: 태그 추가하기
@@ -329,6 +367,16 @@ ko:
   #seeing this used incorrectly somewhere we should be using a more specific
   #translation, please let us know.
   any_: 모두
+  #Label for an option to show any place
+  any_place: 어떤
+  app_owner_application_about_p2_html: |
+    2022년부터 API 클라이언트를 만들고자 하는 사용자에게는 수동 승인이 필요합니다.
+    타사 앱을 만들려면 먼저 신청서를 제출해야 합니다.
+    "앱 소유자". 이 응용 프로그램은 제안된 앱의 기능을 설명해야 합니다
+    그리고 그것을 어떻게 사용할 계획인지. 신청서를 제출하려면 계정이
+    생후 2개월 이상이고 최소 10 <a href="https://help.inaturalist.org/support/solutions/articles/151000170241"
+    target="_blank">식별 개선</a> 지난 달에. 후속 조치를 요청할 수 있습니다
+    귀하의 계획에 대한 질문은 어떤 이유로든 신청을 거절할 권리가 있습니다.
   apply_to_selected: 선택에 적용
   apply_captive_cultivated: "포획됨 / 사육됨 적용"
   apply_fields: 필드 적용
@@ -359,6 +407,8 @@ ko:
   are_you_sure_you_want_to_delete_this_assessment?: 이 평가를 삭제하겠습니까?
   are_you_sure_you_want_to_delete_this_photo?: 이 사진을 삭제하겠습니까?
   are_you_sure_you_want_to_delete_this_post: 이 게시물을 삭제하겠습니까?
+  #A confirmation message after a user initially presses the delete button for a sound to ensure they want to proceed with deletion.
+  are_you_sure_you_want_to_delete_this_sound?: 이 소리를 삭제하시겠습니까?
   are_you_sure_you_want_to_delete_this_taxon_change: 분류군 변동사항을 저장하겠습니까?
   are_you_sure_you_want_to_remove_all_tags: 모든 태그를 삭제하시겠습니까?
   are_you_sure_you_want_to_remove_curator: 정말 %{user}님의 큐레이터 권한을 삭제하시겠습니까?
@@ -369,6 +419,8 @@ ko:
     이 사용자의 콘텐츠의 스팸 플래그가 해결됩니다.
   are_you_sure_you_want_to_remove_these_x_taxa?: "%{x}개의 분류군을 삭제하겠습니까?"
   are_you_sure_you_want_to_remove_this_taxon_from_checklist: "이 분류군을 %{place}의 체크리스트에서 제거하겠습니까?"
+  artificially_generated_content: 인위적으로 생성된 콘텐츠
+  artificially_generated_content_desc: 대부분 또는 전체가 인공 지능을 통해 생성된 콘텐츠를 포함합니다.
   associated_observations: 관련된 관찰
   associated_taxa: 관련된 분류군
   attention: 주의
@@ -392,6 +444,13 @@ ko:
   #Noun form, as in a property of something. Generally used to describe the
   #name of an attribute available for annotation, e.g. "Life Stage"
   attribute: 특성
+  #Adjective describing when a place in an atlas was "exploded," i.e. divided
+  #into its constituent places
+  atlas_alteration_action_exploded: 폭발
+  #Adjective describing when a place in an atlas was "unexploded," i.e. its
+  #constituent places were removed and now the atlas just contains this
+  #place
+  atlas_alteration_action_unexploded: 불폭발
   authority_list:
     iucn_red_list: IUCN 적색 목록
   authorize_permissions_from_provider: "%{provider}의 허용을 수락함"
@@ -439,6 +498,8 @@ ko:
   blog_widget: 블로그 위젯
   blue_butterfly_etc: "파랑, 나비 등."
   body: 본문
+  #Text inserted into a textarea when the bold button is clicked but no text was selected
+  bold_text: 굵은 글씨
   breadcrumbs: 빵 부스러기
   brief_caption: 간결한 캡션
   browse: 찾아보기
@@ -518,6 +579,15 @@ ko:
   check_list_place: "%{place} 체크리스트"
   check_list_updated: 체크리스트가 업데이트되었습니다!
   check_out_what_the_observation: 동정하고자 하는 관찰대상의 생김새를 확인합니다.
+  check_this_box_if_html: |
+    적용하려면 이 상자를 선택하십시오. <a
+    href='http://creativecommons.org/licenses/by-nc/4.0/'
+    target='_blank'>크리에이티브 커먼즈 저작자표시-비상업적 라이선스</a> 받는 사람
+    업로드된 콘텐츠. 즉, 누구나 귀하의 사진을 복사하고 재사용 할 수 있습니다.
+    허락을 구하지 않고 관찰한 경우, 신용을 제공하는 한
+    그리고 저작물을 상업적으로 사용하지 마십시오. 다른 라이선스를 선택하거나
+    나중에 라이선스를 제거하지만 이 라이선스는 공유하기에 가장 적합한 라이선스입니다.
+    연구자.
   checklist: 체크리스트
   choose_a_field: 필드 선택
   choose_a_list_above: 목록을 선택하세요.
@@ -567,6 +637,7 @@ ko:
   community_id_heading: 공동체 ID
   community_id_at_species_or_lower?: 종 단위 이하의 커뮤니티 동정
   community_id_at_species_level_or_lower: 종 단위 이하의 커뮤니티 동정
+  community_taxon_matches_observation_taxon: Community Taxon이 Observation Taxon과 일치합니다.
   compare: 비교하기
   compare_with: '다음과 비교:'
   comparing: 비교 중
@@ -595,10 +666,20 @@ ko:
     description: 목록에 포함된 이유를 명시
     place: 보존 상태 제한지역
     url: 보전 상태를 설명하는 페이지의 URL
+    iucn: |
+      동등한 IUCN 적색 목록 코드. 이것은 실제 IUCN 평가가 아닙니다.
+      좌표 공개의 위협에 가장 잘 맞는 IUCN 코드만 있으면 됩니다
+      이 상태에 의해 암시됩니다. 이렇게 하면 지리적 개인 정보 보호가 "최소
+      우려" 이하이므로 이에 대한 관찰을 모호하게 하고 싶다면
+      분류군을 "Near Threatened" 이상으로 설정합니다.
   contact_support: 연락 지원
   contain_all_descendants?: 이 체크리스트가 여기 존재하는 하위 분류군을 모두 포함하고 있나요?
   continue: 계속
   continue_to_site: '%{site_name}(으)로 계속하기'
+  #e.g. "With iNaturalist, you can contribute to real science"
+  contribute: 기여하기
+  #e.g. "Contribute to iNaturalist"
+  contribute_cta: 기여하기
   contributor_cannot_be_found: 기여자 찾을 수 없음
   contributors_to_project: "%{project}의 기여자들"
   controlled_term_labels:
@@ -615,6 +696,7 @@ ko:
     pupa: 번데기
     nymph: 약충
     larva: 약충
+    #Evidence of an egg of an organism
     egg: 알
     juvenile: 아성체
     alive_or_dead: 생존 여부
@@ -634,7 +716,25 @@ ko:
     track: 발자국
     #Endoskeletal remains, like a deer bone
     bone: 뼈
+    #Skin or exoskeleton shed by a reptile or arthropod, not a particular
+    #plumage in a bird or seasonal hair/fur in a mammal
+    molt: 허물
+    #Evidence of an organism feeding between the dermal layers of a leaf
+    leafmine: 벌레 먹은 잎
+    #Evidence of hair no longer attached to the organism from which it originated
+    hair: 털
+    #Evidence of something made my an organism, made with or excavated from other materials
+    construction: 구조물
   controlled_term_definitions:
+    bone: |
+      주로 내골격 잔류물. 그렇지 않은 경우 부분적인 뼈 노출 포함
+      온전한 상태의 개체에게는 "개체"라는 주석이 달려야 합니다
+    feather: 개체에게서 떨어져 나온 하나 이상의 깃털
+    molt: 탈피로 인해 벗겨저서 버려진 외골격이나 피부
+    leafmine: 잎 표면을 갉아먹은 증거
+    hair: 생물의 몸에서 빠져나온 털
+    egg: 알 전체 혹은 일부분
+    construction: 동물이 다른 물질로 만들어낸 둥지, 댐 등의 구조물 혹은 굴이나 구멍을 파낸 흔적
     organism: 개체의 전체 혹은 일부
     scat: 배설물(펠릿 등 토사물 미포함)
   controls: 제어
@@ -706,16 +806,28 @@ ko:
     다음을 만족하는 경우에만 큐레이터를 신청하시기 바랍니다:
   curator_application_you_should_apply_if_you_are_a_regular_user: |
     지난 몇 개월간 관찰 기록 및 동정을 등록하였으며 앞으로도 계속 활동하고자 함
+  #Label for a menu item linking to a help page aimed at curators
+  curator_guide: 큐레이터 가이드
   curators_changed_for_x_html: "%{x} 큐레이터 변경됨"
   curators: 큐레이터
   curators_can_remove_observations_from: 큐레이터는 프로젝트에서 관찰을 제거할 수 있고 프로젝트 뷰에서 큐레이터가 표시한 동정을 볼 수 있습니다. 큐레이터는 프로젝트에서 수정된 좌표와 관찰에서 숨겨진 위치의 원래 좌표를 볼 수 있습니다.
+  curator_coordinate_access: 큐레이터 좌표 접근
   curator_identification: 큐레이터 확인
+  #Text to inform the user what the current consensus is for a given specimen's identification (aka taxon)
+  current_community_id: "현재 커뮤니티 분류군: %{taxon}"
   current_flags: 현재 플래그
   custom_project_fields: 자체지정한 프로젝트 필드
   custom_project_was_successfully_created: 자체지정 프로젝트가 성공적으로 생성되었습니다.
   custom_project_was_successfully_updated: 자체지정 프로젝트가 성공적으로 업데이트되었습니다.
+  #Button to customize projects that appear in the header
+  customize__projects: 사용자 지정
   darr_apply_darr: "&darr; 적용 &darr;"
   dashboard: 대시보드
+  dashboard_pilots:
+    #button asking to participate in a pilot
+    pilot_participate: "예! 참가하고 싶습니다."
+    #title for a pilot asking users to help fill species gaps by identifiying needs_id observations of species not in the computer vision model
+    gaps_id_pilot_title: "식별 격차 파일럿: ID 수배 종 필요"
   data_deficient: 정보부족(DD)
   data_quality: 데이터 품질
   data_quality_assessment: 데이터 품질 평가
@@ -786,6 +898,8 @@ ko:
   delete_photo: 사진을 삭제하시겠습니까?
   delete_project: 이 프로젝트를 제거하시겠습니까?
   delete_selected: 선택한 것을 삭제
+  #Label for a button to delete a sound file
+  delete_sound: 소리 삭제
   delete_taxon_and_merge_most_data_html: |
     <i>%{taxon}</i> 삭제하고 그것의 대부분의 데이터를 다른 분류군 안으로 병합합니다. <strong>중복되는 분류군을 제거</strong>하기 위해 이 도구를 사용합니다. 오래된 동의어를 제거하고자 한다면, 분류군 교환을 만드시기 바랍니다. <strong>조심합니다!</strong> 분류군을 삭제하는 것은 매우 파괴적일 수 있습니다. 자세한 사항은 <a href="%{curator_url}">큐레이터 안내서</a>를 확인합니다.
   delete_user: 사용자 삭제
@@ -811,10 +925,23 @@ ko:
     failure:
       user:
         suspended: 당신의 계정은 일시 중지되었습니다.
+      #Error message seen when using attempting to reset a password using an invalid reset token
+      reset_password_token_invalid: 암호 재설정 토큰이 유효하지 않습니다. 가장 최근에 보낸 비밀번호 재설정 이메일의 링크를 사용하거나 <a href="%{url}">새 항목 요청</a>.
+  #message informing the user the must confirm their email address to interact with other users
+  devise_confirmation_instructions_please_click2: |
+    아래 링크를 클릭하여 이메일 주소를 확인하십시오. 이메일을 확인하지 않은 경우
+    주소가 없으면 다른 사용자의 콘텐츠와 상호 작용할 수 없습니다.
+  #e.g. "With iNaturalist, you can discover nature nearby"
+  discover: 발견하기
   did_you_mean: '이것을 찾으셨나요:'
   did_you_photos_flickr?: 플리커에 사진을 올렸나요?
   disable: 비활성화
   disagree_: 동의하지 않음
+  #Checkbox controlling whether to show observations that have disagreeing
+  #identifications or not
+  disagreements: 불일치
+  #Title / tooltip for the disagreements checkbox
+  disagreements_show_observations_that: 일치하지 않는 식별이 있는 관찰 결과를 표시합니다.
   disconnect_provider: "%{provider} 연결 끊기"
   display_link_to_checklist: 프로젝트 페이지에서 프로젝트 목록으로 링크 표시
   distance_traveled: "여행한 거리 (m)"
@@ -828,6 +955,8 @@ ko:
   #Button text to donate to iNaturalist. Please try to keep translations as
   #short as possible
   donate: 기부하기
+  #Imperative verb; link to a page where a user can donate money to iNaturalist
+  donate_: 기부
   done: 완료
   dont_have_an_account_sign_up_html: 계정이 없으십니까? <strong>가입하세요.</strong>
   dont_use_double_quotes: 따옴표를 사용하지 마세요.
@@ -861,6 +990,7 @@ ko:
   edit_multiple_locations: 다수의 장소 편집
   edit_multiple_species: 다수의 종 편집
   edit_notes: 메모 편집
+  edit_observations: 관찰 편집
   edit_photos: 사진 편집
   edit_photos_for_observation_id: "관찰 %{obs_id}의 사진 편집"
   edit_place: 장소 수정
@@ -879,7 +1009,8 @@ ko:
   edit_your_settings_for_this_project: 이 프로젝트에 대한 내 설정 편집
   edited_by_name_html: "편집자 : %{name}"
   editing: 편집
-  editing_announcement: 공지 편집
+  #Title for a page to edit an announcement
+  editing_announcement_x: 공지 사항 편집 %{id}
   editing_custom_project_fields_for: 자체적 프로젝트 필드 편집
   editing_observation_field: 관찰 필드 편집
   editing_observation_id: "관찰 편집 %{obs_id}"
@@ -907,6 +1038,8 @@ ko:
   endemic_to_x: "%{x}의 토착종"
   eol_collection_url: "EOL 모음 URL"
   error_updating_photo: "사진 업데이트 오류: %{photo_errors}"
+  #The text response for when a sound file's data (i.e. creative commons licensing information) failed to update in our database.
+  error_updating_sound: "소리 업데이트 오류: %{sound_errors}"
   establishment:
     endemic: 고유종
     establishment: 상태
@@ -945,6 +1078,7 @@ ko:
   extinct: 절멸(EX)
   extinct_in_the_wild: 야생절멸(EW)
   extra_properties: 추가 특징들
+  evidence_accurately_depicts_organism_or_scene: 증거는 유기체나 장면을 정확하게 묘사합니다.
   facebook: 페이스북
   failed_to_find_your_location: 당신의 위치를 찾는데 실패하였습니다.
   failed_to_repair_photo: "사진을 수리하는데 실패했습니다. %{errors}"
@@ -953,6 +1087,12 @@ ko:
   #Plural noun for instances when someone has marked something as a favorite, e.g. "Order by: Faves"
   faves: 즐겨찾기
   Family: 과
+  #Header for a section showing the user's favorite projects
+  favorite_projects: 좋아하는 프로젝트
+  #Description of what Favorite Projects section in user settings
+  favorite_projects_desc: |
+    헤더에 링크로 표시되는 프로젝트를 최대 7개까지 선택합니다. 업데이트
+    페이지를 새로 고친 후 나타납니다.
   favorite_taxa: 좋아하는 분류군
   favorites: "즐겨찾기"
   feedback: 피드백
@@ -966,6 +1106,10 @@ ko:
   fields_can_only_be_edited_by_the_people_who: 필드는 만든이와 사이트 큐레이터만 편집할 수 있습니다.
   fields_merged: 필드 병합
   file: 파일
+  #Label for a computer file's content type. Example values: audio/mp3, image/gif
+  file_format: 파일 형식
+  #Label for the URL to a file (i.e. to a sound file, image file)
+  file_url: 파일 URL
   file_should_be_in_the_following_format: "파일은 다음의 형식을 따라야 합니다: 분류군 이름, 설명"
   fill_out_project_observation_fields: 프로젝트 관찰 필드를 기입하십시오
   fill_out_your_profile: 프로파일을 완성하십시오
@@ -1005,7 +1149,6 @@ ko:
   flag_description: 큐레이터들이 이 자료의 문제점을 알 수 있도록 플래그를 다세요.
   flag_for_curation: 큐레이션 대상으로 플래그
   flag_it!: 플래그!
-  flag_reason: "&ldquo; %{record}를 플래그하는 이유는"
   flag_saved: 플래그 저장됨
   flag_this_observation: 이 관찰에 플래그를 달기
   flag_this_photo: 이 사진 플래그
@@ -1056,6 +1199,8 @@ ko:
   Genus: 속
   geoprivacy: 지역 개인 정보
   get_started: 시작하기
+  #Label for a menu item linking to a help page about how to get started using iNaturalist
+  getting_started: 시작하기
   global_names: 세계적 이름들
   globally: 세계적으로
   go: 가기
@@ -1096,6 +1241,8 @@ ko:
   header_your_profile: 나의 프로필
   heads_up: 주의
   heads_up_this_photo_has_been_flagged: "주의: 이 사진은 플래그되었습니다."
+  #A warning in a small header to a user that this sound is considered problematic to listen to by another user (i.e. it is spam, has offensive content)
+  heads_up_this_sound_has_been_flagged: "주의: 이 소리에 플래그가 지정되었습니다."
   heads_up_this_photo_is_already_associated_with: "주의: 이 사진은 이미 <a target='_blank' href='%{url}'>다른 관찰</a>와 연결되어 있습니다."
   heads_up_you_have_multiple: "주의: 당신은 동일한 랭크들에 대해 다수의 분류학상의 기작 태그가 달려 있습니다. 랭크에 따라 아래에 색으로 구분되어있습니다."
   help: 도움말
@@ -1116,6 +1263,10 @@ ko:
   iconic_taxon: 특정 분류군
   identify: 동정하기
   identify_title: "동정하기"
+  #e.g. "With iNaturalist, you can identify nature nearby"
+  identify_verb: 식별
+  #e.g. "Identify using iNaturalist"
+  identify_cta: 식별
   identification: 동정
   #Notification when an identification has been deleted
   identification_deleted: 동정 삭제됨
@@ -1159,9 +1310,12 @@ ko:
   info: 정보
   insects: 곤충
   insect_life_stage: 곤충 성장 단계
+  instagram: 인스타그램
   internal_server_error: 내부 서버 오류
   introduced: 도입종
   introduced_in_place: "%{place} 에 도입됨"
+  #Error message shown when a date format is invalid
+  invalid_date: 유효하지 않은 날짜
   invitation: 초대장
   invite: 초대
   invite_people: 사용자들 초대
@@ -1180,8 +1334,10 @@ ko:
     스팸이 실수라고 생각되신다면
     <a href="mailto:%{help_email}" class="contact">저희에게 연락하십시오</a>.
     <a href="%{manage_flags_path}">표시 관리</a>
+  jobs: 직업
   join: 가입하기
   join_project: 이 프로젝트 가입하기
+  join_the_largest_group_of_naturalists_in_the_world: 세계에서 가장 큰 박물학자 그룹에 가입하세요!
   join_this_project: 이 프로젝트 가입하기
   'joined!': 가입했습니다!
   joined_projects: 참가한 프로젝트
@@ -1190,6 +1346,7 @@ ko:
   journal_archives_for: '일지 저장소:'
   journal_post: 일지 포스트
   journal_post_deleted: 일지 포스트 삭제
+  journal_posts: 저널 게시물
   jpg_png_or_gif: "JPG, PNG나 GIF"
   just_added!: 추가했습니다!
   keep_editing: 편집 계속
@@ -1210,6 +1367,8 @@ ko:
   latitude: 위도
   latitude_value: "위도: %{latitude}"
   layout: 배치 (레이아웃)
+  #e.g. "With iNaturalist, you can learn from a global community of naturalists"
+  learn: 배우다
   learn_more: 더 알아보기
   least_concern: 관심 대상
   leave: 떠나기
@@ -1258,7 +1417,6 @@ ko:
   life_list: "%{user}의 생물 목록"
   link: 링크
   link_your_flickr_account: Flickr 계정과 링크하기
-  link_your_google_account: 구글 계정과 링크하기
   linked_flickr: "당신의 %{site_name} 계정은 Flickr 계정과 연결되어 있습니다."
   linked_flickr_automatically: "그리고, %{site_name}에 Flickr 계정으로 로그인하면, 자동적으로 Flickr와 %{site_name} 계정이 연동된다는 것을 유의해주십시오. Flickr를 사용한다면 사진을 들여오기 더 용이하게 하기 위함입니다."
   linked_flickr_description: "%{site_name} 계정을 Flickr 계정과 연동시키면 당신의 관찰에 대한 여러 사진들을 업로드할 수 있습니다. 물론 언제든지 %{site_name} 계정과 Flickr 계정의 연동을 끊을 수 있지만, 사진을 추가하지는 못하게 됩니다. 새로운 Flickr 계정을 만들어서 %{site_name}과 연동할 수도 있습니다."
@@ -1271,6 +1429,11 @@ ko:
   list_updated: 목록 업데이트됨!
   list_views:
     photo: 사진
+  #Adjective describing addition of a taxon to a list
+  listed_taxon_alteration_action_listed: 나열
+  #Adjective describing removal of a taxon from a list
+  listed_taxon_alteration_action_unlisted: 미등록
+  lists: 목록
   load: 불러오기
   loading: "불러오는 중..."
   loading_flickr_photos: "Flickr 사진 불러오는 중..."
@@ -1317,6 +1480,10 @@ ko:
   location_is_private: 위치가 비공개이다
   log_in: 로그인
   log_scale_label: 로그
+  #Adjectival phrase describing state of being logged in
+  logged_in: 로그인됨
+  #Adjectival phrase describing state of being logged out
+  logged_out: 로그아웃됨
   logo:
     logo: 로고
     white_bg_gif: 흰색 배경 GIF
@@ -1340,6 +1507,7 @@ ko:
   manager: 매니저
   managers: 관리자들
   managers_can_do: 매니저들은 큐래이터가 하는 모든 활동을 할 수 있을 뿐만 아니라, 프로젝트 설정을 편집하고 프로젝트 일지 포스트 작성도 할 수 있다.
+  managing_projects: 프로젝트 관리
   map: 지도
   map_legend: 지도 설명문
   map_marker_size: 지도 마커 크기
@@ -1405,6 +1573,8 @@ ko:
   more_info: 자세한 정보
   more_info_title: 자세한 정보
   more_observations: 더 많은 관찰
+  #Label for a button or section that shows additional options
+  more_options: 더 많은 옵션
   more_photos: 더 많은 사진들
   more_than_a_week_ago: 한 주 이전에
   most_browser_print_pdf: "참고: 대부분의 브라우저는 PDF를 인쇄하는 옵션이 있습니다"
@@ -1538,7 +1708,11 @@ ko:
   no_taxonomic_changes_match_those_criteria: 그 조건을 충족하는 분류군 없음
   no_wikipedia_page_for_taxon: 이 분류군은 위키백과 페이지가 없습니다.
   noble_curators: "%{site}의 고귀한 큐레이터들"
+  #A user who is not a curator
+  non_curator: 큐레이터가 아닌 경우
   non_human?: 사람이 아닙니까?
+  #A user who does not admin any projects
+  non_project_admin: 프로젝트 관리자가 아닌 경우
   none: 없음
   none_found: 찾을 수 없음
   normal: 보통
@@ -1560,6 +1734,8 @@ ko:
   obscured: 숨김
   obscured_description: |
     실제 좌표 반경 10KM 이내의 임의의 지점으로 표시된 공용 좌표입니다. 실제 좌표는 당신이 관찰을 추가한 프로젝트의 당신과 큐레이터에게만 보입니다.
+  #verb, call to action, e.g. "Observe nature nearby"
+  observe: 관찰해
   observation: 관찰
   observation_: 관찰
   observation_added_to_the_project: "%{project}에 관찰 추가됨"
@@ -1574,6 +1750,7 @@ ko:
   observation_date?: 날짜?
   observation_field: 관찰 필드
   observation_fields: 관찰 필드
+  observation_fields_for_projects: 프로젝트에 대한 관찰 필드
   observation_fields_are_additional: 관찰 필드는 관찰에 추가로 데이터 입력 필드를 더할 수 있는 필드입니다.
   observation_requirements: 관찰 요구사항
   observations: 관찰
@@ -1696,6 +1873,68 @@ ko:
     large: 크게
   photos_updated: 사진 업데이트됨
   pi_consent_desc_title: 개인 정보에 관해
+  pi_consent_desc_html: |
+    <p>
+    우리는 사용자 이름 및 이메일 주소와 같은 개인 정보를 저장합니다.
+    이 사이트의 계정을 관리하고 개인 정보 보호법을 준수하기 위해
+    이 사용에 동의한다는 표시를 나타내기 위해 이 확인란을 선택해야 합니다.
+    개인 정보의. 우리가 어떤 정보를 가지고 있는지 더 알아보기 위해
+    수집 및 사용 방법은 다음을 참조하십시오.
+    <a href='%{privacy_url}' target='_blank'>개인정보처리방침</a>
+    그리고 우리의 <a href='%{terms_url}' target='_blank'>이용 약관</a>.
+    </p>
+    <p>
+    개인 정보를 저장하지 않고 iNaturalist 계정을 가질 수 있는 방법은 없습니다.
+    따라서 이 동의를 철회하는 유일한 방법은 귀하의
+    계좌.
+    </p>
+  pi_consent_label: |
+    본인은 iNaturalist가 제한된 종류의 저장 및 처리를 허용하는 데 동의합니다.
+    내 계정을 관리하기 위한 나에 대한 개인 정보
+  pi_consent_child_label: |
+    본인은 iNaturalist가 제한된 종류의 저장 및 처리를 허용하는 데 동의합니다.
+    내 아이의 계정을 관리하기 위해 내 아이에 대한 개인 정보
+  data_transfer_consent_desc_title: 개인정보 이전 동의에 대해서
+  data_transfer_consent_desc_html: |
+    <p>
+    유럽 연합의 일반 데이터와 같은 일부 데이터 개인 정보 보호법
+    보호 규정(GDPR), 전송에 대한 명시적 동의 필요
+    해당 관할권에서 다른 관할권으로의 개인 정보
+    이 정보의 법적 보호가 고려되지 않는 경우
+    충분한. 현재
+    <a href="https://en.wikipedia.org/wiki/Max_Schrems#Schrems_II">2020</a>,
+    유럽 연합은 더 이상 미국을 국가로 간주하지 않습니다.
+    개인에 대한 적절한 법적 보호를 제공하는 관할권
+    정보, 특히 미국 정부의 가능성 때문에
+    미국으로 들어오는 데이터를 감시합니다. 다른 관할권에서도 가능합니다
+    같은 의견을 가질 수 있습니다.
+    </p>
+    <p>
+    iNaturalist를 사용하려면 다음과 같은 개인 정보를 저장해야 합니다.
+    이메일 주소, 모든 iNaturalist 데이터는 미국에 저장되어 있습니다.
+    귀하가 사용할 때 귀하가 어떤 법적 관할권에 있는지 확신할 수 없습니다.
+    iNaturalist, 따라서 GDPR과 같은 개인 정보 보호법을 준수하기 위해 귀하는
+    귀하가 이 위험과 동의를 이해하고 수락한다는 것을 인정해야 합니다.
+    귀하의 개인 정보를 iNaturalist의 서버로 전송하기 위해
+    미국.
+    </p>
+    <p>
+    당사가 수집하는 정보 및 사용 방법에 대해 자세히 알아보기
+    저희를 참조하십시오
+    <a href='%{privacy_url}' target='_blank'>개인정보처리방침</a>
+    그리고 우리의 <a href='%{terms_url}' target='_blank'>이용 약관</a>.
+    </p>
+    <p>
+    개인 정보를 저장하지 않고 iNaturalist 계정을 가질 수 있는 방법은 없습니다.
+    따라서 이 동의를 철회하는 유일한 방법은 귀하의
+    계좌.
+    </p>
+  data_transfer_consent_label: |
+    본인은 본인의 개인 정보가 유나이티드로 전송되는 데 동의합니다.
+    미국
+  data_transfer_consent_child_label: |
+    본인은 제 자녀의 개인 정보가 다음 주소로 전송되는 데 동의합니다.
+    미국
   pin_verb: 저장
   place: 장소
   place_autocomplete_placeholder: 자이언 국립공원, 마이애미, 등등
@@ -1728,6 +1967,8 @@ ko:
       town: 읍·면·동
       Unknown: 알 수 없음
       unknown: 알 수 없음
+  #message describing a delay between importing a place and observations appearing in it
+  place_imported_delay: 관측이 이 장소와 연관되는 데 최대 하루가 걸릴 수 있습니다.
   place_name: 지역 이름
   place_notes: 메모 위치
   place_updated: 지역 업데이트됨!
@@ -1998,11 +2239,26 @@ ko:
     zambia: 잠비아
     zimbabwe: 짐바브웨
   places_merged_successfully: 장소가 성공적으로 합쳐졌습니다!
+  #user-facing guidance that new places cannot be too large
+  places_warning_area: |
+    장소는 700,000제곱킬로미터를 초과할 수 없습니다.
+  #user-facing guidance that new places cannot be too large, with a smaller max area
+  #when we have enable the "content-freeze" mode to reduce processing on the site
+  places_warning_area_during_content_freeze: |
+    장소는 70,000제곱킬로미터를 초과할 수 없습니다.
+  #user-facing guidance that new places cannot contain too many observations
+  places_warning_observation_count: |
+    장소에는 200,000개 이상의 관측치가 포함될 수 없습니다.
+  #user-facing guidance that new places cannot contain too many observations, with a lower max
+  #observat count when we have enable the "content-freeze" mode to reduce processing on the site
+  places_warning_observation_count_during_content_freeze: |
+    장소에는 10,000개 이상의 관측치가 포함될 수 없습니다.
   plants: 식물
   please_explain_why_you_want_to_hide_this: 이것을 숨기려는 이유를 설명해 주십시오
   please_explain_why_you_want_to_unhide_this: 이것의 숨김을 해제하려는 이유를 설명해 주십시오
   please_hold_on_while_the_file: 파일이 생성될 때까지 잠시 기다려 주세요. 관찰이 많을 경우 몇 분 걸릴 수 있습니다.
   position: 위치
+  powered_by_inaturalist_open_source_software_html: '구동 <a href="https://github.com/inaturalist/inaturalist" target="_new" >iNaturalist 오픈 소스 소프트웨어</a>'
   press: 보도
   prev: 이전
   previous_observation: 이전 관찰
@@ -2016,7 +2272,12 @@ ko:
   probably_spam: 스팸으로 추정
   processing3p: "처리 중..."
   profile: 프로필
+  #A user may attempt to upload a profile picture with an unsupported content type, and this
+  #text will be the first part of an error message displayed to the user describing that error
+  profile_picture_file_type: 프로필 사진 파일 형식
   project: 프로젝트
+  #A user who admin's a project
+  project_admin: 프로젝트 관리자
   project_created_on: 님이 %{date} 에 이 프로젝트를 생성하였습니다
   project_group_label: 그룹
   project_icon: 프로젝트 아이콘
@@ -2040,6 +2301,16 @@ ko:
   range: 범위
   #Taxonomic rank, e.g. "genus," "subfamily", "kingdom", etc.
   rank: 순위
+  rank_levels:
+    #Label when displaying genus level, which is the same for genus and
+    #genushybrid
+    genus: 속 / 속잡종
+    #Label when displaying species level, which is the same for species and
+    #hybrid
+    species: 종 / 잡종
+    #Label when displaying infraspecies level, which is the same for all the
+    #infraspecies ranks
+    subspecies: 아종 / 품종 / 형태
   #A person's rank on an ordinal scale (e.g. "first place," "second place,"
   #etc.). Generally used as a column header in lists of observers and
   #identifiers
@@ -2132,6 +2403,7 @@ ko:
   reviewed: 검토함
   rg_observations: 연구 자료 등급 관찰
   rules_for_adding_observations: 관찰을 추가할 때의 규칙
+  satellite: 위성
   save: 저장
   save_all: 모두 저장
   save_and_continue: "저장하고 계속하기..."
@@ -2192,6 +2464,7 @@ ko:
   sign_in_with_google: Google 계정으로 로그인
   sign_out: 로그아웃
   sign_up: 가입하기
+  sign_up_sentence_case: 가입하기
   similar_species: 비슷한 종
   similar_taxa: 비슷한 분류군
   sizes: 크기
@@ -2215,7 +2488,15 @@ ko:
     photos_sounds: 사진 / 음원
     request_timed_out: SoundCloud로의 요청이 타임아웃되었습니다. 나중에 다시 시도 해주세요.
     select_one_or_more_sounds: 하나 이상의 음원을 선택하세요
+    #The title to an uploaded sound file. Id is typically a number, and Attribution is the name of the uploader plus creative licensing information i.e. "all rights reserved"
+    sound_by_id_attribution: 소리 %{id}, %{attribution}
+    #Message that notifies a user that their sound was successfully deleted
+    sound_deleted: 소리 삭제
     sound_has_been_flagged: 이 소리는 플래그되었습니다.
+    #Notifies an admin/curator that they successfully censored a sound from the website
+    sound_hidden: 숨겨진 소리
+    #Notifies an admin/curator that they successfully UNcensored a sound -- the sound can now be listened to by everyone
+    sound_unhidden: 숨겨지지 않은 사운드
     your_soundcloud_account: SoundCloud 계정
   source_wikipedia: "출처: 위키백과"
   spam: 스팸
@@ -2242,6 +2523,9 @@ ko:
   store: 스토어
   store_caps: 스토어
   submitted: 업로드 날짜
+  #Label for a button that subscribes the user to updates on a resource, e.g.
+  #comments on a journal post
+  subscribe: 구독하다
   subscribe_to_a_taxon: 분류군 알림 받기
   subscribe_to_a_place: 장소 알림 받기
   subscribe_to_observations_in_a_taxon: '특정 분류군에 대한 모든 관찰에 대한 알림을 받기 (예시: ''메뚜기과'', ''흰나비속'')'
@@ -2264,8 +2548,11 @@ ko:
   taxon_name_was_deleted: 분류군 이름이 삭제되었습니다.
   taxon_name_was_successfully_updated: 분류군 이름이 성공적으로 수정되었습니다.
   taxonomic_order: 분류 체계
+  teachers_guide: 교사용 가이드
   tell_the_world_a_little_about_yourself: 자기소개하기
   tell_us_why: 이유를 말해주세요...
+  terms_service: 이용 약관
+  terrain: 지형
   text: 텍스트
   thanks!: 감사합니다!
   the_following_observations_could: "%{link}에 관찰을 추가하지 못했습니다."
@@ -2287,24 +2574,45 @@ ko:
   #As in the title of a book or a blog post
   title: 제목
   too_many_results: 결과가 너무 많음
+  tos_privacy_guidelines_label: |
+    동의합니다. <a href="/terms" target="_blank">이용 약관</a> 그리고
+    <a href="/privacy" target="_blank">개인정보처리방침</a>, 그리고 나는 검토했다.
+    이 <a href="/pages/community+guidelines" target="_blank">커뮤니티 가이드라인</a>.
   total: 합계
   total_observations: 총 관찰
   total_observations_caps: 전체 관찰 수
+  #e.g. "With iNaturalist, you can track species you've seen worldwide"
+  track: 트랙
   translated_languages: 번역된 언어
   twitter: 트위터
   unblock: 차단 해제
+  #Label for a menu item linking to a help page describing how iNaturalist Projects work
+  understanding_projects: 프로젝트 이해하기
   unknown: 알 수 없음
   unknown_error: 알 수 없는 오류
-  unlink_your_google_account: 구글 계정의 연결을 끊습니다
   unmute: 알림 제외를 해제
   unsubscribe: 알림 해제
   update: 갱신
+  update_existing_observations_with_new_license_desc: |
+    이 옵션을 선택하면 새 라이선스 선택 사항이 모든 사용자에게 적용됩니다.
+    기존 관찰. 많은 경우 몇 시간이 걸릴 수 있습니다.
+    관찰.
+  update_existing_photos_with_new_license_desc: |
+    이 옵션을 선택하면 새 라이선스 선택 사항이 모든 사용자에게 적용됩니다.
+    기존 사진. 많은 경우 몇 시간이 걸릴 수 있습니다.
+    사진.
+  update_existing_sounds_with_new_license_desc: |
+    이 옵션을 선택하면 새 라이선스 선택 사항이 모든 사용자에게 적용됩니다.
+    기존 소리. 많은 경우 몇 시간이 걸릴 수 있습니다.
+    소리.
   update_observations: 관찰 업데이트
   update_photos: 사진 갱신
   update_subscription: 구독 갱신
   update_subscription_preferences: 구독 환경 설정 업데이트
   updated: 갱신됨
   updated_daily: 매일 갱신
+  #Notifies a user that they were able to successfully change information about a sound file (i.e. creative licensing information)
+  updated_sound: 업데이트된 사운드
   upload: 올리기
   upload_a_csv_file: CSV 파일 올리기
   upload_photo: 사진 올리기
@@ -2342,13 +2650,20 @@ ko:
   user_added_an_x_to_noun_by_you_html: "%{user}님이 나의 %{noun}에 %{x}을(를) 추가했습니다."
   #@gender operates on %{x}
   user_added_an_x_to_noun_html: "%{user}님이 %{noun}에 %{x}을(를) 추가했습니다."
-  user_added_x_observations_html: "%{user} 님이 %{x}개의 관찰을 추가했습니다."
   user_already_authenticated: 사용자는 이미 인증되었습니다
   user_autocomplete_placeholder: kueda, simon123 등.
   user_blocked: 사용자가 차단됨
   user_commented: "%{user}님이 댓글을 남겼습니다"
   user_muted: 사용자를 알림에서 제외함
   user_suggested_an_id: "%{user}님이 ID를 제시했습니다"
+  user_trusts_this_project_when_added_by_any: |
+    사용자는 관찰의 숨겨진 좌표가 추가된 프로젝트 큐레이터를 신뢰합니다.
+    누구에 의해서든지에 의해서의 프로젝트에.
+  user_trusts_this_project_when_added_by_observer: |
+    사용자는 관찰의 숨겨진 좌표가 추가된 프로젝트 큐레이터를 신뢰합니다.
+    관찰자에 의해 프로젝트에.
+  user_trusts_this_project_when_added_by_none: |
+    사용자는 숨겨진 좌표를 가진 프로젝트 큐레이터를 신뢰하지 않습니다.
   username: 사용자 이름
   username_or_email: 사용자 이름이나 이메일
   username_or_user_id: 사용자 이름이나 사용자 ID
@@ -2358,6 +2673,7 @@ ko:
   users_projects: "%{user}님의 프로젝트"
   valid_options_are: '유효한 옵션:'
   value: 값
+  video_tutorials: 동영상 튜토리얼
   view_all: 모두 보기
   view_all_members: 모든 회원 보기
   view_all_observations: 모든 관찰 보기
@@ -2378,9 +2694,10 @@ ko:
   view_sample: 샘플 보기
   view_x: "%{x} 보기"
   view_your_observations: 내 관찰 보기
-  video_tutorials: 동영상 튜토리얼
   vulnerable: 취약(VU)
   was_it_captive_cultivated?: "포획되거나 사육되었습니까?"
+  we_also_support3: |
+    또한 다음에서 사진 가져오기를 지원합니다. <a href="http://flickr.com">플리커</a>.
   we_couldnt_find_a_user: 해당하는 이메일 주소의 사용자를 찾지 못했습니다.
   we_couldnt_find_a_user_with_that_activation_code: "해당 활성 코드와 맞는 사용자를 찾지 못했습니다. 이미 당신의 계정을 활성화했을 수 있습니다. 로그인을 시도해 보세요."
   we_had_trouble_saving_comment: "해당 댓글을 저장하는데 문제가 발생했습니다."
@@ -2391,15 +2708,23 @@ ko:
   welcome_to_inat: "%{site_name}에 오신 것을 환영합니다!"
   welcome_to_guides: "%{site_name} 가이드에 오신 것을 환영합니다!"
   welcome_to_x_project: "%{project}에 오신 것을 환영합니다."
+  #e.g. "What was observed?"
+  what: 뭐야
   what_were_you_looking_for?: "찾으시는 것이 무엇이었습니까? (대상 목록)"
   whats_this?: 이것은 무엇입니까?
+  #e.g. "When was it observed?"
   when: 날짜
   when_did_you_see_it?: 언제 봤나요?
   when_did_you_see_them?: <em>언제</em> 그것을 봤나요?
+  #e.g. "Where was it observed?"
   where: 위치
   which_projects_can_add_your_observations?: 내 관찰을 추가할 수 있는 전통적인 프로젝트는 무엇입니까?
   why_you_can_see_the_coordinates: 좌표를 볼 수 있는 이유
+  #e.g. "Who observed it?"
+  who: 누구
   who_can_add_observations_to_this_project?: 이 프로젝트에 관찰을 추가할 수 있는 사람은 누구입니까?
+  #Question mark added to the end of the word "Why" to make it a question. e.g. "Why should I use iNaturalist?"
+  why_question: 왜?
   widget: 위젯
   widget_code: 위젯 코드
   wikipedia_attribution_cc_by_sa_3: |
@@ -2412,6 +2737,8 @@ ko:
   year: 년
   year_month: 년/월
   'yes': "예"
+  yes_license_my_childs_observations: 예, 과학자들이 데이터를 사용할 수 있도록 내 아이의 사진, 소리 및 관찰 자료에 대한 라이선스를 부여하십시오(권장).
+  yes_license_my_observations_so_scientists_can_use: 예, 과학자들이 내 데이터를 사용할 수 있도록 내 사진, 소리 및 관찰 항목에 라이선스를 부여하십시오(권장).
   yesterday: 어제
   you: 나
   you_: 나
@@ -2443,13 +2770,138 @@ ko:
   your_recent_projects: 내 최근 프로젝트
   your_relationships: 내 관계
   views:
+    announcements:
+      locales_desc: |
+        Cmd 키 또는 Shift 키를 누른 상태에서 여러 항목을 선택합니다. "모두"를 선택하거나 만들지 않음
+        선택 항목은 다음에 관계없이 모든 사용자에게 공지 사항을 표시합니다.
+        로캘. 지역이 없는 언어를 선택하면 대상이 *아니*게 됩니다
+        지역이 있는 로케일, 예를 들어 영어를 선택하면 표시되지 않습니다.
+        영어(영국)를 선택한 사람들을 위해.
+      clients_desc: |
+        Cmd 키 또는 Shift 키를 누른 상태에서 여러 항목을 선택합니다. "모두"를 선택하거나 만들지 않음
+        선택 항목은 다음에 관계없이 모든 사용자에게 공지 사항을 표시합니다.
+        클라이언트.
+      end_desc: |
+        계정 시간대에서 이 공지가 중지되는 시간
+        나타나는. 여러 시간대에 걸쳐 적용되므로 모든 사람이 더 이상 볼 수 없습니다.
+        동시에 현지 시간과 관련이 없습니다.
+      excludes_non_site_desc: |
+        공지 사항이 사이트를 대상으로 하는 경우(기본값입니다.
+        Site Admin)에 있는 모든 사이트를 대상으로 하는 공지 사항이 제외됩니다.
+        이 배치.
+      ip_countries_desc: |
+        Cmd 키 또는 Shift 키를 누른 상태에서 여러 항목을 선택합니다. "모두"를 선택하거나 만들지 않음
+        선택 항목은 다음에 관계없이 모든 사용자에게 공지 사항을 표시합니다.
+        IP 국가.
+      exclude_ip_countries_desc: |
+        CMD를 누르거나 Shift를 누른 채 클릭하여 여러 개를 선택합니다. 일부 국가는 표시되지 않습니다.
+        발표. IP 국가를 선택한 경우 IP 국가 제외를 선택합니다.
+        전자에서 뺍니다.
+      #Note about how the announcement last observation date property works
+      last_observation_date_desc: |
+        사용자가 가장 최근에 만든 생성 날짜입니다.
+        관찰은 캐시되므로 대상을 지정하는 데 몇 시간이 걸릴 수 있습니다.
+        적용
+      observation_oauth_application_ids_desc: |
+        Cmd 키 또는 Shift 키를 누른 상태에서 여러 항목을 선택합니다. "모두"를 선택하거나 만들지 않음
+        선택 항목은 다음에 관계없이 모든 사용자에게 공지 사항을 표시합니다.
+        앱.
+      site_ids_desc: |
+        Cmd 키 또는 Shift 키를 누른 상태에서 여러 항목을 선택합니다. "모두"를 선택하거나 만들지 않음
+        선택 항목은 다음에 관계없이 모든 사용자에게 공지 사항을 표시합니다.
+        사이트 제휴.
+      start_desc: |
+        계정 시간대에서 이 공지가 시작되는 시간입니다
+        나타나는. 여러 시간대에 걸쳐 적용되므로 모든 사람이 볼 수 있습니다.
+        동시에 현지 시간과 관련이 없습니다.
+      #Description of a group of options for targeting announcements based
+      #on donation behavior
+      target_users_by_donation_behavior: 기부 행동으로 사용자 타겟팅
+      #Description of a group of options for targeting announcements based
+      #on identification behavior
+      target_users_by_identification_behavior: 식별 동작으로 사용자 타겟팅
+      #Description of a group of options for targeting announcements based
+      #on observation behavior
+      target_users_by_observation_behavior: 관찰 동작으로 사용자 타겟팅
+      #Description of a group of options for targeting announcements based
+      #miscellaneous user attributes
+      target_users_by_other_attributes: 다른 속성으로 사용자 타겟팅
+    atlases:
+      show:
+        #Title for section describing atlases
+        about_atlases: 아틀라스 소개
+        #Description of what atlases are
+        atlases_convey_the_global_distribution: |
+          Atlases는 분류군의 전 세계 분포를 전달합니다. 큐레이터는
+          Atlases는 Atlas의 구조를 정의하고
+          그것을 운전하는 분류군을 나열했습니다.
+        #Label for a button that divides a place in an atlas into it's
+        #constituent places. E.g. if the atlas for Red Fox contained Europe
+        #you wanted to specify that Red Fox only occurs in Belgium and
+        #France, you would "explode" Europe so you could choose Belgium and
+        #France.
+        explode_this_place: 이곳을 폭발시켜라
+        #Label for a button that reunites places in an atlas into the place
+        #that contains them. E.g. if an atlas contains Europe but it has
+        #been "exploded" into its constituent countries, this would remove
+        #those countries so the atlas would just contain Europe again.
+        unexplode_this_place: 이 장소를 분해 해제합니다.
+        #Notice when an atlas has not been altered
+        no_alterations_to_this_atlas_yet: 이 아틀라스에는 아직 변경 사항이 없습니다
+        #Title for a section showing recent alterations to an atlas
+        recent_atlas_alterations: 최근 아틀라스 변경 사항
+        #Title for a section showing taxa that were recently added to a check
+        #list
+        recent_listed_taxon_additions: 최근 나열된 분류군 변경
+        #Label for a button that shows taxa on checklists for a place
+        show_listed_taxa: 나열된 분류군 표시
+        #Notice when an atlas is not active
+        this_atlas_is_not_currently_active: 이 아틀라스는 현재 활성화되지 않았습니다.
+        #Warning before removing a place from an atlas
+        this_will_remove_this_taxon_and_all: |
+          이렇게 하면 이 분류군과 모든 하위 분류군이 체크리스트에서 제거됩니다
+          이 장소 및 여기에 포함된 모든 표준 장소와 연결됩니다. 술래
+          실행 취소할 수 없습니다. 이 작업을 수행하시겠습니까?
+        #Warning when there are observations outside of the places defined by
+        #the atlas
+        warning_there_are_observations_not_represented: |
+          경고: 이 아틀라스에 표시되지 않는 관측치가 있습니다
     devise:
       mailer:
         confirmation_instructions:
           are_you_planning_on_using_in_the_classroom: 교실에서 %{site_name}을(를) 사용할 예정이십니까?
     donate:
       donate_short_desc: "지금 기부해서 iNaturalist를 지원해주세요!"
+    email_confirmation:
+      click_here_to_resend_a_confirmation_email: 확인 이메일을 다시 보내려면 여기를 클릭하십시오.
+      #message displayed after users trigger sending a email to confirm their email address
+      confirmation_email_sent: 확인 이메일이 전송되었습니다.
+      #text displayed before showing a user the email address that we will
+      #resend a confirmation email to
+      here_is_the_email_colon: |
+        확인 메일을 보낼 이메일 주소는 다음과 같습니다.
+      #statement introducing suggestions for users that do no receive confirmation emails
+      if_you_do_not_receive_the_email_here_are_tips_colon: |
+        이메일을 받지 못한 경우 다음 몇 가지 팁이 있습니다.
+      #statement telling users to contact us if they are not receiving confirmation emails
+      if_you_are_still_not_receiving_email_contact_us_html: 그래도 확인 이메일을 받지 못한 경우 다음 연락처로 문의해 주세요. <a href="mailto:help+confirmation@inaturalist.org">help@inaturalist.org</a> 그래서 우리는 당신을 도울 수 있습니다.
+      please_add_an_email_and_password: 계정에 대한 액세스 권한을 잃지 않도록 이메일과 비밀번호를 추가하세요.
+      please_click_the_link_sent_to_email_to_confirm_html: 로 전송된 링크를 클릭하십시오. <span class="email">%{email}</span> 을 클릭하여 이메일 주소를 확인합니다.
+      please_confirm_that_email_is_the_best_contact_html: 다음 사항을 확인하십시오. <span class="email">%{email}</span> 귀하에게 연락하는 가장 좋은 방법입니다. #message requesting users confirm their email address to be able to engage with other users
+      please_confirm_to_interact_and_access: 다른 사용자의 콘텐츠와 상호 작용하고 특정 페이지에 액세스하려면 이메일 주소를 확인하십시오. #message requesting that a user confirm their email address, displaying the email to confirm
+      please_confirm_your_email_address_html: 이메일 주소를 확인하십시오. <span class="email">%{email}</span>. #statement used in areas that might contain a form allowing users to add comments, etc. This # informs users they must confirm their email address if they want to be able to interact
+      please_confirm_to_interact: 다른 사용자의 콘텐츠와 상호 작용하려면 이메일 주소를 확인하십시오.
+      #statement used on pages that are not functional unless a user has confirmed their email address
+      please_confirm_to_use_this_page: 이 페이지를 사용하려면 이메일 주소를 확인하십시오.
+      #tip for users who do not receive confirmation emails to check if their email view is filtered
+      tips_check_email_filters: 받은 편지함에서 이메일을 제거할 수 있는 필터가 있는지 확인하세요. #tip for users who do not receive confirmation emails to check their email spam folder
+      tips_check_your_spam_folder: 스팸 폴더 확인
+      your_site_account_has_no_email: 당신의 %{site_name} 계정에 연결된 이메일 주소가 없습니다.
     guides:
+      index:
+        funding2_html: |
+          가이드 개발을 위한 자금은 다음과 같이 제공되었습니다.
+          <a href="http://eol.org"><img alt="Encyclopedia of Life" src="%{image_url}"></a>
       edit:
         add_rank_tags_help_html: |
           우리 분류학을 바탕으로 분류 등급 태그를 추가하세요, 예를 들어
@@ -2480,6 +2932,17 @@ ko:
       subject_body: 제목 / 본문
       index:
         show_messages_from_user: '%{user}님으로부터 온 메시지 보기'
+        #Users cannot create messages if they lack the criteria for
+        #earning interaction privilege
+        interaction_privilege_notice: |
+          이메일을 확인한 후 새 메시지를 보낼 수 있습니다
+          주소. 지금은 다른 사람들이 보낸 메시지를 읽고 답장을 보낼 수 있습니다.
+        #Users cannot create messages if they lack the criteria for
+        #earning interaction or speech privilege
+        privilege_notice: |
+          이메일을 확인한 후 새 메시지를 보낼 수 있습니다
+          주소를 지정하고 3개의 검증 가능한 관찰 또는 3개의 식별을 추가했습니다.
+          다른 사람들을 위해. 지금은 다른 사람들이 보낸 메시지를 읽고 답장을 보낼 수 있습니다.
     oauth:
       authorizations:
         new:
@@ -2501,6 +2964,17 @@ ko:
         you_reviewed_message: "검색된 %{total}개의 관찰 중, 이 페이지에서 %{pageTotal}개의 관찰 중에서 %{reviewed}개를 검토했습니다."
         unreview_all_tooltip: "페이지 내 모든 관찰자 검토상태 삭제하기"
       show:
+        #One of a list of requirements an observation must meet to be in the Research Grade category
+        dqa_help_research_grade_community_observation_html: |
+          이 <strong>Community Taxon 및 Observation Taxon 일치</strong>
+          (관찰 분류군이 더 많을 수 있는 드문 경우를 위해,
+          커뮤니티 분류군보다 구체적)
+        #One of a list of reasons for an observation to revert to Casual
+        dqa_help_casual_not_accurate_evidence_html: |
+          관찰 <strong>유기체의 정확한 증거를 제시하지 않거나
+          장면</strong> (예: 인공 지능을 사용하여 추가, 제거 또는 교체했습니다.
+          이미지 또는 사운드의 요소. 노이즈 제거, 초점 스태킹 또는 만들기
+          센서 먼지 제거와 같은 작은 수정은 일반적으로 괜찮습니다).
         flagged_photos_desc_html: |
           이러한 사진 중 일부가 부적절한 내용 또는 저작권 침해로
           플래그되어 있습니다. 자세한 내용은 %{links}을(를) 보십시오
@@ -2541,8 +3015,6 @@ ko:
         use_this_link_to_create_html: |
           전통 프로젝트를 만들려면 <a href="%{url}">이 링크</a>를 사용하세요.
         welcome_to_projects: 프로젝트에 오신 것을 환영합니다!
-        you_can_learn_more_html: |
-          <a href="https://www.inaturalist.org/pages/managing-projects">여기서</a> 프로젝트 관리법을 알아보거나, <a href="https://www.inaturalist.org/blog/15450-announcing-changes-to-projects-on-inaturalist">iNaturalist 블로그</a>에서 프로젝트들의 역사를 읽어보세요.
         errors:
           name_is_required: 프로젝트 이름은 필수입니다
           name_less_than_100_characters: 프로젝트 이름은 100글자 이내여야 합니다.
@@ -2559,6 +3031,14 @@ ko:
           이 자원의 소유자를 차단했기 때문에 이들과 통신하는 것은
           불가능합니다. 이 문서의 상호작용 기능들 대부분은 동작하지
           않습니다.
+    sounds:
+      show:
+        #The user has been warned that an uploaded sound file has been noted as being problematic.
+        #To bypass the warning, this additional text provides a link to the sound and guidance.
+        view_original_html: |
+          원본은 다음에서 볼 수 있습니다. <a href="%{url}">%{url}</a>. 부탁해요
+          이 소리가 나면 저작권 침해 플래그를 해결되지 않은 상태로 둡니다.
+          저작권을 침해합니다.
     stats:
       index:
         avg_ttcid: 평균 TTCID
@@ -2567,16 +3047,105 @@ ko:
       year:
         include_usa: 미국 포함
     taxa:
+      edit:
+        #a message when you try to save major changes to a taoxn name
+        you_can_only_make_minor_changes_to_the_species_epithet_directly_html: |
+          종 별명을 직접 사소한 변경만 할 수 있습니다(예: 성별 변경, 철자 오류). 추가 <a target="_blank" href="%{url}">분류군 스왑</a> 이름에 다른 변경이 필요한 경우.
+        #message when you try to save edits to a taxon that is a descendant of a locked taxon
+        heads_up_locked: "주의: 방금 잠긴 분류군의 후손을 추가했습니다(<a href='/taxa/%{locked_ancestor_id}'>%{locked_ancestor_name}</a>). 대신 이것을 기존 분류군에 병합하는 것을 고려하십시오." #message when you try to save edits to a taxon that has inactive parents
+        heads_up_inactive_parent: " 주의: 이 활성 분류군의 부모는 비활성 상태이지만 이 분류군의 출력입니다. <a href='/taxon_changes/%{taxon_change_id}'> 분류군 변경 초안</a> 우리는 당신이 곧 커밋할 것이라고 가정합니다." #a message when you try to save an edit to a taxon covered by a taxon framework
+        covered_by_taxon_framework: 이 활성 분류군은 %{count} 다운스트림 관찰 또는 분류군 프레임워크에 의해 다루어지므로 일부 분류학적 속성은 해당 분류군 프레임워크와 관련된 직원 또는 분류군 큐레이터만 편집할 수 있습니다.
       show:
         frequency:
           research: 연구 자료 등급
           "Alive or Dead=Alive": 살아있음
           "Alive or Dead=Dead": 죽음
+          "Life Stage=Egg": 알
+        site_curators_disabled_wikipedia_html: |
+          사이트 큐레이터가 표시를 비활성화했습니다. <a href="%{url}">이
+          위키피디아의 콘텐츠</a>. 에서 페이지를 편집하여 도움을 줄 수 있습니다.
+          Wikipedia를 사용하여 이 분류군에 적합하게 만들거나 이것을 표시하여
+          Taxon을 사용하여 사이트 큐레이터의 관심을 끌 수 있습니다.
+      #an error when someone tried to edit the name of a taxon too radically
+      name_must_be_similar: 직접 편집할 때 이름은 유사해야 하며, 급진적인 이름 변경을 위해 분류군을 교체하십시오.
+      #error message when Flicker permissions preventing Flickr tagger feature
+      cant_tag_photos_html: |
+        %{site} Flickr가 귀하가 권한을 부여했다는 것을 알 때까지 사진에 태그를 추가할 수 없습니다.
+        <a href='%{url}'>Flickr 권한 부여</a>.
+      #error message when the Flickr tagger feature fails
+      something_went_wrong_tags: |
+        해당 태그를 게시하는 데 문제가 발생했습니다. %{message}
+    taxon_changes:
+      #state of a pending taxon change
+      pending: 보류 중인
+      #state of a approved taxon change
+      approved: 승인
+      #for taxon changes requiring approval votes, a message indicating to the user that they voted
+      vote_added: 투표가 추가되었습니다.
+      #for taxon changes requiring approval votes, a message indicating to the user that they removed their vote
+      vote_removed: 투표가 제거되었습니다.
+      #a tooltip that replaces the names of curators who have voted in approval of a taxon change when there are no votes
+      no_votes_yet: 아직 투표가 없습니다
+      #message when taxon change is committed
+      taxon_change_committed: 분류군 변경 투고! 자동 업데이트할 수 있는 기록은 곧 변경될 예정입니다.
+      #message when taxon change is moved into the pending state, count is a number (e.g. 5)
+      taxon_change_pending:
+        other: "이 분류군 변경은 현재 보류 중입니다. 승인이 필요합니다. %{count} 큐레이터가 커밋할 수 있도록 합니다."
+      #message when someone tries to commit a taxon change with active children
+      input_taxon_cannot_have_active_children: |
+        입력 분류군은 활성 자식을 가질 수 없거나, 먼저 이동하거나, '출력으로 자식을 이동하시겠습니까?' 옵션을 선택할 수 없습니다.
+      output_taxon_rank_level_not_coarser_html: >
+        출력 분류군 순위 수준은 입력 분류군의 활성 자식의 순위 수준보다 거칠지 않습니다. %{taxon_link}.
+      #a message when someone tries to commit a taxon change that was already committed
+      taxon_change_already_committed: 이 분류학적 변경은 이미 약속되었습니다!
+      #an error message when trying to delete a taxon change, param is the integer id of the taxon change
+      something_whent_wrong: "분류군 변경을 삭제하는 데 문제가 발생했습니다.%{id}'!"
+      #a message when a taxon change was deleted
+      taxon_change_deleted: 분류군 변경이 삭제되었습니다.
+      #a message when a taxon change was successfully updated
+      taxon_change_successfully_update: 분류군 변경이 성공적으로 업데이트되었습니다.
+      #an error message when trying to modify/create a taxon change that can be found
+      no_changes_specified: 변경 사항이 지정되지 않음
+      #a message when a taxon change was successfully created
+      taxon_change_successfully_created: 분류군 변경이 생성되었습니다.
+      #message indicating the taxon change requires approval by count number of other curators to go from pending to approved
+      requires_approval:
+        other: "승인 필요 %{count} 다른 큐레이터가 투입"
     users:
       edit:
+        block_desc_blocking_someone_prevents: |
+          누군가를 차단하면 그 사람이 당신에게 메시지를 보내거나 당신의 댓글을 달 수 없습니다.
+          관찰, 관찰 식별 및 기타 상호 작용
+          당신과 함께 %{site_name}. 또한 귀하의 관찰 내용을 제거합니다.
+          검색 결과를 검색하고 검색에서 관측 정보를 제거합니다.
+          결과. 그러나 그것이 그들에게 당신을 보이지 않게 만드는 것은 아닙니다. 그들은 할 수 있습니다
+          여전히 관찰 내용을 찾고 프로필을 볼 수 있지만 할 수 없습니다
+          당신과 상호 작용하십시오.
+        block_desc_blocking_is_for_situations: |
+          차단은 사이좋게 지낼 수 없는 상황을 위한 것입니다
+          누군가와 그들은 당신이 최선의 노력을 기울임에도 불구하고 당신을 혼자 두지 않을 것입니다.
+          문명화된 방식으로 분쟁을 해결합니다. 숨는 방법이 아닙니다.
+          귀하의 의견을 가진 사람들로부터 식별을 방지하기 위해
+          신뢰하지 않거나 커뮤니티 ID를 거부합니다(다른
+          설정을 위한 설정). 따라서 차단은 두 가지 방식으로 작동합니다.
+          누군가, 그들은 당신과 상호 작용할 수 없지만 당신도 상호 작용할 수 없습니다
+          그들과 함께. 다른 사람이 귀하의 신원을 식별하지 못하도록 오용하는 경우
+          관찰을 하면 자신이 관찰을 식별하는 것도 방지됩니다.
+          관찰.
+        block_desc_you_can_only_block_html: |
+          세 사람만 차단할 수 있습니다. 우리는 이것이 합리적이라고 생각합니다.
+          차단이 필요한 사람들을 수용하는 번호
+          차단의 남용을 방지합니다. 더 차단해야 한다고 생각되면
+          사람들, 제발 <a href="mailto:%{help_email}">문의</a>.
+        block_desc_there_are_two_exceptions: |
+          차단이 상호 작용을 방지하지 않는 두 가지 상황이 있습니다.
         if_you_change_your_mind_you_can_always_edit_your_settings_html: |
           마음이 바뀌면 언제든지
           <a href='/users/edit'>설정을 수정</a>할 수 있습니다.
+        errors:
+          #error message when a user attempts to update their profile picture using
+          #an image that has an unsupported file type
+          unsupported_file_type: 지원되지 않는 파일 형식입니다. JPG, PNG 및 GIF를 사용할 수 있습니다.
         place_preference_changed_notice_html: |
           장소 설정이 변경되었습니다. 마음이 바뀌면 언제든지
           <a href='/users/edit'>설정을 수정</a>할 수 있습니다.
@@ -2596,6 +3165,7 @@ ko:
         step3_title: 확인 이메일 대기
     welcome:
       index:
+        connect_with_nature: 자연과 교감하다
         explore_and_share: 자연에서 본 것을 공유하며 알아가요.
         how_it_works: 사용하는 법
         record_your_observations: 관찰을 기록하세요
@@ -2621,8 +3191,194 @@ ko:
         works_on_all_your_devices: 모든 기기에서 사용 가능합니다
         install_our_mobile_apps: |
           iNaturalist 앱을 설치해서 인터넷 없이도 항상 관찰하세요
+        who_uses_site_name: "사용자 %{site_name}?"
         what_are_you_waiting_for: 더 망설일 필요 있나요?
         join_today: 지금 가입하기
+    welcome_v2:
+      index:
+        hero:
+          #Main hero headline on the home page
+          headline: 당신의 호기심이 과학에 기여하는 곳.
+          #Hero subheadline describing the core value proposition
+          subheadline: >
+            식물, 동물, 균류 등을 식별하며 지구상의 살아있는 생명 지도에 더해보세요.
+          #Primary call-to-action button in the hero section
+          cta_join: 커뮤니티에 참여하세요
+          #Tagline displayed beneath the hero CTA, emphasising the app's accessibility
+          tagline: 무료, 비영리, 지역사회 주도.
+        features:
+          #Section label introducing the three core user actions
+          intro: "iNaturalist를 통해 다음과 같은 기능을 할 수 있습니다:"
+          #Description of what users can Identify
+          #Read as "{Identify} plants, animals, fungi, & more"
+          identify_desc: 식물, 동물, 균류 등 다양한 주제
+          #Description of what users can Track
+          #Read as "{Track} species you've seen worldwide"
+          track_desc: 전 세계에서 본 종들
+          #Description of where users can Contribute
+          #Read as "{Contribute} to real science"
+          contribute_desc: 진짜 과학으로
+          #Description of what users can Discover
+          #Read as "{Discover} nature nearby"
+          discover_desc: 자연 근처
+          #Description of what users can Learn
+          #Read as "{Learn} from a global community of naturalists"
+          learn_desc: 전 세계 자연주의자 공동체로부터
+        stories:
+          #Section heading for real-world stories powered by community science
+          heading: 커뮤니티 과학의 힘
+          #Photo credit for each community-science story card; %{user} = observer login, %{place} = display place name
+          observation_credit: 본 사람 %{user} %{place}
+          #Heading for the story about rediscovering an extinct moth species
+          moth_heading: 오랫동안 잃어버린 종의 재발견
+          #Body text for the moth rediscovery story; %{moth_common_name} = common name of the moth from JSON
+          moth_body: >
+            그 %{moth_common_name} 나방은 수십 년간 목격되지 않았고 한때 멸종된 것으로 여겨졌으나, 뉴질랜드의 한 관광객이 우연히 발견했다.
+          #Heading for the story about a new-to-science mantis species
+          mantis_heading: 과학에 새로 들어온 종을 발견하다
+          #Body text for the mantis discovery story
+          mantis_body_html: >
+            <span class="italic">Inimia nat</span> — 약칭: <span class="italic">I. 내셔널</span> — 이 종은 호주에서 한 여성이 동네를 걷다가 발견한 과학에 새롭게 소개된 사마귀 종입니다.
+          #Heading for the story about volunteers protecting amphibians
+          amphibian_heading: 지역 생태계 보호
+          #Body text for the amphibian protection story
+          amphibian_body: >
+            캘리포니아의 지역 자원봉사자 그룹이 iNaturalist를 통해 번화한 도로를 건너는 이주하는 양서류를 보호하기 위해 모였습니다.
+          #Link below the stories to read more community science stories
+          read_more: 더 많은 이야기를 읽어보세요
+        observation:
+          #Heading for the sample observation section
+          heading: 모든 관찰은 하나의 이야기를 전합니다
+        stats:
+          #Description label for the observations statistic
+          #Prepended by count, e.g. "350M+ observations contributing to biodiversity science"
+          observations_label: 생물다양성 과학에 기여하는 관찰
+          #Description label for the species statistic
+          #Prepended by count, e.g. "550,000+ species documented across the globe"
+          species_label: 전 세계적으로 기록된 종들
+          #Description label for the papers statistic
+          #Prepended by count, e.g. "7,000+ papers citing iNaturalist data"
+          papers_label: iNaturalist 데이터를 인용한 논문들
+          #Description label for the discoveries statistic
+          #Prepended by count, e.g. "500+ species discovered or rediscovered by community scientists"
+          discoveries_label: 지역 과학자들이 발견하거나 재발견한 종들
+        how:
+          #Step 1 description — instructing users to photograph any organism
+          step1_body: >
+            앱을 열고 동네나 전 세계 어디에서든 야생 식물, 동물, 균류 또는 기타 생물을 사진으로 찍으세요.
+          #Step 2 description — explaining AI and community identification
+          step2_body: >
+            앱은 즉시 식별을 제안하고, 전 세계 자연학자 커뮤니티가 이를 확인하거나 정밀하게 만듭니다.
+          #Step 3 description — explaining how observations become open scientific data
+          step3_body: >
+            당신의 관찰은 전 세계 과학자, 보전가, 연구자들이 사용하는 오픈 데이터가 됩니다.
+          #Explanatory note below the three steps giving the "why" behind contributing
+          why_note_html: >
+            자연은 그 어느 때보다 빠르게 변하고 있으니 우리는 <span class="underline">너</span> 무엇이 어디에 사는지 기록하는 데 도움을 주기 위해서입니다.
+        testimonials:
+          #Quote from the testimonial author (last name Gube)
+          gube_quote: >
+            이 경험은 종 식별에 큰 도움이 되었고, 전 세계 다양한 사람들과 교류할 기회를 주었습니다.
+          #Job title and location of the testimonial author (last name Gube)
+          gube_title: 해양 보존가 및 수중 사진작가, 케냐
+          #Quote from the testimonial author (last name Kratzer)
+          kratzer_quote: >
+            iNaturalist는 연구가 부족한 분류군에 관한 새롭고 흥미로운 연구의 문을 열어줍니다. 제 생각에 이 플랫폼은 생태학 과학의 최첨단입니다.
+          #Job title and location of the testimonial author (last name Kratzer)
+          kratzer_title: 미국 Owlfly LLC의 현장 안내서 저자
+          #Quote from the testimonial author (last name Sumanapala)
+          sumanapala_quote: >
+            iNaturalist와 그 헌신적인 식별자 커뮤니티는 제 탐구에 매우 귀중한 자원이 되었습니다. 이 경험이 현재 제 작업의 기초를 다지는 데 도움이 되었습니다.
+          #Job title and location of the testimonial author (last name Sumanapala)
+          sumanapala_title: 스리랑카 생물다양성 연구원
+          #Quote from the testimonial author (last name Fachetti)
+          fachetti_quote: >
+            iNaturalist는 사람, 자연, 지식을 연결하는 강력한 도구입니다. 희귀종이나 아직 기술되지 않은 종도 사진으로 담을 수 있고, 동시에 자연 유산 보존에도 기여하고 있습니다.
+          #Job title and location of the testimonial author (last name Fachetti)
+          fachetti_title: 환경 기술자이자 취미 사진가, 브라질
+          #Quote from the testimonial author (last name Velazco)
+          velazco_quote: >
+            세계 어디에 있든, 박사 학위가 있든 자연을 사랑하든, iNaturalist는 자연과 많은 동료 자연주의자들과 더 가까워지게 해줄 것입니다.
+          #Job title and location of the testimonial author (last name Velazco)
+          velazco_title: 생물학자, 멕시코
+        everyone:
+          #Heading for the broad audience section
+          heading: 모든 사람은 자연주의자입니다
+          #Description inviting anyone who has been curious about a living thing
+          body: >
+            살아있는 무언가를 자세히 보고 그것이 무엇인지 궁금해했다면, iNaturalist가 바로 당신을 위한 것입니다.
+          #Heading for the impact sub-section
+          impact_heading: 당신은 영향력을 발휘할 수 있습니다
+          #Description of how each photo contributes to the global scientific record
+          impact_body: >
+            여러분이 공유하는 모든 사진은 전 세계 연구자들이 의존하는 전 세계 과학 기록의 일부가 됩니다.
+          #Heading for the community reputation sub-section
+          community_heading: '"온라인에서 가장 좋은 곳"'
+          community_heading_2: 온라인에서 가장 좋은 곳
+          #Description of the welcoming community aspect
+          community_body: >
+            신원 확인을 위해 오고, 커뮤니티와 과학에 영향을 미치기 위해 머무르세요.
+        download:
+          #Heading prompting users to download the mobile app
+          heading: iNaturalist 앱을 다운로드하세요
+          #Subheading describing the two core benefits of the app
+          subheading: 실시간 식별 정보를 얻고 과학에 기여하세요
+          #Social proof label showing total app downloads
+          #%{count} = formatted and rounded number of downloads. The plus (+) reflects there being more than that number.
+          count_label: "%{count}+ 다운로드"
+        explore:
+          #Heading for the explore species section; species cards generated from static JSON exported from iNat
+          heading: 전 세계 종을 탐험하세요
+          #Button / link to browse species without downloading
+          button: 지금 바로 탐색해 보세요
+        seek:
+          #Heading for the Seek app section, aimed at users under 13
+          heading: "13세 미만? 다운로드하세요!"
+          #Description of Seek's badge and challenge features
+          body: 배지를 획득하고 종을 관찰하는 챌린지에 참여하세요!
+          #Review count social proof label for the app
+          #%{count} = formatted and rounded number of 5-star reviews. The plus (+) reflects there being more than that number.
+          review_tagline: "%{count}+ 5성 리뷰"
+        newsletter:
+          #Heading inviting users to subscribe to the monthly newsletter
+          heading: 월간 뉴스레터를 받아보세요!
+          #Description of the newsletter's content
+          body: iNaturalist 커뮤니티의 이야기와 발견을 계속 소식하세요.
+        donate:
+          #Heading describing iNaturalist's nonprofit status
+          heading: iNaturalist는 과학과 보전을 지원하는 비영리 단체입니다.
+          #Supporting line connecting the user's donation to iNaturalist's mission of supporting science and conservation.
+          subheading: 여러분의 지원이 가능하게 합니다.
+          #Call-to-action button for the donation section
+          cta: 지금 기부하세요
+        faq:
+          #Section heading for the Frequently Asked Questions block
+          heading: 자주 묻는 질문
+          #FAQ: uploading existing photos — question
+          upload_existing_question: 이미 가지고 있는 사진을 업로드할 수 있나요?
+          #FAQ: uploading existing photos — answer
+          upload_existing_answer: >
+            네! 사진이 언제 어디서 찍혔는지 대략 알고 있다면, 오래된 사진도 환영합니다.
+          #FAQ: who can use iNaturalist data — question
+          who_can_use_question: iNaturalist 관찰을 바탕으로 누가 과학을 할 수 있을까요?
+          #FAQ: who can use iNaturalist data — answer
+          who_can_use_answer: >
+            누구든! 모든 iNaturalist 관찰은 연구자, 보전 실무자, 그리고 호기심 많은 개인에게 공개되어 있고 자유롭게 제공됩니다.
+          #FAQ: research grade definition — question
+          research_grade_question: '"연구 등급"이란 무엇을 의미하나요?'
+          #FAQ: research grade definition — answer
+          research_grade_answer: >
+            커뮤니티가 식별에 합의하면, 그 관측은 '연구 등급'이 되어 전 세계 과학 기록에 포함됩니다. 모든 식별 정보가 그 자리에 도달하는 데 도움이 될 수 있습니다.
+          #FAQ: whether prior knowledge is needed — question
+          no_knowledge_question: 제가 뭘 보고 있는지 알아야 하나요?
+          #FAQ: whether prior knowledge is needed — answer
+          no_knowledge_answer: >
+            전혀 그렇지 않습니다! 사진을 공유하면 전 세계 자연주의자 커뮤니티가 이를 식별하는 데 도움을 줄 수 있습니다.
+          #FAQ: whether the app is required — question
+          need_app_question: 앱을 꼭 써야 하나요?
+          #FAQ: whether the app is required — answer; references both the website and mobile app
+          need_app_answer: >
+            데스크톱에서는 iNaturalist.org 아주 잘 작동합니다. 모바일 기기에서는 특히 이동 중 종을 식별하는 데 최고의 경험을 제공합니다.
   date:
     abbr_day_names:
       - 일
@@ -2718,11 +3474,57 @@ ko:
   time:
     formats:
       #See https://ruby-doc.org/stdlib-2.6.1/libdoc/date/rdoc/Date.html#method-i-strftime for formatting codes. Use %=B or %=b for lowercase months.
+      short: '%-d %b %I:%M %p'
+      #See https://ruby-doc.org/stdlib-2.6.1/libdoc/date/rdoc/Date.html#method-i-strftime for formatting codes. Use %=B or %=b for lowercase months.
+      short_with_year: '%-d %b %Y %I:%M %p'
+      #See https://ruby-doc.org/stdlib-2.6.1/libdoc/date/rdoc/Date.html#method-i-strftime for formatting codes. Use %=B or %=b for lowercase months.
       day_month_year: "%Y년 %B %d일"
   activerecord:
     models:
       TaxonLink: 분류 링크
     attributes:
+      announcement:
+        #Whether or not the announcement can be dismissed by people who see it
+        dismissible: 닫기 가능
+        #Start of a date range that the viewer must not have donated in to see the announcement
+        exclude_donor_start_date: 기부자 시작일 제외
+        #End of a date range that the viewer must not have donated in to see the announcement
+        exclude_donor_end_date: 기부자 종료일 제외
+        excludes_non_site: 이 게재위치에서 사이트 ID가 없는 다른 공지사항을 숨깁니다.
+        #iNat client applications that the user must not have made an observation
+        #with to see the announcement
+        exclude_observation_oauth_application_ids: 앱에서 참관인 제외
+        #start of a date range that the viewer must have donated in to see the announcement
+        include_donor_start_date: 기부자 시작일 포함
+        #End of a date range that the viewer must have donated in to see the announcement
+        include_donor_end_date: 기부자 종료일 포함
+        #iNat client applications that the user must have made an observation
+        #with to see the announcement
+        include_observation_oauth_application_ids: 앱의 참관인 포함
+        #List of countries that the viewer's IP address can come from to see the announcement
+        ip_countries: IP 국가
+        #Start of a date range that includes the viewer's most recent observation
+        last_observation_start_date: 최신 obs 시작 날짜
+        #end of a date range that includes the viewer's most recent observation
+        last_observation_end_date: 최신 obs 종료 날짜
+        #Maximum number of identifications the viewer must have added for others to see the announcement
+        max_identifications: 최대 식별 수
+        #Minimum number of identifications the viewer must have added for others to see the announcement
+        min_identifications: 최소 식별
+        #Maximum number of observations the viewer must have added for others to see the announcement
+        max_observations: 최대 관측치
+        #Minimum number of observations the viewer must have added for others to see the announcement
+        min_observations: 최소 관측치
+        #Place in iNat where this announcement will be shown, e.g. web dashboard, mobile home, etc
+        placement: 배치
+        #Preference for an announcement that is only shown to the user who created the announcement
+        target_creator: Target 작성자(테스트용)
+        #Whether or not the announcement is shown to logged in users
+        target_logged_in: Target 로그인됨
+        #Earliest date the viewer can have signed up to see the announcement
+        user_created_start_date: 가장 빠른 사용자 가입 날짜
+        #Latest date the viewer can have signed up to see the announcement
+        user_created_end_date: 최신 사용자 가입 날짜
       assessment:
         description: 설명
       assessment_section:
@@ -2743,10 +3545,13 @@ ko:
         start_time: 시작 시간
         last_aggregated_at: 마지막으로 묶인 관찰
       taxon:
+        #Boolean attribute that controls whether Wikipedia content is shown for this taxon
+        shows_wikipedia: 위키백과를 보여줍니다.
         wikipedia_summary: 위키백과 요약
         wikipedia_title: 위키백과 제목
       user:
         email: 이메일
+        faved_project_ids: 좋아하는 프로젝트
         login: 사용자 이름
         name: 이름
         locale: 언어 환경
@@ -2758,12 +3563,14 @@ ko:
         accepted: 동의해야 합니다
         confirmation: 비밀번호와 일치하지 않습니다
         empty: 비워둘 수 없습니다
+        must_look_like_an_email_address: 이메일 주소처럼 보여야 합니다.
         even: 짝수여야 합니다
         inclusion: 목록에 포함되어 있지 않습니다
         invalid: 잘못되었습니다
         not_a_number: 숫자가 아닙니다
         not_an_integer: 정수여야 합니다
         odd: 홀수여야 합니다
+        requires_privilege_interaction: 이렇게 하려면 확인된 이메일 주소가 있어야 합니다
       template:
         body: '다음 필드에 문제가 있었습니다:'
       models:
@@ -2773,10 +3580,19 @@ ko:
               has_query_parameter: "쿼리 변수를 포함할 수 없습니다."
               invalid_uri: "유효한 URI이어야 합니다."
               relative_uri: "절대 URI이어야 합니다."
+        moderator_action:
+          attributes:
+            base:
+              #Error saying that only staff can rename
+              only_staff_can_rename: 직원만 이름을 변경할 수 있습니다.
         observation:
           attributes:
             base:
               coordinates_cannot_be_zero_zero: "좌표는 0,0이 될 수 없습니다"
+            observed_on:
+              #Error message when user attempts to enter an observation date
+              #like "2020 or "2020-05"
+              must_be_a_single_day: 범위가 아닌 하루여야 합니다.
         observation_field_value:
           attributes:
             value:
@@ -2787,6 +3603,41 @@ ko:
           attributes:
             place_geometry:
               is_too_large_to_edit: 편집하기에 너무 큼
+              #Error message when a user uploads a KML that has a polygon
+              #where all the points are the same.
+              polygon_with_no_area: 영역이 없는 폴리곤이 있습니다(모든 포인트가 동일함).
+        taxon:
+          attributes:
+            name:
+              #Error message trying to change name for a taxon other than animal/plant/fungi
+              microbe_or_ungrafted: "바이러스, 박테리아 또는 접목되지 않은 계통군에 대한 이름 변경은 허용되지 않습니다."
+              #Error message trying to change name for a taxon coarser than species
+              coarser_than_species: "종보다 거친 등급에 대해서는 이름 변경이 허용되지 않습니다"
+              #Error message trying to change name like this Taricha torosa x granulosa
+              hybrid_formulas: "하이브리드 수식의 경우 이름 변경이 허용되지 않습니다."
+              #Error message trying to add an x as a hybrid sign
+              add_ascii_x_disallowed: "속과 종 사이의 잡종 마커로 'x'를 추가할 수 없습니다."
+              #Error message trying to change a specie or ssp name to something with no genus or species parts
+              must_be_binomial: "확인을 위해 이항(속 종)이어야 합니다."
+              #Error message trying to change the genus part of a ssp or sp
+              genus_cannot_change: "속은 바뀔 수 없습니다"
+              #Error message trying make major changes to a species name other than minor changes or 'x'/'×' removal or '×' addition
+              nonstandard_species_marker_only: "비표준 종 이름: 'x'/'×' 제거 또는 '×' 추가만 허용됩니다."
+              #Error message trying make major changes to sp epithet
+              specific_epithet_similar: "특정 별명은 유사해야 합니다(사소한 오타/성별만 해당)."
+              #Error message trying eliminate the ssp epithet part for a ssp
+              infra_required: "이 등급에 필요한 종하 별명"
+              #Error message trying make major changes to a species part of ssp
+              only_infra_may_change: "종하 등급에 대해서는 종하 별명만 변경될 수 있습니다"
+              #Error message trying make major changes to the ssp epithet
+              infra_epithet_similar: "종하 별명은 유사해야 합니다(경미한 오타/성별만 해당)."
+              #Error message trying make major changes to the ssp epithet
+              first_letter_of_epithet_cannot_change: "별명의 첫 글자는 변경할 수 없습니다."
+        taxon_change:
+          attributes:
+            base:
+              #Taxon changes cannot involve the Life taxon, which is the root of the taxonomic tree
+              life_taxon_cannot_be_involved: 생명 분류군은 분류군 변경에 관여할 수 없습니다
         taxon_name:
           attributes:
             lexicon:
@@ -2798,11 +3649,15 @@ ko:
                 사진 %{max}장을 초과할 수 없습니다
         user:
           attributes:
+            faved_project_ids:
+              #Error when a user tries to add a project that does not exist
+              #to their favorite projects, e.g. "Faved projects must all
+              #exist"
+              must_all_exist: 모두 존재해야 합니다.
             login:
               must_begin_with_a_letter: |
                 문자로 시작해야 하고 공백을 포함할 수 없으며, 문자, 숫자, 밑줄, 대시만 사용이 가능합니다.
-            email:
-              must_look_like_an_email_address: 이메일 주소 같아 보여야 합니다
+              domain_is_not_supported: 도메인은 지원되지 않습니다.
   doorkeeper:
     errors:
       messages:

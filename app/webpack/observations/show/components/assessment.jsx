@@ -1,3 +1,5 @@
+// We use dangerouslySetInnerHTML a lot in this file
+/* eslint-disable react/no-danger */
 import React from "react";
 import PropTypes from "prop-types";
 import {
@@ -29,6 +31,8 @@ class Assessment extends React.Component {
     } = this.props;
     if ( !observation ) { return ( <span /> ); }
     const loggedIn = config && config.currentUser;
+    const responsive = config.currentUser?.isAdmin
+      && config.currentUser?.isInTestGroup( "responsive-obs-detail" );
     const { open } = this.state;
     const InnerWrapper = innerWrapper || ( props => (
       <div>
@@ -70,14 +74,112 @@ class Assessment extends React.Component {
                   <div className="header">
                     { I18n.t( "data_quality_assessment" ) }
                   </div>
-                  <div
-                    className="contents"
-                    dangerouslySetInnerHTML={{
-                      __html: I18n.t( "views.observations.show.quality_assessment_help2_html", {
-                        site_name: SITE.short_name
-                      } )
-                    }}
-                  />
+                  <div className="contents">
+                    <p
+                      dangerouslySetInnerHTML={{
+                        __html: I18n.t( "views.observations.show.dqa_help_needs_id_lead_html" )
+                      }}
+                    />
+                    <ul>
+                      <li
+                        dangerouslySetInnerHTML={{
+                          __html: I18n.t( "views.observations.show.dqa_help_needs_id_has_a_date_html" )
+                        }}
+                      />
+                      <li
+                        dangerouslySetInnerHTML={{
+                          __html: I18n.t( "views.observations.show.dqa_help_needs_id_is_georeferenced_html" )
+                        }}
+                      />
+                      <li
+                        dangerouslySetInnerHTML={{
+                          __html: I18n.t( "views.observations.show.dqa_help_needs_id_has_photos_or_sounds_html" )
+                        }}
+                      />
+                      <li
+                        dangerouslySetInnerHTML={{
+                          __html: I18n.t( "views.observations.show.dqa_help_needs_id_is_not_of_human_html" )
+                        }}
+                      />
+                    </ul>
+                    <p
+                      dangerouslySetInnerHTML={{
+                        __html: I18n.t( "views.observations.show.dqa_help_research_grade_lead_html" )
+                      }}
+                    />
+                    <ul>
+                      <li
+                        dangerouslySetInnerHTML={{
+                          __html: I18n.t( "views.observations.show.dqa_help_research_grade_community_species_html", {
+                            site_name: SITE.short_name
+                          } )
+                        }}
+                      />
+                      <li
+                        dangerouslySetInnerHTML={{
+                          __html: I18n.t( "views.observations.show.dqa_help_research_grade_community_observation_html", {
+                            site_name: SITE.short_name
+                          } )
+                        }}
+                      />
+                    </ul>
+                    <p
+                      dangerouslySetInnerHTML={{
+                        __html: I18n.t( "views.observations.show.dqa_help_casual_lead_html" )
+                      }}
+                    />
+                    <ul>
+                      <li
+                        dangerouslySetInnerHTML={{
+                          __html: I18n.t( "views.observations.show.dqa_help_casual_day_year_not_accurate2_html" )
+                        }}
+                      />
+                      <li
+                        dangerouslySetInnerHTML={{
+                          __html: I18n.t( "views.observations.show.dqa_help_casual_location_not_accurate_html" )
+                        }}
+                      />
+                      <li
+                        dangerouslySetInnerHTML={{
+                          __html: I18n.t( "views.observations.show.dqa_help_casual_not_wild_html" )
+                        }}
+                      />
+                      <li
+                        dangerouslySetInnerHTML={{
+                          __html: I18n.t( "views.observations.show.dqa_help_casual_not_organism_html" )
+                        }}
+                      />
+                      <li
+                        dangerouslySetInnerHTML={{
+                          __html: I18n.t( "views.observations.show.dqa_help_casual_not_recent_html" )
+                        }}
+                      />
+                      <li
+                        dangerouslySetInnerHTML={{
+                          __html: I18n.t( "views.observations.show.dqa_help_casual_not_one_subject_html" )
+                        }}
+                      />
+                      <li
+                        dangerouslySetInnerHTML={{
+                          __html: I18n.t( "views.observations.show.dqa_help_casual_not_accurate_evidence_html" )
+                        }}
+                      />
+                      <li
+                        dangerouslySetInnerHTML={{
+                          __html: I18n.t( "views.observations.show.dqa_help_casual_voted_out_html" )
+                        }}
+                      />
+                      <li
+                        dangerouslySetInnerHTML={{
+                          __html: I18n.t( "views.observations.show.dqa_help_casual_opted_out_maverick_html" )
+                        }}
+                      />
+                    </ul>
+                    <p>{ I18n.t( "views.observations.show.dqa_help_system_lead" ) }</p>
+                    <ul>
+                      <li>{ I18n.t( "views.observations.show.dqa_help_system_captive_vote" ) }</li>
+                    </ul>
+                  </div>
                 </Popover>
               )}
               className="cool"
@@ -89,12 +191,12 @@ class Assessment extends React.Component {
           </div>
           <Panel expanded={open} onToggle={() => {}}>
             <Panel.Collapse>
-              <InnerWrapper>
+              <InnerWrapper config={config}>
                 <Row>
-                  <Col xs={7}>
+                  <Col xs={responsive ? null : 7} sm={responsive ? 7 : null}>
                     <QualityMetricsContainer />
                   </Col>
-                  <Col xs={5}>
+                  <Col xs={responsive ? null : 5} sm={responsive ? 5 : null}>
                     <ResearchGradeProgressContainer />
                   </Col>
                 </Row>

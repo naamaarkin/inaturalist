@@ -42,13 +42,9 @@ Rails.application.config.middleware.use OmniAuth::Builder do
     end
   end
 
-  if CONFIG.twitter
-    provider :twitter, CONFIG.twitter.key, CONFIG.twitter.secret
-  end
-
   if CONFIG.soundcloud
     opts = { scope: "non-expiring" }
-    if File.exists?( "/etc/ssl/certs" )
+    if File.exist?( "/etc/ssl/certs" )
       opts[:client_options] = { ssl: { ca_path: "/etc/ssl/certs" } }
     end
     provider :soundcloud, CONFIG.soundcloud.client_id, CONFIG.soundcloud.secret, opts
@@ -71,8 +67,8 @@ Rails.application.config.middleware.use OmniAuth::Builder do
     opts = {
       # Apparently this just triggers scary permissions errors until we're a "verified" app on Google
       # :scope => "userinfo.email,userinfo.profile,plus.me,https://picasaweb.google.com/data/,https://www.googleapis.com/auth/photoslibrary.readonly",
-      :scope => "userinfo.email,userinfo.profile,plus.me,https://www.googleapis.com/auth/photoslibrary.readonly",
-      :prompt => "consent",
+      :scope => "userinfo.email,userinfo.profile,plus.me",
+      :prompt => "select_account",
       :access_type => "offline"
     }
     provider :google_oauth2, CONFIG.google.client_id, CONFIG.google.secret, opts

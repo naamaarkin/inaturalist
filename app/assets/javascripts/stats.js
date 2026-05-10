@@ -43,16 +43,46 @@ Stats.loadChartsFromJSON = function ( json ) {
 
   Stats.loadObservations7Days( json );
   Stats.loadPlatforms( json );
-  Stats.loadTTID( json );
   Stats.loadActiveUsers( json );
   Stats.loadRecentUsers( json );
   Stats.loadDailyUsers( json );
   Stats.loadObservations( json );
+  Stats.loadIdentifications( json );
+  Stats.loadCumulativeIdentifications( json );
+  Stats.loadObservationsUnknown( json );
+  Stats.loadObservationsTotalUnknownRatio( json );
   Stats.loadCumulativeUsers( json );
   Stats.loadCumulativePlatforms( json );
   Stats.loadProjects( json );
   Stats.loadRanks( json );
   Stats.loadRanksPie( json );
+  Stats.loadTodayIdentifiedByOthers( json );
+  Stats.loadTodayIdentifiedByOthersByIconicTaxon( json );
+};
+
+Stats.loadIdentifications = function ( json ) {
+  google.charts.setOnLoadCallback( function ( ) {
+    Stats.simpleChart( {
+      element_id: "identifications",
+      chartType: "AnnotationChart",
+      series: [
+        { label: I18n.t( "views.stats.index.ids_last_7_days" ) },
+        { label: I18n.t( "views.stats.index.ids_today" ) },
+        { label: I18n.t( "views.stats.index.ids_last_7_days_for_others" ) },
+        { label: I18n.t( "views.stats.index.ids_today_for_others" ) }
+      ],
+      data: _.map( json, function ( stat ) {
+        stat.data.identifications = stat.data.identifications || {};
+        return [
+          Stats.dateForStat( stat ),
+          stat.data.identifications.last_7_days || 0,
+          stat.data.identifications.today || 0,
+          stat.data.identifications.last_7_days_for_others || 0,
+          stat.data.identifications.today_for_others || 0
+        ];
+      } )
+    } );
+  } );
 };
 
 Stats.loadObsSpark = function ( json ) {
@@ -74,10 +104,12 @@ Stats.loadPercentIdSpark = function ( json ) {
       { label: "% ID" }
     ],
     data: _.map( json, function ( stat ) {
-      if ( stat.data.identifier ) {
-        return [Stats.dateForStat( stat ), stat.data.identifier.percent_id];
-      }
-      return [Stats.dateForStat( stat ), 0];
+      return [
+        Stats.dateForStat( stat ),
+        ( stat.data.observations.community_identified
+          / stat.data.observations.last_7_days
+        )
+      ];
     } )
   } );
 };
@@ -89,10 +121,12 @@ Stats.loadPercentCIDToGenusSpark = function ( json ) {
       { label: "% ID" }
     ],
     data: _.map( json, function ( stat ) {
-      if ( stat.data.identifier ) {
-        return [Stats.dateForStat( stat ), stat.data.identifier.percent_cid_to_genus];
-      }
-      return [Stats.dateForStat( stat ), 0];
+      return [
+        Stats.dateForStat( stat ),
+        ( stat.data.observations.community_identified_to_genus
+          / stat.data.observations.last_7_days
+        )
+      ];
     } )
   } );
 };
@@ -165,6 +199,8 @@ Stats.loadCumulativePlatforms = function ( json ) {
         { label: I18n.t( "website" ) },
         { label: I18n.t( "iphone" ) },
         { label: I18n.t( "android" ) },
+        { label: I18n.t( "seek" ) },
+        { label: I18n.t( "inat_next" ) },
         { label: I18n.t( "other" ) }
       ],
       data: _.map( json, function ( stat ) {
@@ -174,6 +210,8 @@ Stats.loadCumulativePlatforms = function ( json ) {
           stat.data.platforms_cumulative.web,
           stat.data.platforms_cumulative.iphone,
           stat.data.platforms_cumulative.android,
+          stat.data.platforms_cumulative.seek,
+          stat.data.platforms_cumulative.inat_next,
           stat.data.platforms_cumulative.other
         ];
       } )
@@ -216,6 +254,8 @@ Stats.loadPlatforms = function ( json ) {
         { label: I18n.t( "website" ) },
         { label: I18n.t( "iphone" ) },
         { label: I18n.t( "android" ) },
+        { label: I18n.t( "seek" ) },
+        { label: I18n.t( "inat_next" ) },
         { label: I18n.t( "other" ) }
       ],
       data: _.map( json, function ( stat ) {
@@ -225,49 +265,11 @@ Stats.loadPlatforms = function ( json ) {
           stat.data.platforms.web,
           stat.data.platforms.iphone,
           stat.data.platforms.android,
+          stat.data.platforms.seek,
+          stat.data.platforms.inat_next,
           stat.data.platforms.other
         ];
       } )
-    } );
-  } );
-};
-
-Stats.loadTTID = function ( json ) {
-  var dodgerblue = d3.rgb( "dodgerblue" );
-  var ldodgerblue = d3.rgb( dodgerblue.r + 75, dodgerblue.g + 75, dodgerblue.b + 75 );
-  var pink = d3.rgb( "deeppink" );
-  var lpink = d3.rgb( pink.r + 100, pink.g + 100, pink.b + 100 );
-  google.charts.setOnLoadCallback( function ( ) {
-    Stats.simpleChart( {
-      element_id: "ttid",
-      chartType: "AnnotationChart",
-      series: [
-        { label: I18n.t( "views.stats.index.med_ttid" ) },
-        { label: I18n.t( "views.stats.index.avg_ttid" ) },
-        { label: I18n.t( "views.stats.index.med_ttcid" ) },
-        { label: I18n.t( "views.stats.index.avg_ttcid" ) }
-      ],
-      data: _.map( json, function ( stat ) {
-        if ( stat.data.identifier ) {
-          return [
-            Stats.dateForStat( stat ),
-            stat.data.identifier.med_ttid / 60,
-            stat.data.identifier.avg_ttid / 60,
-            stat.data.identifier.med_ttcid / 60,
-            stat.data.identifier.avg_ttcid / 60
-          ];
-        }
-        return [Stats.dateForStat( stat ), null, null, null, null];
-      } ),
-      chartOptions: {
-        scaleType: "allfixed",
-        colors: [
-          dodgerblue.toString(),
-          ldodgerblue.toString(),
-          pink.toString(),
-          lpink.toString()
-        ]
-      }
     } );
   } );
 };
@@ -282,6 +284,134 @@ Stats.loadProjects = function ( json ) {
       series: [{ label: I18n.t( "total" ) }],
       data: _.map( json, function ( stat ) {
         return [Stats.dateForStat( stat ), stat.data.projects.count];
+      } )
+    } );
+  } );
+};
+
+Stats.loadTodayIdentifiedByOthers = function ( json ) {
+  google.charts.setOnLoadCallback( function ( ) {
+    Stats.simpleChart( {
+      chartOptions: {
+        legend: { position: "none" }
+      },
+      chartType: "LineChart",
+      element_id: "today-identified-by-others",
+      series: [{ label: I18n.t( "total" ) }],
+      data: _.map( json, function ( stat ) {
+        return [
+          Stats.dateForStat( stat ),
+          stat.data.observations.today_identified_by_others
+        ];
+      } )
+    } );
+  } );
+};
+
+Stats.iconicTaxonLabel = function ( iconicTaxonID ) {
+  var labelID = parseInt( iconicTaxonID, 10 );
+  if ( window.inaturalist && inaturalist.ICONIC_TAXA && inaturalist.ICONIC_TAXA[labelID] ) {
+    return inaturalist.ICONIC_TAXA[labelID].name;
+  }
+  return I18n.t( "unknown" );
+};
+
+Stats.loadTodayIdentifiedByOthersByIconicTaxon = function ( json ) {
+  var iconicKey = "today_identified_by_others_by_iconic_taxon";
+  var iconicIDs = _.chain( json ).
+    map( function ( stat ) {
+      return _.keys( stat.data.observations[iconicKey] || {} );
+    } ).
+    flatten( ).
+    uniq( ).
+    sortBy( function ( key ) {
+      return Stats.iconicTaxonLabel( key );
+    } ).
+    value( );
+  if ( _.isEmpty( iconicIDs ) ) {
+    return;
+  }
+  google.charts.setOnLoadCallback( function ( ) {
+    Stats.simpleChart( {
+      element_id: "today-identified-by-others-iconic",
+      chartOptions: {
+        legend: { position: "right" }
+      },
+      chartType: "LineChart",
+      series: _.map( iconicIDs, function ( key ) {
+        return {
+          label: Stats.iconicTaxonLabel( key )
+        };
+      } ),
+      data: _.map( json, function ( stat ) {
+        var values = _.map( iconicIDs, function ( key ) {
+          var counts = stat.data.observations[iconicKey] || {};
+          return counts[key] || 0;
+        } );
+        values.unshift( Stats.dateForStat( stat ) );
+        return values;
+      } )
+    } );
+  } );
+};
+
+Stats.loadCumulativeIdentifications = function ( json ) {
+  google.charts.setOnLoadCallback( function ( ) {
+    Stats.simpleChart( {
+      chartOptions: {
+        legend: { position: "bottom" }
+      },
+      element_id: "cumulative-identifications",
+      series: [
+        { label: I18n.t( "total" ) },
+        { label: I18n.t( "views.stats.index.for_others" ) }
+      ],
+      data: _.map( json, function ( stat ) {
+        return [
+          Stats.dateForStat( stat ),
+          stat.data.identifications.count,
+          stat.data.identifications.count_for_others
+        ];
+      } )
+    } );
+  } );
+};
+
+Stats.loadObservationsUnknown = function ( json ) {
+  google.charts.setOnLoadCallback( function ( ) {
+    Stats.simpleChart( {
+      chartOptions: {
+        legend: { position: "none" }
+      },
+      element_id: "observations-unknown",
+      series: [{ label: I18n.t( "total" ) }],
+      data: _.map( json, function ( stat ) {
+        return [
+          Stats.dateForStat( stat ),
+          stat.data.observations.created_30_days_not_identified
+        ];
+      } )
+    } );
+  } );
+};
+
+Stats.loadObservationsTotalUnknownRatio = function ( json ) {
+  google.charts.setOnLoadCallback( function ( ) {
+    Stats.simpleChart( {
+      chartOptions: {
+        legend: { position: "bottom" }
+      },
+      chartType: "LineChart",
+      element_id: "observations-total-unknown-ratio",
+      series: [
+        { label: I18n.t( "views.stats.index.observations_total_unknown_ratio_desc" ) }
+      ],
+      data: _.map( json, function ( stat ) {
+        return [
+          Stats.dateForStat( stat ),
+          // eslint-disable-next-line max-len
+          stat.data.observations.created_30_days_not_identified / stat.data.observations.created_30_days
+        ];
       } )
     } );
   } );
@@ -406,7 +536,7 @@ Stats.loadRanksPie = function ( json ) {
     Stats.simpleChart( {
       element_id: "ranks_pie",
       data: _.map( json[0].data.taxa.count_by_rank, function ( value, rank ) {
-        return [I18n.t( "ranks." + rank, { defaultValue: rank } ), parseInt( value, 0 )];
+        return [I18n.t( "ranks." + rank, { defaultValue: rank } ), parseInt( value, 10 )];
       } ),
       chartType: "PieChart"
     } );
@@ -438,7 +568,8 @@ Stats.simpleChart = function ( opts ) {
   }
   var chartOptions = options.chartOptions || { };
   var data = new google.visualization.DataTable( );
-  if ( options.chartType === google.visualization.AreaChart ) {
+  if ( options.chartType === google.visualization.AreaChart ||
+    options.chartType === google.visualization.LineChart ) {
     data.addColumn( "date", "Date" );
     chartOptions.vAxis = { minValue: 0 };
     chartOptions.height = 300;
@@ -455,9 +586,13 @@ Stats.simpleChart = function ( opts ) {
     data.addColumn( "date", "Date" );
     chartOptions.min = 0;
     chartOptions.zoomStartTime = new Date( Stats.monthAgoDate( ) );
+    chartOptions.numberFormats = opts.numberFormats || "#,###";
   }
   _.each( options.series, function ( s ) {
-    data.addColumn( "number", s.label );
+    data.addColumn( {
+      type: "number",
+      label: s.label
+    } );
   } );
   data.addRows( options.data );
   var chart = new options.chartType( document.getElementById( options.element_id ) );

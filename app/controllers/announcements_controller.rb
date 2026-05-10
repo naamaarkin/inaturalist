@@ -1,10 +1,11 @@
 # frozen_string_literal: true
 
 class AnnouncementsController < ApplicationController
-  before_action :authenticate_user!
-  before_action :site_admin_required, except: [:dismiss]
-  before_action :load_announcement, only: [:show, :edit, :update, :destroy, :dismiss]
-  before_action :load_sites, only: [:new, :edit, :create]
+  before_action :authenticate_user!, except: [:active]
+  before_action :site_admin_required, except: [:active, :dismiss]
+  before_action :load_announcement, only: [:show, :edit, :update, :destroy, :dismiss, :duplicate]
+  before_action :load_sites, only: [:new, :edit, :create, :duplicate]
+  before_action :load_oauth_applications, only: [:new, :edit, :create, :duplicate]
 
   layout "bootstrap"
 
@@ -18,6 +19,24 @@ class AnnouncementsController < ApplicationController
     @announcements = @announcements.where( "\"end\" > ?", Time.now ) if @active
     @placement = params[:placement] if Announcement::PLACEMENTS.include?( params[:placement] )
     @announcements = @announcements.where( placement: @placement ) unless @placement.blank?
+  end
+
+  def active
+    @announcements = Announcement.active(
+      placement: params[:placement],
+      client: params[:client],
+      user_agent_client: user_agent_client,
+      user: current_user,
+      site: current_user&.site,
+      ip: Logstasher.ip_from_request_env( request.env )
+    )
+    @announcements.each do | announcement |
+      helpers.create_announcement_impression( announcement )
+    end
+
+    respond_to do | format |
+      format.json { render json: @announcements }
+    end
   end
 
   def show
@@ -37,9 +56,7 @@ class AnnouncementsController < ApplicationController
         ( @site_admin = @site.site_admins.detect {| sa | sa.user_id == current_user.id } )
       @announcement.sites = [@site]
     end
-    respond_to do | format |
-      format.html
-    end
+    respond_to( &:html )
   end
 
   def edit; end
@@ -51,6 +68,7 @@ class AnnouncementsController < ApplicationController
         ( @site_admin = @site.site_admins.detect {| sa | sa.user_id == current_user.id } )
       @announcement.sites = [@site]
     end
+    @announcement.user = current_user
     respond_to do | format |
       if @announcement.save
         format.html { redirect_to( @announcement, notice: t( :announcement_was_successfully_created ) ) }
@@ -84,10 +102,19 @@ class AnnouncementsController < ApplicationController
       @announcement.dismiss_user_ids << current_user.id
     end
     @announcement.save!
+    Logstasher.write_announcement_dismissal( @announcement, request: request, user: current_user )
+
     respond_to do | format |
       format.any { head :no_content }
       format.html { redirect_back_or_default( dashboard_path ) }
     end
+  end
+
+  def duplicate
+    @announcement = @announcement.duplicate_as_user( current_user )
+
+    # Show the form with all fields prefilled (unsaved record)
+    render :new
   end
 
   private
@@ -102,5 +129,24 @@ class AnnouncementsController < ApplicationController
 
   def load_sites
     @sites = Site.limit( 100 )
+  end
+
+  def load_oauth_applications
+    @oauth_applications = [OauthApplication.new( id: 0, name: "Web" )] + OauthApplication.where(
+      "official AND scopes LIKE '%write%'"
+    )
+    @oauth_applications.sort_by!( &:name )
+  end
+
+  def user_agent_client
+    user_agent = request.headers["User-Agent"]
+    return if user_agent.blank?
+
+    return Announcement::INATRN if user_agent =~ /iNaturalistReactNative|iNaturalistRN/
+    return Announcement::SEEK if user_agent =~ /Seek/
+    return Announcement::INAT_IOS if user_agent =~ %r{iNaturalist/.*Darwin}
+    return Announcement::INAT_ANDROID if user_agent =~ %r{iNaturalist/.*Android}
+
+    nil
   end
 end

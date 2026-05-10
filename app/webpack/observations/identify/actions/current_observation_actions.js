@@ -7,8 +7,8 @@ import {
   incrementReviewed,
   decrementReviewed
 } from "./observations_stats_actions";
-import { updateObservationInCollection } from "./observations_actions";
-import { showFinishedModal } from "./finished_modal_actions";
+import { updateObservationInCollection, OBSERVATION_FIELDS } from "./observations_actions";
+import { hideFinishedModal, showFinishedModal } from "./finished_modal_actions";
 import {
   fetchSuggestions,
   updateWithObservation as updateSuggestionsWithObservation,
@@ -21,255 +21,40 @@ import {
   resetSubscriptions,
   setSubscriptions
 } from "../../show/ducks/subscriptions";
-import { setConfirmModalState } from "../../show/ducks/confirm_modal";
+import { setConfirmModalState } from "../../../shared/ducks/confirm_modal";
 import {
   addToProject as sharedAddToProject,
   removeFromProject as sharedRemoveFromProject,
   joinProject as sharedJoinProject,
   addObservationFieldValue as sharedAddObservationFieldValue,
   updateObservationFieldValue as sharedUpdateObservationFieldValue,
-  removeObservationFieldValue as sharedRemoveObservationFieldValue
+  removeObservationFieldValue as sharedRemoveObservationFieldValue,
+  nominateIdentification as sharedNominateIdentification,
+  unnominateIdentification as sharedUnnominateIdentification,
+  voteIdentification as sharedVoteIdentification,
+  unvoteIdentification as sharedUnvoteIdentification
 } from "../../shared/ducks/observation";
+import { updateSession } from "../../show/ducks/users";
+import { parseRailsErrorsResponse } from "../../../shared/util";
+import { showAlert } from "../../../shared/ducks/alert_modal";
+import { fetchRelationships, setRelationships } from "../../show/ducks/relationships";
 
-const SHOW_CURRENT_OBSERVATION = "show_current_observation";
-const HIDE_CURRENT_OBSERVATION = "hide_current_observation";
-const FETCH_CURRENT_OBSERVATION = "fetch_current_observation";
-const RECEIVE_CURRENT_OBSERVATION = "receive_current_observation";
-const UPDATE_CURRENT_OBSERVATION = "update_current_observation";
-const SHOW_NEXT_OBSERVATION = "show_next_observation";
-const SHOW_PREV_OBSERVATION = "show_prev_observation";
-const ADD_IDENTIFICATION = "add_identification";
-const ADD_COMMENT = "add_comment";
-const LOADING_DISCUSSION_ITEM = "loading_discussion_item";
-const STOP_LOADING_DISCUSSION_ITEM = "stop_loading_discussion_item";
+import {
+  SHOW_CURRENT_OBSERVATION,
+  HIDE_CURRENT_OBSERVATION,
+  FETCH_CURRENT_OBSERVATION,
+  RECEIVE_CURRENT_OBSERVATION,
+  UPDATE_CURRENT_OBSERVATION,
+  SHOW_NEXT_OBSERVATION,
+  SHOW_PREV_OBSERVATION,
+  ADD_IDENTIFICATION,
+  ADD_COMMENT,
+  LOADING_DISCUSSION_ITEM,
+  STOP_LOADING_DISCUSSION_ITEM
+} from "./current_observation_actions_names";
 
 // order matters...
 const TABS = ["info", "suggestions", "annotations", "data-quality"];
-
-const USER_FIELDS = {
-  id: true,
-  login: true,
-  icon_url: true
-};
-const MODERATOR_ACTION_FIELDS = {
-  action: true,
-  id: true,
-  created_at: true,
-  reason: true,
-  user: USER_FIELDS
-};
-const TAXON_FIELDS = {
-  ancestry: true,
-  ancestor_ids: true,
-  ancestors: {
-    id: true,
-    uuid: true,
-    name: true,
-    iconic_taxon_name: true,
-    is_active: true,
-    preferred_common_name: true,
-    rank: true,
-    rank_level: true
-  },
-  default_photo: {
-    attribution: true,
-    license_code: true,
-    url: true,
-    square_url: true
-  },
-  iconic_taxon_name: true,
-  id: true,
-  is_active: true,
-  name: true,
-  preferred_common_name: true,
-  rank: true,
-  rank_level: true
-};
-const CONTROLLED_TERM_FIELDS = {
-  id: true,
-  label: true,
-  multivalued: true
-};
-const PROJECT_FIELDS = {
-  admins: {
-    user_id: true
-  },
-  icon: true,
-  project_observation_fields: {
-    id: true,
-    observation_field: {
-      allowed_values: true,
-      datatype: true,
-      description: true,
-      id: true,
-      name: true
-    }
-  },
-  slug: true,
-  title: true
-};
-const OBSERVATION_FIELDS = {
-  annotations: {
-    controlled_attribute: CONTROLLED_TERM_FIELDS,
-    controlled_value: CONTROLLED_TERM_FIELDS,
-    user: USER_FIELDS,
-    vote_score: true,
-    votes: {
-      vote_flag: true,
-      user: USER_FIELDS
-    }
-  },
-  application: {
-    id: true,
-    icon: true,
-    name: true,
-    url: true
-  },
-  comments: {
-    body: true,
-    created_at: true,
-    flags: { id: true },
-    hidden: true,
-    id: true,
-    moderator_actions: MODERATOR_ACTION_FIELDS,
-    spam: true,
-    user: USER_FIELDS
-  },
-  community_taxon: TAXON_FIELDS,
-  created_at: true,
-  description: true,
-  faves: {
-    user: USER_FIELDS
-  },
-  flags: {
-    id: true,
-    flag: true,
-    resolved: true
-  },
-  geojson: true,
-  geoprivacy: true,
-  id: true,
-  identifications: {
-    body: true,
-    category: true,
-    created_at: true,
-    current: true,
-    disagreement: true,
-    flags: { id: true },
-    hidden: true,
-    moderator_actions: MODERATOR_ACTION_FIELDS,
-    previous_observation_taxon: TAXON_FIELDS,
-    spam: true,
-    taxon: TAXON_FIELDS,
-    taxon_change: { id: true, type: true },
-    updated_at: true,
-    user: USER_FIELDS,
-    uuid: true,
-    vision: true
-  },
-  identifications_most_agree: true,
-  // TODO refactor to rely on geojson instead of lat and lon
-  latitude: true,
-  license_code: true,
-  location: true,
-  longitude: true,
-  map_scale: true,
-  non_traditional_projects: {
-    current_user_is_member: true,
-    project_user: {
-      user: USER_FIELDS
-    },
-    project: PROJECT_FIELDS
-  },
-  obscured: true,
-  observed_on: true,
-  observed_time_zone: true,
-  ofvs: {
-    observation_field: {
-      allowed_values: true,
-      datatype: true,
-      description: true,
-      name: true,
-      taxon: {
-        name: true
-      },
-      uuid: true
-    },
-    user: USER_FIELDS,
-    uuid: true,
-    value: true,
-    taxon: TAXON_FIELDS
-  },
-  outlinks: {
-    source: true,
-    url: true
-  },
-  observation_photos: {
-    id: true
-  },
-  photos: {
-    id: true,
-    uuid: true,
-    url: true,
-    license_code: true
-  },
-  place_guess: true,
-  place_ids: true,
-  positional_accuracy: true,
-  preferences: {
-    prefers_community_taxon: true
-  },
-  private_geojson: true,
-  private_place_guess: true,
-  private_place_ids: true,
-  project_observations: {
-    current_user_is_member: true,
-    preferences: {
-      allows_curator_coordinate_access: true
-    },
-    project: PROJECT_FIELDS,
-    uuid: true
-  },
-  public_positional_accuracy: true,
-  quality_grade: true,
-  quality_metrics: {
-    id: true,
-    metric: true,
-    agree: true,
-    user: USER_FIELDS
-  },
-  reviewed_by: true,
-  sounds: {
-    file_url: true,
-    file_content_type: true,
-    id: true,
-    license_code: true,
-    play_local: true,
-    url: true,
-    uuid: true
-  },
-  tags: true,
-  taxon: TAXON_FIELDS,
-  taxon_geoprivacy: true,
-  time_observed_at: true,
-  time_zone: true,
-  user: {
-    ...USER_FIELDS,
-    name: true,
-    observations_count: true,
-    preferences: {
-      prefers_community_taxa: true,
-      prefers_observation_fields_by: true
-    }
-  },
-  viewer_trusted_by_observer: true,
-  votes: {
-    id: true,
-    user: USER_FIELDS,
-    vote_flag: true,
-    vote_scope: true
-  }
-};
 
 function showCurrentObservation( observation ) {
   return {
@@ -289,10 +74,11 @@ function receiveCurrentObservation( observation, others ) {
   } );
 }
 
-function updateCurrentObservation( updates ) {
+function updateCurrentObservation( updates, options = { } ) {
   return Object.assign( { }, {
     type: UPDATE_CURRENT_OBSERVATION,
-    updates
+    updates,
+    observation_id: options.observation_id
   } );
 }
 
@@ -454,15 +240,18 @@ function fetchCurrentObservation( observation = null ) {
 
 function showNextObservation( ) {
   return ( dispatch, getState ) => {
-    const { observations, currentObservation } = getState();
+    const { observations, currentObservation, config } = getState();
     let nextObservation;
+    let nextIndex = _.findIndex( observations.results, o => (
+      o.id === currentObservation?.observation?.id
+    ) );
+    nextIndex += 1;
+
     if ( currentObservation.visible ) {
-      let nextIndex = _.findIndex( observations.results, o => (
-        o.id === currentObservation.observation.id
-      ) );
       if ( nextIndex === null || nextIndex === undefined ) { return; }
-      nextIndex += 1;
       nextObservation = observations.results[nextIndex];
+    } else if ( nextIndex === observations.results.length ) {
+      return;
     } else {
       nextObservation = currentObservation.observation || observations.results[0];
     }
@@ -475,13 +264,22 @@ function showNextObservation( ) {
       dispatch( showFinishedModal( ) );
     }
     dispatch( updateEditorContent( "obsIdentifyIdComment", "" ) );
+    if ( !config.mapZoomLevelLocked
+      && !_.isNumber( config.currentUser.preferred_identify_map_zoom_level ) ) {
+      dispatch( setConfig( { mapZoomLevel: undefined } ) );
+    }
   };
 }
 
 function showPrevObservation( ) {
   return ( dispatch, getState ) => {
     const { observations, currentObservation } = getState();
+    if ( _.isEmpty( currentObservation.observation ) ) {
+      return false;
+    }
     if ( !currentObservation.visible ) {
+      dispatch( hideFinishedModal( ) );
+      dispatch( showCurrentObservation( currentObservation.observation ) );
       return;
     }
     let prevIndex = _.findIndex( observations.results, o => (
@@ -538,7 +336,21 @@ function toggleQualityMetric( observation, metric, agree ) {
         ( ) => {
           dispatch( fetchCurrentObservation( observation ) );
         }
-      );
+      ).catch( e => {
+        e.response.text( ).then( text => {
+          const railsErrors = parseRailsErrorsResponse( text ) || [I18n.t( "failed_to_save_record" )];
+          dispatch( showAlert(
+            railsErrors.join( "," ),
+            { title: I18n.t( "request_failed" ) }
+          ) );
+        } ).catch( ( ) => {
+          dispatch( showAlert(
+            I18n.t( "failed_to_save_record" ),
+            { title: I18n.t( "request_failed" ) }
+          ) );
+        } );
+        throw e;
+      } );
     }
   };
 }
@@ -550,9 +362,11 @@ function toggleCaptive( ) {
     const agree = observation.captiveByCurrentUser;
     dispatch( updateCurrentObservation( {
       captiveByCurrentUser: !observation.captiveByCurrentUser,
-      reviewedByCurrentUser: true
+      reviewedByCurrentUser: s.config?.currentUserCanInteractWithResource( observation )
     } ) );
-    if ( !observation.reviewedByCurrentUser ) {
+    if ( !observation.reviewedByCurrentUser
+      && s.config?.currentUserCanInteractWithResource( observation )
+    ) {
       const reviewParams = {
         id: s.config.testingApiV2 ? observation.uuid : observation.id
       };
@@ -566,6 +380,9 @@ function toggleReviewed( optionalObs = null ) {
   return ( dispatch, getState ) => {
     const s = getState( );
     const observation = optionalObs || s.currentObservation.observation;
+    if ( !s.config?.currentUserCanInteractWithResource( observation ) ) {
+      return;
+    }
     const reviewed = observation.reviewedByCurrentUser;
     const params = { id: observation.id, skip_refresh: true };
     if (
@@ -609,16 +426,25 @@ function stopLoadingDiscussionItem( item ) {
   return { type: STOP_LOADING_DISCUSSION_ITEM, item };
 }
 
-export function addAnnotation( controlledAttribute, controlledValue ) {
+export function addAnnotation( controlledAttribute, controlledValue, options = {} ) {
   return ( dispatch, getState ) => {
     const state = getState( );
+    const { config } = state;
     const newAnnotations = ( state.currentObservation.observation.annotations || [] ).concat( [{
       controlled_attribute: controlledAttribute,
       controlled_value: controlledValue,
       user: state.config.currentUser,
       api_status: "saving"
     }] );
-    dispatch( updateCurrentObservation( { annotations: newAnnotations } ) );
+    if ( config.currentUser?.prefers_hide_identify_annotations ) {
+      dispatch( updateSession( {
+        prefers_hide_identify_annotations: false
+      } ) );
+    }
+    dispatch( updateCurrentObservation(
+      { annotations: newAnnotations },
+      { observation_id: state.currentObservation.observation.id }
+    ) );
 
     const payload = {
       resource_type: "Observation",
@@ -646,7 +472,7 @@ export function addAnnotationFromKeyboard( attributeLabel, valueLabel ) {
     if ( !attribute ) { return; }
     const value = attribute.values.find( v => v.label === valueLabel );
     if ( !value ) { return; }
-    const existing = s.currentObservation.observation.annotations.find(
+    const existing = s.currentObservation.observation.annotations?.find(
       a => a.controlled_value && a.controlled_attribute
         && a.controlled_attribute.id === attribute.id
         && ( !a.controlled_attribute.multivalued || a.controlled_value.id === value.id )
@@ -750,7 +576,19 @@ export function vote( scope, params = { } ) {
     iNaturalistJS.observations.fave( payload )
       .then( () => dispatch( fetchCurrentObservation( ) ) )
       .catch( e => {
-        console.log( "[DEBUG] Faile to add annotation: ", e );
+        e.response.text( ).then( text => {
+          const railsErrors = parseRailsErrorsResponse( text ) || [I18n.t( "failed_to_save_record" )];
+          dispatch( showAlert(
+            railsErrors.join( "," ),
+            { title: I18n.t( "request_failed" ) }
+          ) );
+        } ).catch( ( ) => {
+          dispatch( showAlert(
+            I18n.t( "failed_to_save_record" ),
+            { title: I18n.t( "request_failed" ) }
+          ) );
+        } );
+        throw e;
       } );
   };
 }
@@ -1080,11 +918,27 @@ export function followUser( ) {
     if ( !state.currentObservation.observation ) { return; }
     const obs = state.currentObservation.observation;
     if ( !obs.user ) { return; }
-    const { currentUser } = state.config;
+    const { currentUser, testingApiV2 } = state.config;
     const obsUser = obs.user;
     if ( obsUser.id === currentUser.id ) {
       return;
     }
+    if ( testingApiV2 ) {
+      // v2 handles following through the relationships endpoints
+      dispatch( setRelationships( [{
+        api_status: "saving"
+      }] ) );
+      const payload = {
+        relationship: {
+          friend_id: obsUser.id
+        }
+      };
+      iNaturalistJS.relationships.create( payload ).then(
+        ( ) => dispatch( fetchRelationships( { observation: obs } ) )
+      );
+      return;
+    }
+
     const newSubscriptions = state.subscriptions.subscriptions.concat( [{
       resource_type: "User",
       resource_id: obsUser.id,
@@ -1109,11 +963,26 @@ export function unfollowUser( ) {
     if ( !state.currentObservation.observation ) { return; }
     const obs = state.currentObservation.observation;
     const obsUser = obs.user;
-    const { currentUser } = state.config;
+    const { currentUser, testingApiV2 } = state.config;
     if ( !obsUser ) { return; }
     if ( obsUser.id === currentUser.id ) {
       return;
     }
+    if ( testingApiV2 ) {
+      // v2 handles following through the relationships endpoints
+      const relationship = state.relationships.relationships[0];
+      if ( _.isEmpty( relationship ) ) {
+        return;
+      }
+      dispatch( setRelationships( [{
+        api_status: "deleting"
+      }] ) );
+      iNaturalistJS.relationships.delete( { id: relationship.id } ).then( ( ) => {
+        dispatch( fetchRelationships( { observation: obs } ) );
+      } );
+      return;
+    }
+
     const newSubscriptions = _.map( state.subscriptions.subscriptions, s => (
       s.resource_type === "User" && s.resource_id === obsUser.id
         ? Object.assign( { }, s, { api_status: "deleting" } )
@@ -1139,7 +1008,7 @@ export function subscribe( ) {
     if ( state.currentObservation.observation.user.id === state.config.currentUser.id ) {
       return;
     }
-    const observation = { id: state.currentObservation.observation.id };
+    const { observation } = state.currentObservation;
     const obsSubscription = _.find( state.subscriptions.subscriptions, s => (
       s.resource_type === "Observation" && s.resource_id === observation.id ) );
     if ( obsSubscription ) {
@@ -1158,7 +1027,7 @@ export function subscribe( ) {
       }] );
       dispatch( setSubscriptions( newSubscriptions ) );
     }
-    const payload = { id: observation.id };
+    const payload = { id: observation.uuid };
     iNaturalistJS.observations.subscribe( payload ).then( ( ) => {
       dispatch( fetchSubscriptions( { observation } ) );
     } );
@@ -1180,6 +1049,93 @@ export function togglePlayFirstSound( ) {
     } else {
       player.pause( );
     }
+  };
+}
+
+export function addProjects( ) {
+  return ( dispatch, getState ) => {
+    const s = getState( );
+    const { config } = s;
+    if ( !s.currentObservation.observation || s.currentObservation.tab !== "annotations" ) {
+      return;
+    }
+    if ( config.currentUser.prefers_hide_identify_projects ) {
+      dispatch( updateSession( {
+        prefers_hide_identify_projects: false
+      } ) );
+    }
+  };
+}
+
+export function addObservationFields( ) {
+  return ( dispatch, getState ) => {
+    const s = getState( );
+    const { config } = s;
+    if ( !s.currentObservation.observation || s.currentObservation.tab !== "annotations" ) {
+      return;
+    }
+    if ( config.currentUser.prefers_hide_identify_observation_fields ) {
+      dispatch( updateSession( {
+        prefers_hide_identify_observation_fields: false
+      } ) );
+    }
+  };
+}
+
+export function nominateIdentification( id ) {
+  return ( dispatch, getState ) => {
+    const state = getState( );
+    dispatch( sharedNominateIdentification(
+      state.currentObservation.observation,
+      id,
+      null,
+      ( ) => {
+        dispatch( fetchCurrentObservation( ) );
+      }
+    ) );
+  };
+}
+
+export function unnominateIdentification( id ) {
+  return ( dispatch, getState ) => {
+    const state = getState( );
+    dispatch( sharedUnnominateIdentification(
+      state.currentObservation.observation,
+      id,
+      null,
+      ( ) => {
+        dispatch( fetchCurrentObservation( ) );
+      }
+    ) );
+  };
+}
+
+export function voteIdentification( id, voteValue ) {
+  return ( dispatch, getState ) => {
+    const state = getState( );
+    dispatch( sharedVoteIdentification(
+      state.currentObservation.observation,
+      id,
+      voteValue,
+      null,
+      ( ) => {
+        dispatch( fetchCurrentObservation( ) );
+      }
+    ) );
+  };
+}
+
+export function unvoteIdentification( id ) {
+  return ( dispatch, getState ) => {
+    const state = getState( );
+    dispatch( sharedUnvoteIdentification(
+      state.currentObservation.observation,
+      id,
+      null,
+      ( ) => {
+        dispatch( fetchCurrentObservation( ) );
+      }
+    ) );
   };
 }
 

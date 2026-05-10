@@ -62,21 +62,20 @@ const DonateContent2022 = ( {
             {
               forMonthlyDonor
                 ? (
-                  <a
-                    href={`/monthly-supporters?utm_campaign=${year}-year-in-review&utm_content=button&utm_term=thank-you-for-being-a-monthly-supporter`}
-                    className="btn btn-lg btn-primary btn-bordered"
+                  <div
+                    className="btn btn-lg btn-primary btn-bordered inactive"
                   >
                     {
                       I18n.t(
                         "views.donate.monthly_supporters.thank_you_for_being_a_monthly_supporter_caps",
                         {
-                          defaultValue: I18n.t(
+                          defaultValuePreFallback: I18n.t(
                             "views.donate.monthly_supporters.thank_you_for_being_a_monthly_supporter"
                           )
                         }
                       )
                     }
-                  </a>
+                  </div>
                 )
                 : (
                   <a
@@ -87,7 +86,7 @@ const DonateContent2022 = ( {
                       I18n.t(
                         "views.donate.monthly_supporters.become_a_monthly_supporter_of_inaturalist_caps",
                         {
-                          defaultValue: I18n.t(
+                          defaultValuePreFallback: I18n.t(
                             "views.donate.monthly_supporters.become_a_monthly_supporter_of_inaturalist"
                           )
                         }

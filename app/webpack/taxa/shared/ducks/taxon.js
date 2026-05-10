@@ -17,6 +17,8 @@ const SET_RARE = "taxa-show/taxon/SET_RARE";
 const SET_RECENT = "taxa-show/taxon/SET_RECENT";
 const SET_WANTED = "taxa-show/taxon/SET_WANTED";
 const SET_SIMILAR = "taxa-show/taxon/SET_SIMILAR";
+const SET_IDENTIFICATIONS = "taxa-show/taxon/SET_IDENTIFICATIONS";
+const SET_IDENTIFICATIONS_QUERY = "taxa-show/taxon/SET_IDENTIFICATIONS_QUERY";
 const SHOW_PHOTO_CHOOSER = "taxa-show/taxon/SHOW_PHOTO_CHOOSER";
 const HIDE_PHOTO_CHOOSER = "taxa-show/taxon/HIDE_PHOTO_CHOOSER";
 const SET_TAXON_CHANGE = "taxa-show/taxon/SET_TAXON_CHANGE";
@@ -32,7 +34,8 @@ const CORE_TAXON_FIELDS = {
   preferred_common_name: true,
   is_active: true,
   extinct: true,
-  ancestor_ids: true
+  ancestor_ids: true,
+  vision: true
 };
 
 export default function reducer( state = { counts: {} }, action ) {
@@ -50,6 +53,11 @@ export default function reducer( state = { counts: {} }, action ) {
       delete newState.rare;
       delete newState.recent;
       delete newState.similar;
+      delete newState.identifications;
+      newState.identificationsQuery = {
+        upvoted: "true",
+        sortKey: "votesDesc"
+      };
       delete newState.species;
       delete newState.taxonChange;
       delete newState.trending;
@@ -86,6 +94,12 @@ export default function reducer( state = { counts: {} }, action ) {
       break;
     case SET_SIMILAR:
       newState.similar = action.results;
+      break;
+    case SET_IDENTIFICATIONS:
+      newState.identifications = action.results;
+      break;
+    case SET_IDENTIFICATIONS_QUERY:
+      newState.identificationsQuery = action.parameters;
       break;
     case SET_WANTED:
       newState.wanted = action.taxa;
@@ -191,6 +205,13 @@ export function setSimilar( results ) {
   };
 }
 
+export function setIdentifications( results ) {
+  return {
+    type: SET_IDENTIFICATIONS,
+    results
+  };
+}
+
 export function showPhotoChooser( ) {
   return { type: SHOW_PHOTO_CHOOSER };
 }
@@ -215,8 +236,35 @@ export function showPhotoChooserIfSignedIn( ) {
   };
 }
 
+const termIsRelevantForTaxon = ( term, taxon ) => {
+  // if there are taxon requirements, this taxon or its ancestors must be among them
+  if ( !_.isEmpty( term.taxon_ids )
+    && _.isEmpty(
+      _.intersection(
+        _.flatten( [taxon.ancestor_ids, taxon.id] ),
+        term.taxon_ids
+      )
+    )
+  ) {
+    return false;
+  }
+
+  // if there are taxon exceptions, this taxon or its ancestors must not be among them
+  if ( !_.isEmpty( term.excepted_taxon_ids )
+    && !_.isEmpty(
+      _.intersection(
+        _.flatten( [taxon.ancestor_ids, taxon.id] ),
+        term.excepted_taxon_ids
+      )
+    )
+  ) {
+    return false;
+  }
+  return true;
+};
+
 export function fetchTerms( options = { histograms: false } ) {
-  return ( dispatch, getState ) => {
+  return async ( dispatch, getState ) => {
     const s = getState( );
     const { testingApiV2 } = s.config;
     const params = { taxon_id: s.taxon.taxon.id, per_page: 50 };
@@ -237,11 +285,14 @@ export function fetchTerms( options = { histograms: false } ) {
         controlled_attribute: {
           id: true,
           label: true,
-          taxon_ids: true
+          taxon_ids: true,
+          excepted_taxon_ids: true
         },
         controlled_value: {
           id: true,
-          label: true
+          label: true,
+          taxon_ids: true,
+          excepted_taxon_ids: true
         },
         unannotated: "all"
       };
@@ -252,12 +303,7 @@ export function fetchTerms( options = { histograms: false } ) {
         return memo;
       }, {} );
       const relevantResults = _.filter( r.results, f => (
-        !f.controlled_attribute.taxon_ids
-        || _.intersection(
-          s.taxon.taxon.ancestor_ids,
-          f.controlled_attribute.taxon_ids
-        ).length > 0
-        || f.controlled_attribute.taxon_ids.length === 0
+        termIsRelevantForTaxon( f.controlled_attribute, s.taxon.taxon )
       ) );
       const fieldValues = _.groupBy( relevantResults, f => f.controlled_attribute.id );
       // If there's data about how many observations do *not* have annotations
@@ -309,34 +355,64 @@ export function fetchSpecies( taxon, options = { } ) {
   };
 }
 
-export function fetchTaxon( taxon, options = { } ) {
+export function fetchDescription( ) {
+  return ( dispatch, getState ) => {
+    const { taxon } = getState( ).taxon;
+    let url = `/taxa/${taxon.id}/description`;
+    if ( I18n.locale.match( /^en/ ) ) {
+      url += "?wiki_prompt=true";
+    }
+    fetch( url ).then(
+      response => {
+        const sourceName = response.headers.get( "X-Describer-Name" );
+        const sourceURL = response.headers.get( "X-Describer-URL" );
+        // the URL is being sent in an HTTP header, which does not support UTF-8, so force encoding
+        const describerUrl = _.isEmpty( sourceURL ) ? null : utf8.decode( sourceURL );
+        response.text( ).then( body => {
+          if ( body && body.length > 0 ) {
+            dispatch( setDescription( sourceName, describerUrl, body ) );
+          }
+        } );
+      },
+      error => {
+        console.log( "[DEBUG] error: ", error );
+      }
+    );
+  };
+}
+
+export function fetchTaxon( taxon, options = { params: { } } ) {
   return ( dispatch, getState ) => {
     const s = getState( );
     const t = taxon || s.taxon.taxon;
     const { testingApiV2 } = s.config;
     const params = {
-      ...options,
+      ...options.params,
       preferred_place_id: s.config.preferredPlace ? s.config.preferredPlace.id : null,
       locale: I18n.locale
     };
     if ( testingApiV2 ) {
       params.fields = {
         ...CORE_TAXON_FIELDS,
+        provisional: true,
         complete_species_count: true,
         observations_count: true,
         complete_rank: true,
         flag_counts: "all",
+        listed_taxa_count: true,
         default_photo: {
           url: true
         },
         ancestors: {
           ...CORE_TAXON_FIELDS,
+          provisional: true,
           complete_species_count: true,
           observations_count: true,
           complete_rank: true
         },
         children: {
           ...CORE_TAXON_FIELDS,
+          provisional: true,
           complete_species_count: true,
           observations_count: true,
           complete_rank: true
@@ -344,6 +420,7 @@ export function fetchTaxon( taxon, options = { } ) {
         taxon_photos: {
           photo: {
             attribution: true,
+            attribution_name: true,
             id: true,
             license_code: true,
             small_url: true,
@@ -355,6 +432,62 @@ export function fetchTaxon( taxon, options = { } ) {
             url: true
           },
           taxon: CORE_TAXON_FIELDS
+        },
+        conservation_status: {
+          iucn: true,
+          status: true,
+          description: true,
+          url: true,
+          authority: true,
+          geoprivacy: true,
+          user: {
+            login: true
+          },
+          place: {
+            display_name: true
+          }
+        },
+        conservation_statuses: {
+          iucn: true,
+          status: true,
+          description: true,
+          url: true,
+          authority: true,
+          geoprivacy: true,
+          taxon_id: true,
+          taxon_name: true,
+          user: {
+            login: true
+          },
+          place: {
+            id: true,
+            admin_level: true,
+            name: true,
+            display_name: true
+          }
+        },
+        establishment_means: {
+          id: true,
+          establishment_means: true,
+          place: {
+            id: true,
+            name: true,
+            display_name: true
+          }
+        },
+        listed_taxa: {
+          id: true,
+          establishment_means: true,
+          place: {
+            id: true,
+            admin_level: true,
+            name: true,
+            display_name: true
+          },
+          list: {
+            id: true,
+            title: true
+          }
         }
       };
     }
@@ -364,32 +497,10 @@ export function fetchTaxon( taxon, options = { } ) {
       $( "a[href='#charts-seasonality']" ).tab( "show" );
       dispatch( setTaxon( response.results[0] ) );
       dispatch( fetchTerms( ) );
-    } );
-  };
-}
-
-export function fetchDescription( ) {
-  return ( dispatch, getState ) => {
-    const { taxon } = getState( ).taxon;
-    let url = `/taxa/${taxon.id}/description`;
-    if ( I18n.locale.match( /^en/ ) ) {
-      url += "?wiki_prompt=true";
-    }
-    fetch( url ).then(
-      response => {
-        const source = response.headers.get( "X-Describer-Name" );
-        // the URL is being sent in an HTTP header, which does not support UTF-8, so force encoding
-        const describerUrl = utf8.decode( response.headers.get( "X-Describer-URL" ) );
-        response.text( ).then( body => {
-          if ( body && body.length > 0 ) {
-            dispatch( setDescription( source, describerUrl, body ) );
-          }
-        } );
-      },
-      error => {
-        console.log( "[DEBUG] error: ", error );
+      if ( options.fetchDescription ) {
+        dispatch( fetchDescription( ) );
       }
-    );
+    } );
   };
 }
 
@@ -571,6 +682,10 @@ export function fetchWanted( ) {
 export function fetchSimilar( ) {
   return ( dispatch, getState ) => {
     const state = getState( );
+    if ( state.taxon.similar ) {
+      return;
+    }
+
     const { testingApiV2 } = state.config;
     const { taxon } = state.taxon;
     const endpoint = inatjs.identifications.similar_species;
@@ -605,6 +720,191 @@ export function fetchSimilar( ) {
   };
 }
 
+export function setIdentificationsQuery( parameters ) {
+  return dispatch => {
+    dispatch( {
+      type: SET_IDENTIFICATIONS_QUERY,
+      parameters
+    } );
+    // eslint-disable-next-line no-use-before-define
+    dispatch( fetchIdentifications( ) );
+  };
+}
+
+export function fetchIdentifications( options = { } ) {
+  return ( dispatch, getState ) => {
+    const state = getState( );
+    const { taxon } = state.taxon;
+    const params = {
+      direct_taxon_id: taxon.id
+    };
+    if ( options.initialLoad && state.taxon.identifications ) {
+      return;
+    }
+    dispatch( setIdentifications( {
+      ...state.taxon.identifications,
+      loading: true
+    } ) );
+
+    const queryParams = state.taxon.identificationsQuery;
+    _.each( [
+      "q",
+      "term_value_id",
+      "upvoted",
+      "downvoted",
+      "nominated",
+      "order_by",
+      "order",
+      "page"
+    ], param => {
+      if ( queryParams[param] ) {
+        params[param] = queryParams[param];
+      }
+    } );
+    params.include_category_counts = "true";
+    params.include_category_controlled_terms = "true";
+    params.fields = "all";
+    inatjs.exemplar_identifications.search( params ).then(
+      response => {
+        if ( options.initialLoad
+          && _.isEmpty( response.results )
+          && response.category_counts.not_nominated > 0
+        ) {
+          dispatch( setIdentificationsQuery( {
+            ...state.taxon?.identificationsQuery,
+            upvoted: null,
+            downvoted: null,
+            nominated: "false",
+            q: null,
+            term_value_id: null,
+            order_by: "created_at",
+            order: "desc",
+            sortKey: "newest"
+          } ) );
+          return;
+        }
+        dispatch( setIdentifications( response ) );
+      },
+      error => console.log( "[DEBUG] error: ", error )
+    );
+  };
+}
+
+export function fetchIdentificationCagtegories( ) {
+  return ( dispatch, getState ) => {
+    const state = getState( );
+    const { taxon } = state.taxon;
+    const params = {
+      direct_taxon_id: taxon.id
+    };
+    const queryParams = state.taxon.identificationsQuery;
+    _.each( [
+      "q",
+      "term_value_id",
+      "upvoted",
+      "downvoted",
+      "nominated"
+    ], param => {
+      if ( queryParams[param] ) {
+        params[param] = queryParams[param];
+      }
+    } );
+    params.per_page = 0;
+    params.include_category_counts = "true";
+    params.include_category_controlled_terms = "true";
+    params.fields = "all";
+    inatjs.exemplar_identifications.search( params ).then(
+      response => {
+        const identifications = _.cloneDeep( getState( ).taxon.identifications );
+        identifications.category_counts = response.category_counts;
+        identifications.category_controlled_terms = response.category_controlled_terms;
+        dispatch( setIdentifications( identifications ) );
+      },
+      error => console.log( "[DEBUG] error: ", error )
+    );
+  };
+}
+export function reloadExemplarIdentification( id ) {
+  return ( dispatch, getState ) => {
+    inatjs.exemplar_identifications.search( { id, fields: "all" } ).then(
+      response => {
+        const identifications = _.cloneDeep( getState( ).taxon.identifications );
+        const updatedIdentifications = _.map( identifications.results, identification => (
+          ( identification.id === id ) ? response.results[0] : identification
+        ) );
+        identifications.results = updatedIdentifications;
+        dispatch( setIdentifications( identifications ) );
+      },
+      error => console.log( "[DEBUG] error: ", error )
+    );
+    dispatch( fetchIdentificationCagtegories( ) );
+  };
+}
+
+export function nominateIdentification( id, exemplarID ) {
+  return dispatch => {
+    inatjs.identifications.nominate( { id }, { same_origin: true } ).then( ( ) => {
+      dispatch( reloadExemplarIdentification( exemplarID ) );
+    } );
+  };
+}
+
+export function unnominateIdentification( id, exemplarID ) {
+  return dispatch => {
+    inatjs.identifications.unnominate( { id }, { same_origin: true } ).then( ( ) => {
+      dispatch( reloadExemplarIdentification( exemplarID ) );
+    } );
+  };
+}
+
+export function voteIdentification( id, voteValue ) {
+  return ( dispatch, getState ) => {
+    const state = getState( );
+    const identifications = _.cloneDeep( state.taxon.identifications );
+    const newIdentifications = _.map( identifications.results, identification => (
+      ( identification.id === id )
+        ? {
+          ...identification,
+          votes: _.filter( identification.votes || [], v => (
+            !( v.user.id === state.config.currentUser.id )
+          ) ).concat( [{
+            vote_flag: ( voteValue !== "bad" ),
+            user: state.config.currentUser,
+            api_status: "saving"
+          }] )
+        }
+        : identification
+    ) );
+    identifications.results = newIdentifications;
+    dispatch( setIdentifications( identifications ) );
+    inatjs.exemplar_identifications.vote( { id, vote: voteValue } ).then( ( ) => {
+      dispatch( reloadExemplarIdentification( id ) );
+    } );
+  };
+}
+
+export function unvoteIdentification( id ) {
+  return ( dispatch, getState ) => {
+    const state = getState( );
+    const identifications = _.cloneDeep( state.taxon.identifications );
+    const newIdentifications = _.map( identifications.results, identification => (
+      ( identification.id === id )
+        ? {
+          ...identification,
+          votes: _.filter( identification.votes, v => (
+            v.user.id !== state.config.currentUser.id
+          ) )
+        }
+        : identification
+    ) );
+    identifications.results = newIdentifications;
+    dispatch( setIdentifications( identifications ) );
+    inatjs.exemplar_identifications.unvote( { id } ).then( ( ) => {
+      dispatch( reloadExemplarIdentification( id ) );
+    } );
+  };
+}
+
 export function updatePhotos( photos ) {
   return ( dispatch, getState ) => {
     const s = getState( );
@@ -625,7 +925,12 @@ export function updatePhotos( photos ) {
     };
     fetch( `/taxa/${taxon.id}/set_photos.json`, params )
       .then( ( ) => {
-        dispatch( fetchTaxon( s.taxon.taxon, { ttl: -1 } ) );
+        dispatch( fetchTaxon( s.taxon.taxon, {
+          params: {
+            ttl: -1
+          },
+          fetchDescription: s.config.chosenTab === "articles"
+        } ) );
         dispatch( hidePhotoChooser( ) );
       } );
   };

@@ -1,9 +1,10 @@
-class ObservationField < ApplicationRecord
+# frozen_string_literal: true
 
-  include ActsAsElasticModel
+class ObservationField < ApplicationRecord
+  acts_as_elastic_model
 
   settings index: { number_of_shards: 1, analysis: ElasticModel::ANALYSIS } do
-    mappings(dynamic: true) do
+    mappings( dynamic: true ) do
       indexes :allowed_values, type: "keyword"
       indexes :datatype, type: "keyword"
       indexes :description, type: "text", analyzer: "ascii_snowball_analyzer"
@@ -22,8 +23,8 @@ class ObservationField < ApplicationRecord
     end
   end
 
-  def as_indexed_json(options={})
-    return {
+  def as_indexed_json( _options = {} )
+    {
       id: id,
       name: name,
       name_autocomplete: name,
@@ -35,5 +36,4 @@ class ObservationField < ApplicationRecord
       users_count: users_count
     }
   end
-
 end

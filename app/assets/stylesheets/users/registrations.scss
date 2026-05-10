@@ -8,6 +8,10 @@
   }
 }
 
+.container.password-reset-invalid {
+  margin-top: 20px;
+}
+
 #imgcol {
   flex: 1;
   background-size: cover;
@@ -42,7 +46,7 @@
       }
       .username {
         font-size: 18px;
-        font-weight: bold;
+        font-weight: 600;
       }
     }
   }
@@ -59,7 +63,7 @@
   h1 {
     font-size: 27px;
     line-height: 32px;
-    font-weight: bold;
+    font-weight: 600;
     text-align: center;
     margin-bottom: 33px;
     margin-top: 40px;
@@ -76,7 +80,7 @@
     border-radius: 7px;
     padding-inline-start: 41.3px;
     font-size: 15px;
-    font-weight: 100;
+    font-weight: 400;
   }
   .form-group.text-field {
     position: relative;
@@ -135,11 +139,14 @@
       font-weight: bold;
       color: #666;
     }
+    .btn-nostyle {
+      position: relative;
+      top: -2px;
+    }
   }
 
   .btn-primary.btn-inat {
     margin-top: 20px;
-    padding-bottom: 7px;
     white-space: inherit;
   }
 
@@ -162,7 +169,7 @@
 
   .btn-inat {
     width: 100%;
-    font-weight: bold;
+    font-weight: 600;
     &.btn-lg {
       font-size: 20px;
     }
@@ -195,10 +202,6 @@
     &.google {
       background-color: $google-red;
       border-color: $google-red;
-    }
-    &.twitter {
-      background-color: $twitter-blue;
-      border-color: $twitter-blue;
     }
     &.flickr {
       background-color: black;
@@ -258,17 +261,14 @@
       font-size: 21px;
       line-height: 0;
     }
-    &.twitter {
-      i {
-        font-size: 26px;
-        position: relative;
-        inset-inline-start: -1px;
-      }
-    }
     &.yahoo {
       i {
         font-size: 18px;
       }
     }
   }
+}
+
+#license-fields {
+  visibility: hidden;
 }

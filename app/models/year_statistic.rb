@@ -507,8 +507,15 @@ class YearStatistic < ApplicationRecord
       unless o["photos"].blank?
         json_obs[:photos] = [o["photos"][0].select {| k, _v | %w(url original_dimensions).include?( k ) }]
       end
+      # I think we use the first 36 for "Most Comments and Faves" and the rest
+      # are used for photo mosaic at the top
       if i < 36
-        json_obs = json_obs.merge( o.select {| k, _v | %w(comments_count faves_count observed_on).include?( k ) } )
+        obs_attrs = %w(comments_count faves_count)
+        # Omit date for obscured records. Customizing this for those w/
+        # permission to view obscured info just seems more complicated than
+        # YIR is worth
+        obs_attrs << "observed_on" unless o["obscured"]
+        json_obs = json_obs.merge( o.select {| k, _v | obs_attrs.include?( k ) } )
         json_obs[:user] = o["user"].select {| k, _v | %(id login name icon_url).include?( k ) }
         if o["taxon"]
           json_obs[:taxon] = o["taxon"].select {| k, _v | %(id name rank preferred_common_name).include?( k ) }
@@ -524,7 +531,7 @@ class YearStatistic < ApplicationRecord
     es_params = YearStatistic.identifications_es_base_params( year )
     es_params[:filters] << { terms: { "user.id" => [user.id] } }
     es_params[:aggregate] = {
-      users_helped: { terms: { field: "observation.user_id", size: 40_000 } }
+      users_helped: { terms: { field: "observation.user_id", size: 80_000 } }
     }
     buckets = Identification.
       elastic_search( es_params ).
@@ -549,7 +556,7 @@ class YearStatistic < ApplicationRecord
     es_params = YearStatistic.identifications_es_base_params( year )
     es_params[:filters] << { terms: { "observation.user_id" => [user.id] } }
     es_params[:aggregate] = {
-      users_helped: { terms: { field: "user.id", size: 40_000 } }
+      users_helped: { terms: { field: "user.id", size: 80_000 } }
     }
     buckets = Identification.
       elastic_search( es_params ).
@@ -688,8 +695,8 @@ class YearStatistic < ApplicationRecord
     run_cmd "composite -gravity center #{circle_icon_path} #{ellipse_montage_path} #{montage_with_icon_path}"
 
     # Add the text
-    light_font_path = File.join( Rails.root, "public", "fonts", "Whitney-Light-Pro.otf" )
-    medium_font_path = File.join( Rails.root, "public", "fonts", "Whitney-Medium-Pro.otf" )
+    light_font_path = File.join( Rails.root, "public", "fonts", "Lato-Light.ttf" )
+    medium_font_path = File.join( Rails.root, "public", "fonts", "Lato-Medium.ttf" )
     final_path = File.join( work_path, "final.jpg" )
     owner = if user
       user.name.blank? ? user.login : user.name
@@ -837,9 +844,9 @@ class YearStatistic < ApplicationRecord
       bucketer,
       [histogram_params],
       [
-        Elasticsearch::Transport::Transport::Errors::BadRequest,
-        Elasticsearch::Transport::Transport::Errors::ServiceUnavailable,
-        Elasticsearch::Transport::Transport::Errors::TooManyRequests,
+        Elastic::Transport::Transport::Errors::BadRequest,
+        Elastic::Transport::Transport::Errors::ServiceUnavailable,
+        Elastic::Transport::Transport::Errors::TooManyRequests,
         Faraday::TimeoutError
       ],
       exception_checker: proc {| e | e.message =~ /(timed out|too_many_buckets_exception|Data too large)/ },
@@ -913,6 +920,24 @@ class YearStatistic < ApplicationRecord
       puts "[#{Time.now}] publications, year: #{year}, options: #{options}"
     end
 
+    # TODO: Restore Altmetric API calls when an API key is available
+    # hard-coding some publication scores for 2025. The Altmetric API we were using previously
+    # has just recently required an API key. We have not yet been granted API key access, so
+    # these scores were manually compiled to generate a reasonable list of highly scored
+    # publications for 2025
+    known_doi_scores = {
+      "10.1038/s41586-025-09351-x" => 200,
+      "10.1038/s44358-025-00068-3" => 135,
+      "10.3897/aiep.55.151390" => 94,
+      "10.1371/journal.pone.0326507" => 40,
+      "10.3897/neobiota.99.145703" => 21,
+      "10.1007/s10531-025-03121-x" => 14,
+      "10.3390/insects16080790" => 12,
+      "10.1007/s42991-025-00516-9" => 10,
+      "10.1002/ece3.71926" => 8,
+      "10.1007/s44415-025-00029-w" => 7
+    }
+
     gbif_endpoint = "https://api.gbif.org/v1/literature/search"
     gbif_params = {
       # iNat RG Observations dataset identifier on GBIF We don't publish site-
@@ -920,7 +945,7 @@ class YearStatistic < ApplicationRecord
       gbifDatasetKey: "50c9509d-22c7-4a22-a47d-8c48425ef4a7",
       literatureType: "journal",
       year: year,
-      limit: 50
+      limit: 100
     }
     gbif_api_url = "#{gbif_endpoint}?#{gbif_params.to_query}"
     gbif_web_url = "https://www.gbif.org/resource/search?contentType=literature&#{gbif_params.to_query}"
@@ -928,19 +953,6 @@ class YearStatistic < ApplicationRecord
 
     new_results = []
     response["results"].each do | result |
-      altmetric_score = nil
-
-      if ( doi = result.dig( "identifiers", "doi" ) )
-        url = "https://api.altmetric.com/v1/doi/#{doi}"
-        begin
-          am_response = RestClient.get( url )
-          altmetric_score = JSON.parse( am_response )["score"]
-        rescue RestClient::NotFound => e
-          Rails.logger.debug "[DEBUG] Request failed for #{url}: #{e}"
-        end
-        sleep( 1 )
-      end
-
       new_result = result.slice(
         "title",
         "authors",
@@ -952,8 +964,6 @@ class YearStatistic < ApplicationRecord
         "identifiers"
       )
 
-      new_result["altmetric_score"] = altmetric_score
-
       gbif_dois = result["tags"].select do | tag |
         tag.start_with?( "gbifDOI:" )
       end
@@ -964,11 +974,15 @@ class YearStatistic < ApplicationRecord
         new_result["authors"] = []
       end
 
+      if result["identifiers"] && result["identifiers"]["doi"]
+        new_result["publication_score"] = known_doi_scores[result["identifiers"]["doi"]]
+      end
+
       new_results << new_result
     end
 
     {
-      results: new_results.sort_by {| result | result["altmetric_score"].to_f * -1 }[0..5],
+      results: new_results.sort_by {| result | result["publication_score"].to_f * -1 }[0..5],
       url: gbif_web_url,
       count: response["count"]
     }
@@ -1102,7 +1116,7 @@ class YearStatistic < ApplicationRecord
       streak_bucketer,
       base_query,
       [
-        Elasticsearch::Transport::Transport::Errors::ServiceUnavailable,
+        Elastic::Transport::Transport::Errors::ServiceUnavailable,
         Faraday::TimeoutError
       ],
       exception_checker: proc {| e | e.message =~ /(timed out|too_many_buckets_exception)/ },
@@ -1257,76 +1271,158 @@ class YearStatistic < ApplicationRecord
     end.compact
   end
 
+  def self.crowdin_project_details( project )
+    begin
+      call_crowdin_api( "https://api.crowdin.com/api/v2/projects/#{project.id}" )
+    rescue StandardError => e
+      Rails.logger.error "Failed to fetch CrowdIn project details for #{project.id}: #{e}"
+    end
+  end
+
+  def self.call_crowdin_api( url, body: nil )
+    return unless CONFIG.crowdin&.api_key
+
+    uri = URI.parse( url )
+    Timeout.timeout( 20 ) do
+      http = Net::HTTP.new( uri.host, uri.port )
+      http.use_ssl = true
+      response = if body
+        request = Net::HTTP::Post.new(
+          uri.request_uri,
+          "Content-Type": "application/json",
+          Authorization: "Bearer #{CONFIG.crowdin.api_key}"
+        )
+        request.body = body.to_json
+        http.request( request )
+      else
+        http.get( uri.request_uri, {
+          Authorization: "Bearer #{CONFIG.crowdin.api_key}"
+        } )
+      end
+      if ["200", "201"].include?( response.code )
+        return JSON.parse( response.body.force_encoding( "utf-8" ) )
+      end
+    end
+  end
+
+  def self.append_crowdin_user_data( data, project, top_members_schema, schema_languages )
+    schema_languages.each do | schema_language |
+      begin
+        report_create_response = call_crowdin_api(
+          "https://api.crowdin.com/api/v2/projects/#{project.id}/reports",
+          body: {
+            name: "top-members",
+            schema: top_members_schema.merge( {
+              languageId: schema_language
+            } )
+          }
+        )
+        next unless report_create_response && report_create_response["data"]
+
+        report_identifier = report_create_response["data"]["identifier"]
+        10.times do
+          sleep( 1 )
+          report_status = call_crowdin_api(
+            "https://api.crowdin.com/api/v2/projects/#{project.id}/reports/#{report_identifier}"
+          )
+          break unless report_status && report_status["data"]
+          next unless report_status["data"]["finishedAt"]
+
+          report_download = call_crowdin_api(
+            "https://api.crowdin.com/api/v2/projects/#{project.id}/reports/#{report_identifier}/download"
+          )
+          break unless report_download && report_download["data"]
+
+          report_url = report_download["data"]["url"]
+          report_contents = JSON.parse( RestClient.get( report_url ) )
+          break unless report_contents["data"]
+
+          append_language_report_user_counts( report_contents, data, project )
+          break
+        end
+      rescue StandardError => e
+        Rails.logger.error "Failed to fetch CrowdIn languages: #{e}"
+      end
+    end
+  end
+
+  def self.append_language_report_user_counts( report_contents, data, project )
+    staff_usernames = User.admins.pluck( :login ) + %w(alexinat inaturalist)
+    report_contents["data"].each do | user_data |
+      next if staff_usernames.include?( user_data["user"]["username"] )
+      next unless user_data["translated"]&.positive?
+
+      username ||= user_data["user"]["username"]
+      data[:users][username] ||= {}
+      data[:users][username][:name] ||= user_data["user"]["fullName"].gsub( /\(.+\)/, "" ).strip
+      data[:users][username]["words_#{project.name}"] ||= 0
+      data[:users][username]["words_#{project.name}"] += user_data["translated"]
+      data[:users][username]["approved_#{project.name}"] ||= 0
+      data[:users][username]["approved_#{project.name}"] += user_data["approved"]
+      data[:users][username][:languages] ||= []
+      user_data["languages"].each do | language |
+        data[:users][username][:languages] << language["name"]
+      end
+      data[:users][username][:languages].uniq!
+      data[:users][username][:languages].sort!
+    end
+    data
+  end
+
   def self.translators( year, options = {} )
     if options[:debug]
       puts "[#{Time.now}] translators, year: #{year}, options: #{options}"
     end
     return unless CONFIG.crowdin&.projects
+    return unless CONFIG.crowdin&.api_key
 
-    locale_to_ci_code = {
+    locale_to_crowdin_language_id = {
       "es" => "es-ES",
       "pt" => "pt-PT"
     }
     data = { languages: {}, users: {} }
-    staff_usernames = User.admins.pluck( :login ) + %w(alexinat inaturalist)
-    CONFIG.crowdin.projects.to_h.each_key do | project_name |
-      project = CONFIG.crowdin.projects.send( project_name )
-      info_r = RestClient.get(
-        "https://api.crowdin.com/api/project/#{project.identifier}/info?key=#{project.key}&json"
-      )
-      info_j = JSON.parse( info_r )
+    CONFIG.crowdin.projects.each_pair do | project_name, project |
+      project.name = project_name
+      unless ( details = crowdin_project_details( project ) )
+        next
+      end
+
       translated_locales = I18n.t( "locales" ).keys.map( &:to_s )
-      info_j["languages"].each do | lang |
+      details["data"]["targetLanguages"].each do | lang |
         next if data[:languages][lang[:name]]
 
         data[:languages][lang["name"]] = {}
         data[:languages][lang["name"]]["name"] = lang["name"]
-        data[:languages][lang["name"]]["code"] = lang["code"]
-        if translated_locales.include?( lang["code"] )
-          data[:languages][lang["name"]][:locale] = lang["code"]
-          locale_to_ci_code[lang["code"].to_s] ||= lang["code"]
-        elsif ( two_letter = lang["code"].split( "-" )[0] ) && translated_locales.include?( two_letter )
+        data[:languages][lang["name"]]["code"] = lang["locale"]
+        if translated_locales.include?( lang["locale"] )
+          data[:languages][lang["name"]][:locale] = lang["locale"]
+          locale_to_crowdin_language_id[lang["locale"].to_s] ||= lang["id"]
+        elsif ( two_letter = lang["locale"].split( "-" )[0] ) && translated_locales.include?( two_letter )
           data[:languages][lang["name"]][:locale] = two_letter
-          locale_to_ci_code[two_letter.to_s] ||= lang["code"]
+          locale_to_crowdin_language_id[two_letter.to_s] ||= lang["id"]
         end
       end
-      export_params = {
-        key: project.key,
-        json: true,
-        format: "csv",
-        date_from: "#{year - 1}-01-01+00:00",
-        date_to: "#{year}-12-31+23:00"
+      top_members_schema = {
+        unit: "words",
+        format: "json",
+        dateFrom: "#{year}-01-01T00:00:00+00:00",
+        dateTo: "#{year}-12-31T23:59:59+00:00"
       }
-      if options[:site]&.locale
-        export_params[:language] = locale_to_ci_code[options[:site].locale]
+      next if options[:site] && options[:site].locale.blank?
+
+      schema_languages = if options[:site]&.locale
+        [locale_to_crowdin_language_id[options[:site].locale]]
+      else
+        data[:languages].values.
+          select {| l | l[:locale] }.
+          map {| l | locale_to_crowdin_language_id[l[:locale]] }.sort
       end
-      export_r = RestClient.post(
-        "https://api.crowdin.com/api/project/#{project.identifier}/reports/top-members/export",
-        export_params
+      append_crowdin_user_data(
+        data,
+        project,
+        top_members_schema,
+        schema_languages
       )
-      export_j = JSON.parse( export_r )
-      next unless export_j["success"]
-
-      report_r = RestClient.get(
-        "https://api.crowdin.com/api/project/#{project.identifier}/reports/top-members/download?key=#{project.key}&hash=#{export_j['hash']}"
-      )
-      CSV.parse( report_r, headers: true ).each do | row |
-        next unless row["Languages"]
-        next if staff_usernames.include?( row["Name"] )
-
-        username = row["Name"][/\((.+)\)/, 1]
-        next if staff_usernames.include?( username )
-
-        languages = row["Languages"].split( ";" ).map( &:strip ).grep_v( /English/ )
-        next if languages.blank?
-
-        username ||= row["Name"]
-        data[:users][username] ||= {}
-        data[:users][username][:name] ||= row["Name"].gsub( /\(.+\)/, "" ).strip
-        data[:users][username]["words_#{project_name}"] = row["Translated (Words)"].to_i
-        data[:users][username]["approved_#{project_name}"] = row["Approved (Words)"].to_i
-        data[:users][username][:languages] = languages
-      end
     end
     data
   end
@@ -1494,9 +1590,16 @@ class YearStatistic < ApplicationRecord
       puts "[#{Time.now}] monthly_supporters, year: #{year}, options: #{options}"
     end
     users = User.limit( 30 ).
-      where( "donorbox_plan_type = 'monthly'" ).
-      where( "donorbox_plan_status = 'active'" ).
-      where( "donorbox_plan_started_at IS NOT NULL" ).
+      where( "
+        (
+          donorbox_plan_type = 'monthly'
+          AND donorbox_plan_status = 'active'
+          AND donorbox_plan_started_at IS NOT NULL
+        ) OR (
+          fundraiseup_plan_frequency = 'monthly'
+          AND fundraiseup_plan_status = 'active'
+          AND fundraiseup_plan_started_at IS NOT NULL
+        )" ).
       joins( :stored_preferences ).
       where( "preferences.name = 'monthly_supporter_badge' AND preferences.value = 't'" ).
       order( Arel.sql( "RANDOM()" ) )
@@ -1568,6 +1671,10 @@ class YearStatistic < ApplicationRecord
               jtklein
               meru20
               sylvain-morin
+              abbeycampbell
+              angielt
+              kvangork
+              sepeterson
             ).include?( pull["user"]["login"] ) &&
             ( merge_date = Date.parse( pull["merged_at"] ) ) &&
             merge_date.year == year

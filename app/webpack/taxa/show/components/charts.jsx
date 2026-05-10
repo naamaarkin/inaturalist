@@ -2,9 +2,9 @@ import React from "react";
 import PropTypes from "prop-types";
 import ReactDOM from "react-dom";
 import _ from "lodash";
-import bb, { areaSpline, spline } from "billboard.js";
+import * as d3 from "d3";
+import bb, { areaSpline, spline, zoom } from "billboard.js";
 import { schemeCategory10 } from "d3";
-import moment from "moment";
 import { Modal } from "react-bootstrap";
 import { objectToComparable } from "../../../shared/util";
 
@@ -163,6 +163,8 @@ class Charts extends React.Component {
     };
   }
 
+  // This is used below, just not in a way that eslint can figure out
+  // eslint-disable-next-line react/no-unused-class-component-methods
   tooltipContent( data, defaultTitleFormat, defaultValueFormat, color, tipTitle ) {
     const {
       seasonalityColumns
@@ -213,6 +215,7 @@ class Charts extends React.Component {
       tipTitle = I18n.t( "relative_observations" );
     }
     const { seasonalityKeys } = this.props;
+    const currentMonth = ( new Date( ) ).getMonth( );
     return _.defaultsDeep( { }, this.defaultBBConfig( ), {
       data: {
         columns,
@@ -236,11 +239,46 @@ class Charts extends React.Component {
       },
       tooltip: {
         contents: ( d, defaultTitleFormat, defaultValueFormat, color ) => that.tooltipContent(
-          d, defaultTitleFormat, defaultValueFormat, color,
+          d,
+          defaultTitleFormat,
+          defaultValueFormat,
+          color,
           `${tipTitle}: ${I18n.t( "date.month_names" )[d[0].index + 1]}`
         )
-      }
+      },
+      // // This adds a dotted line and a label if we ever want to do that instead of a region
+      // grid: {
+      //   x: {
+      //     lines: [
+      //       {
+      //         value: currentMonth,
+      //         text: "Now",
+      //         position: currentMonth === 11 ? "middle" : "end"
+      //       }
+      //     ]
+      //   }
+      // }
+      regions: [
+        {
+          axis: "x",
+          start: currentMonth - 0.5,
+          end: currentMonth + 0.5
+        }
+      ]
     } );
+  }
+
+  // Returns a callback for use with billboard's onrendered option that adds a
+  // class to the current month for monthly charts
+  static onRenderedWithMonthHighlightForMountNode( mountNode ) {
+    return ( ) => {
+      const currentMonth = ( new Date( ) ).getMonth( );
+      d3.select( mountNode ).selectAll( ".bb-axis-x .tick" ).each( function ( d, i ) {
+        if ( i === currentMonth ) {
+          d3.select( this ).classed( "current", true );
+        }
+      } );
+    };
   }
 
   renderSeasonalityChart( ) {
@@ -249,6 +287,7 @@ class Charts extends React.Component {
       _.filter( seasonalityColumns, column => column[0] === "verifiable" || column[0] === "research" )
     );
     const mountNode = $( "#SeasonalityChart", ReactDOM.findDOMNode( this ) ).get( 0 );
+    config.onrendered = Charts.onRenderedWithMonthHighlightForMountNode( mountNode );
     this.seasonalityChart = bb.generate( Object.assign( { bindto: mountNode }, config ) );
   }
 
@@ -284,6 +323,7 @@ class Charts extends React.Component {
       }
       config.data.order = null;
       const mountNode = $( `#FieldValueChart${attributeId}`, ReactDOM.findDOMNode( this ) ).get( 0 );
+      config.onrendered = Charts.onRenderedWithMonthHighlightForMountNode( mountNode );
       this.fieldValueCharts[attributeId] = bb.generate(
         Object.assign( { bindto: mountNode }, config )
       );
@@ -298,6 +338,8 @@ class Charts extends React.Component {
     } = this.props;
     // const dates = this.props.historyKeys;
     const years = _.uniq( dates.map( d => new Date( d ).getFullYear( ) ) ).sort( );
+    const shouldZoomToDecade = years.length >= 10;
+    const formattedYears = years.map( y => `${y}-06-15` );
     const chunks = _.chunk( years, 2 );
     const that = this;
     const regions = chunks.map( pair => (
@@ -326,20 +368,21 @@ class Charts extends React.Component {
         x: {
           type: "timeseries",
           tick: {
-            culling: true,
-            values: years.map( y => `${y}-06-15` ),
+            culling: !shouldZoomToDecade,
+            values: formattedYears,
             format: "%Y"
-          },
-          extent: [moment( ).subtract( 10, "years" ).toDate( ), new Date( )]
+          }
         }
       },
       zoom: {
-        enabled: true,
-        rescale: true
+        enabled: zoom()
       },
       tooltip: {
         contents: ( d, defaultTitleFormat, defaultValueFormat, color ) => that.tooltipContent(
-          d, defaultTitleFormat, defaultValueFormat, color,
+          d,
+          defaultTitleFormat,
+          defaultValueFormat,
+          color,
           `${tipTitle}:
           ${I18n.t( "date.abbr_month_names" )[d[0].x.getMonth( ) + 1]}
           ${d[0].x.getFullYear( )}`
@@ -349,6 +392,13 @@ class Charts extends React.Component {
     } );
     const mountNode = $( ".HistoryChart", ReactDOM.findDOMNode( this ) ).get( 0 );
     this.historyChart = bb.generate( Object.assign( { bindto: mountNode }, config ) );
+    if ( !shouldZoomToDecade ) return;
+
+    const newZooms = [
+      `${years[years.length - 11]}-01-01`,
+      `${years[years.length - 1]}-01-01`
+    ];
+    this.historyChart.zoom( newZooms );
   }
 
   render( ) {
@@ -381,8 +431,10 @@ class Charts extends React.Component {
               role="tab"
               data-toggle="tab"
             >
-              { I18n.t( `controlled_term_labels.${_.snakeCase( values[0].controlled_attribute.label )}`,
-                { defaultValue: values[0].controlled_attribute.label } ) }
+              { I18n.t(
+                `controlled_term_labels.${_.snakeCase( values[0].controlled_attribute.label )}`,
+                { defaultValue: values[0].controlled_attribute.label }
+              ) }
             </a>
           </li>
         ) );
@@ -415,8 +467,105 @@ class Charts extends React.Component {
         ) );
       } );
     }
+    const chartControls = (
+      <div className="chart-controls">
+        <div className="dropdown inlineblock">
+          <button
+            className="btn btn-link help-btn dropdown-toggle"
+            type="button"
+            data-toggle="dropdown"
+            aria-haspopup="true"
+            aria-expanded="false"
+            alt={I18n.t( "Settings" )}
+          >
+            <i className="fa fa-gear" />
+          </button>
+          <ul className="dropdown-menu dropdown-menu-right">
+            <li>
+              { scaled ? (
+                // Note that Bootstrap expects this to be an anchor element,
+                // and won't style the dropdown correctly if it's a button
+                // eslint-disable-next-line jsx-a11y/anchor-is-valid
+                <a
+                  href="#"
+                  role="button"
+                  onClick={e => {
+                    e.preventDefault( );
+                    setScaledPreference( false );
+                    return false;
+                  }}
+                >
+                  { I18n.t( "show_total_counts" ) }
+                </a>
+              ) : (
+                // eslint-disable-next-line jsx-a11y/anchor-is-valid
+                <a
+                  href="#"
+                  role="button"
+                  onClick={e => {
+                    e.preventDefault( );
+                    setScaledPreference( true );
+                    return false;
+                  }}
+                >
+                  { I18n.t( "show_relative_proportions_of_all_observations" ) }
+                </a>
+              ) }
+            </li>
+            <li>
+              { /* eslint-disable-next-line jsx-a11y/anchor-is-valid */ }
+              <a
+                href="#"
+                role="button"
+                onClick={e => {
+                  e.preventDefault( );
+                  setNoAnnotationHiddenPreference( !noAnnotationHidden );
+                  return false;
+                }}
+              >
+                { noAnnotationHidden
+                  ? I18n.t( "show_no_annotation" )
+                  : I18n.t( "hide_no_annotation" )}
+              </a>
+            </li>
+            { chartedFieldValues && config && config.currentUser && config.currentUser.id ? (
+              _.map( chartedFieldValues, ( values, termID ) => (
+                <li key={`identify-link-for-${termID}`}>
+                  <a
+                    href={
+                      `/observations/identify?taxon_id=${taxon.id}&without_term_id=${termID}&reviewed=any&quality_grade=needs_id,research`
+                    }
+                    target="_blank"
+                    rel="noopener noreferrer"
+                  >
+                    {
+                      I18n.t( `add_annotations_for_controlled_attribute.${_.snakeCase( values[0].controlled_attribute.label )}`, {
+                        defaultValue: I18n.t( "add_annotations_for_x", {
+                          x: I18n.t( `controlled_term_labels.${_.snakeCase( values[0].controlled_attribute.label )}` )
+                        } )
+                      } )
+                    }
+                  </a>
+                </li>
+              ) )
+            ) : null }
+          </ul>
+        </div>
+        <button
+          type="button"
+          className="btn btn-link help-btn"
+          onClick={( ) => this.showHelpModal( )}
+          alt={I18n.t( "Help" )}
+        >
+          <i className="fa fa-question-circle" />
+        </button>
+      </div>
+    );
     return (
       <div id="charts" className="Charts">
+        <div className="item-label">
+          { I18n.t( "views.taxa.show.charts_caps" ) }
+        </div>
         <ul className="nav nav-tabs" role="tablist">
           <li role="presentation" className="active">
             <a
@@ -439,120 +588,32 @@ class Charts extends React.Component {
             </a>
           </li>
           { fieldValueTabs }
-          <li role="presentation" className="pull-right">
-            <div className="dropdown inlineblock">
-              <button
-                className="btn btn-link help-btn dropdown-toggle"
-                type="button"
-                data-toggle="dropdown"
-                aria-haspopup="true"
-                aria-expanded="false"
-              >
-                <i className="fa fa-gear" />
-              </button>
-              <ul className="dropdown-menu dropdown-menu-right">
-                <li>
-                  { scaled ? (
-                    // Note that Bootstrap expects this to be an anchor element,
-                    // and won't style the dropdown correctly if it's a button
-                    // eslint-disable-next-line jsx-a11y/anchor-is-valid
-                    <a
-                      href="#"
-                      role="button"
-                      onClick={e => {
-                        e.preventDefault( );
-                        setScaledPreference( false );
-                        return false;
-                      }}
-                    >
-                      { I18n.t( "show_total_counts" ) }
-                    </a>
-                  ) : (
-                    // eslint-disable-next-line jsx-a11y/anchor-is-valid
-                    <a
-                      href="#"
-                      role="button"
-                      onClick={e => {
-                        e.preventDefault( );
-                        setScaledPreference( true );
-                        return false;
-                      }}
-                    >
-                      { I18n.t( "show_relative_proportions_of_all_observations" ) }
-                    </a>
-                  ) }
-                </li>
-                <li>
-                  { /* eslint-disable-next-line jsx-a11y/anchor-is-valid */ }
-                  <a
-                    href="#"
-                    role="button"
-                    onClick={e => {
-                      e.preventDefault( );
-                      setNoAnnotationHiddenPreference( !noAnnotationHidden );
-                      return false;
-                    }}
-                  >
-                    { noAnnotationHidden
-                      ? I18n.t( "show_no_annotation" )
-                      : I18n.t( "hide_no_annotation" )
-                    }
-                  </a>
-                </li>
-                { chartedFieldValues && config && config.currentUser && config.currentUser.id ? (
-                  _.map( chartedFieldValues, ( values, termID ) => (
-                    <li key={`identify-link-for-${termID}`}>
-                      <a
-                        href={
-                          `/observations/identify?taxon_id=${taxon.id}&without_term_id=${termID}&reviewed=any&quality_grade=needs_id,research`
-                        }
-                        target="_blank"
-                        rel="noopener noreferrer"
-                      >
-                        {
-                          I18n.t( `add_annotations_for_controlled_attribute.${_.snakeCase( values[0].controlled_attribute.label )}`, {
-                            defaultValue: I18n.t( "add_annotations_for_x", {
-                              x: I18n.t( `controlled_term_labels.${_.snakeCase( values[0].controlled_attribute.label )}` )
-                            } )
-                          } )
-                        }
-                      </a>
-                    </li>
-                  ) )
-                ) : null }
-              </ul>
-            </div>
-            <button
-              type="button"
-              className="btn btn-link help-btn"
-              onClick={( ) => this.showHelpModal( )}
-            >
-              <i className="fa fa-question-circle" />
-            </button>
-          </li>
         </ul>
         <div className="tab-content">
-          <div role="tabpanel" className="tab-pane active" id="charts-seasonality">
-            <div
-              className={
-                `no-content text-muted text-center ${noSeasonalityData ? "" : "hidden"}`
-              }
-            >
-              { seasonalityLoading ? I18n.t( "loading" ) : I18n.t( "no_observations_yet" ) }
+          <div className="tab-pane-container">
+            {chartControls}
+            <div role="tabpanel" className="tab-pane active" id="charts-seasonality">
+              <div
+                className={
+                  `no-content text-muted text-center ${noSeasonalityData ? "" : "hidden"}`
+                }
+              >
+                { seasonalityLoading ? I18n.t( "loading" ) : I18n.t( "no_observations_yet" ) }
+              </div>
+              <div id="SeasonalityChart" className="SeasonalityChart FrequencyChart" />
             </div>
-            <div id="SeasonalityChart" className="SeasonalityChart FrequencyChart" />
-          </div>
-          <div role="tabpanel" className="tab-pane" id="charts-history">
-            <div
-              className={
-                `no-content text-muted text-center ${noHistoryData ? "" : "hidden"}`
-              }
-            >
-              { historyLoading ? I18n.t( "loading" ) : I18n.t( "no_observations_yet" ) }
+            <div role="tabpanel" className="tab-pane" id="charts-history">
+              <div
+                className={
+                  `no-content text-muted text-center ${noHistoryData ? "" : "hidden"}`
+                }
+              >
+                { historyLoading ? I18n.t( "loading" ) : I18n.t( "no_observations_yet" ) }
+              </div>
+              <div id="HistoryChart" className="HistoryChart FrequencyChart" />
             </div>
-            <div id="HistoryChart" className="HistoryChart FrequencyChart" />
+            { fieldValuePanels }
           </div>
-          { fieldValuePanels }
         </div>
         <Modal
           id="ChartsHelpModal"
@@ -614,10 +675,14 @@ Charts.defaultProps = {
 
     // d3 schemeCategory10 colors are what billboard will use by default. Here's we're
     // just ensuring consistent color for each of these series
-    "Plant Phenology=Flower Budding": schemeCategory10[1],
-    "Plant Phenology=Flowering": schemeCategory10[3],
-    "Plant Phenology=Fruiting": schemeCategory10[0],
-    "Plant Phenology=No Evidence of Flowering": schemeCategory10[2]
+    "Flowers and Fruits=Flower Buds": schemeCategory10[1],
+    "Flowers and Fruits=Flowers": schemeCategory10[3],
+    "Flowers and Fruits=Fruits or Seeds": schemeCategory10[0],
+    "Flowers and Fruits=No Flowers or Fruits": schemeCategory10[2],
+    "Leaves=Breaking Leaf Buds": schemeCategory10[0],
+    "Leaves=Green Leaves": schemeCategory10[2],
+    "Leaves=Colored Leaves": schemeCategory10[1],
+    "Leaves=No Live Leaves": schemeCategory10[3]
   }
 };
 

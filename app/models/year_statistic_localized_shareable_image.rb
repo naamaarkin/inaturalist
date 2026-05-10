@@ -14,9 +14,14 @@ class YearStatisticLocalizedShareableImage < ApplicationRecord
       s3_host_alias: CONFIG.s3_host || CONFIG.s3_bucket,
       s3_region: CONFIG.s3_region,
       bucket: CONFIG.s3_bucket,
-      path: "year_statistic_localized_shareable_images/:id-:locale.:content_type_extension",
+      path: proc {| a | a.instance.paperclip_versioned_path( :shareable_image ) },
       url: ":s3_alias_url"
-    invalidate_cloudfront_caches :shareable_image, "year_statistic_localized_shareable_images/:id-*"
+    paperclip_path_versioning(
+      :shareable_image, [
+        "year_statistic_localized_shareable_images/:id-:locale.:content_type_extension",
+        "year_statistics/:year_statistic_id/:locale-:shareable_image_version.:content_type_extension"
+      ]
+    )
   else
     has_attached_file :shareable_image,
       path: ":rails_root/public/attachments/:class/:id-:locale.:content_type_extension",
@@ -58,10 +63,9 @@ class YearStatisticLocalizedShareableImage < ApplicationRecord
 
     # prepate the text elements
     text = prepare_text
-    # Whitney does not have broad Unicode support, so we need to make sure
-    # Whitney can display the text before we use it
-    no_whitney_support = text.any? {| _k, v | !v.to_s.whitney_support? }
-    light_font_path, medium_font_path, semibold_font_path = font_paths( no_whitney_support )
+    # We need to make sure Lato can display the text before we use it
+    no_lato_support = text.any? {| _k, v | !v.to_s.lato_support? }
+    light_font_path, medium_font_path, semibold_font_path = font_paths( no_lato_support )
     if debug
       puts "Font paths: #{light_font_path}, #{medium_font_path}, #{semibold_font_path}"
     end
@@ -496,8 +500,8 @@ class YearStatisticLocalizedShareableImage < ApplicationRecord
     text
   end
 
-  def font_paths( no_whitney_support )
-    if no_whitney_support
+  def font_paths( no_lato_support )
+    if no_lato_support
       if Rails.env.production?
         if locale =~ /^(ja|ko|zh)/
           light_font_path = "Noto-Sans-CJK-HK"
@@ -514,9 +518,9 @@ class YearStatisticLocalizedShareableImage < ApplicationRecord
         semibold_font_path = "Helvetica-Bold"
       end
     else
-      light_font_path = File.join( Rails.root, "public", "fonts", "Whitney-Book-Pro.otf" )
-      medium_font_path = File.join( Rails.root, "public", "fonts", "Whitney-Medium-Pro.otf" )
-      semibold_font_path = File.join( Rails.root, "public", "fonts", "Whitney-Semibold-Pro.otf" )
+      light_font_path = File.join( Rails.root, "public", "fonts", "lato", "Lato-Light.ttf" )
+      medium_font_path = File.join( Rails.root, "public", "fonts", "lato", "Lato-Medium.ttf" )
+      semibold_font_path = File.join( Rails.root, "public", "fonts", "lato", "Lato-Semibold.ttf" )
     end
     [light_font_path, medium_font_path, semibold_font_path]
   end

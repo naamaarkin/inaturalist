@@ -48,10 +48,10 @@ module HasSubscribers
     #   if a comment was going to generate updates for subscribers to its
     #   parent blog post, the arguments would be comment, blog_post,
     #   subscription, and this block would get called for every subscription.
-    # * <tt>:queue_if</tt> - block to decide whether to queue a record for 
-    #   update generation. The :if block determines whether the record
-    #   generates an update, but that still happens in a Delayed::Job.
-    #   :queue_if determines whether that job gets delayed in the first place. 
+    # * <tt>:unless</tt> - block to decide whether to notify subscribers.
+    #   The :if block determines whether the record generates a notification,
+    #   but that still happens in a Delayed::Job on a per-user basis. :unless
+    #   determines if the record generates notifications at all on callback.
     #   Takes the record as its arg.
     # * <tt>:priority</tt> - DJ priority at which to run the notification
     # * <tt>:include_owner</tt> - Create an update for the user associated
@@ -172,15 +172,18 @@ module HasSubscribers
         end
         true
       end
-      
+
       # this is potentially weird b/c there might be other reasons you're
       # subscribed to something, and this will remove the subscription anyway.
       # alts would be to remove uniqueness constraint so every
       # auto_subscribing object generates a subscription...
-      after_destroy do |record|
-        unless record.try(:unsubscribable?) || CONFIG.has_subscribers == :disabled
-          resource = options[:to] ? record.send(options[:to]) : record
-          user = record.auto_subscriber || record.send(subscriber)
+      after_destroy do | record |
+        unless record.try( :unsubscribable? ) || CONFIG.has_subscribers == :disabled || (
+          options[:unsubscribe_enabled] && respond_to?( options[:unsubscribe_enabled] ) &&
+          !send( options[:unsubscribe_enabled] )
+        )
+          resource = options[:to] ? record.send( options[:to] ) : record
+          user = record.auto_subscriber || record.send( subscriber )
           if user && resource
             Subscription.where(
               user_id: user.id,
@@ -193,7 +196,7 @@ module HasSubscribers
         end
       end
     end
-    
+
     def notify_subscribers_with(notifier, subscribable_association)
       return if CONFIG.has_subscribers == :disabled
       options = self.notifies_subscribers_of_options[subscribable_association.to_sym]
@@ -204,16 +207,25 @@ module HasSubscribers
       
       notification ||= options[:notification] || "create"
       users_to_notify = { }
-      users_with_unviewed_from_notifier = Subscription.users_with_unviewed_updates_from(notifier)
 
       # give the model a chance to load needed associations in an efficient way
       if options[:before_notify] && options[:before_notify].is_a?( Proc )
         options[:before_notify].call( notifier )
       end
 
+      # Do not notify subscribers about comments or IDs that have been hidden
+      return if notifier&.try( :hidden? )
+
       updater_proc = Proc.new {|subscribable|
         next if subscribable.blank?
         next unless subscribable.respond_to?(:update_subscriptions)
+
+        # Do not notify subscribers about resources that have been hidden. As
+        # of this writing I don't think this ever happens, but one can
+        # imagine a situation where an entire observation or journal post
+        # needs to be hidden
+        next if subscribable&.try( :hidden? )
+
         notify_owner = if options[:include_owner].is_a?(Proc)
           options[:include_owner].call(notifier, subscribable)
         elsif options[:include_owner]
@@ -235,7 +247,6 @@ module HasSubscribers
         subscribable.update_subscriptions_with_unsuspended_users.send(iterate_method) do |subscription|
           next if notifier.respond_to?(:user_id) && subscription.user_id == notifier.user_id && !options[:include_notifier]
           next if subscription.created_at > notifier.updated_at
-          next if users_with_unviewed_from_notifier.include?(subscription.user_id)
 
           if options[:if]
             next unless options[:if].call(notifier, subscribable, subscription)
@@ -244,54 +255,73 @@ module HasSubscribers
           users_to_notify[subscribable] << subscription.user_id
         end
       }
-      Observation.connection.transaction do
-        if has_many_reflections.include?(subscribable_association.to_s)
-          notifier.send(subscribable_association).find_each(&updater_proc)
-        elsif reflections.detect{|k,v| k.to_s == subscribable_association.to_s}
-          updater_proc.call(notifier.send(subscribable_association))
-        elsif subscribable_association == :self
-          updater_proc.call(notifier)
-        else
-          subscribable = notifier.send(subscribable_association)
-          if subscribable.is_a?(Enumerable)
-            subscribable.each(&updater_proc)
-          elsif subscribable
-            updater_proc.call(subscribable)
+      if has_many_reflections.include?( subscribable_association.to_s )
+        notifier.send( subscribable_association ).find_each( &updater_proc )
+      elsif reflections.detect {| k, _v | k.to_s == subscribable_association.to_s }
+        updater_proc.call( notifier.send( subscribable_association ) )
+      elsif subscribable_association == :self
+        updater_proc.call( notifier )
+      else
+        subscribable = notifier.send( subscribable_association )
+        if subscribable.is_a?( Enumerable )
+          # preload subscriptions if there are a smaller number of subscribables
+          if subscribable.length < 100
+            ActiveRecord::Base.preload_associations(
+              subscribable,
+              :update_subscriptions_with_unsuspended_users
+            )
           end
+          subscribable.each( &updater_proc )
+        elsif subscribable
+          updater_proc.call( subscribable )
         end
       end
-      if users_to_notify.length > 0
-        users_to_notify.each do |subscribable, user_ids|
-          action_attrs = {
-            resource: subscribable,
-            notifier: notifier,
-            notification: notification
-          }
-          if action = UpdateAction.first_with_attributes(action_attrs)
-            action.append_subscribers( user_ids )
-          end
-        end
+      return if users_to_notify.empty?
+
+      notifier_updates = UpdateAction.for_notifier( notifier )
+      users_with_unviewed_from_notifier = Subscription.users_with_unviewed_updates_from( notifier_updates )
+
+      users_to_notify.each do | notify_subscribable, user_ids |
+        user_ids_to_notify = user_ids - users_with_unviewed_from_notifier
+        next if user_ids_to_notify.empty?
+
+        action_attrs = {
+          resource: notify_subscribable,
+          notifier: notifier,
+          notification: notification
+        }
+        action = UpdateAction.first_with_attributes(
+          action_attrs,
+          candidate_update_actions: notifier_updates
+        )
+        next unless action
+
+        action.append_subscribers( user_ids )
       end
+      nil
     end
 
-    def create_callback(subscribable_association, options = {})
+    def create_callback( subscribable_association, options = {} )
       callback_types = []
-      options_on = options[:on] ? [options[:on]].flatten.map(&:to_s) : %w(after_create)
-      callback_types << :update if options_on.detect{|o| o =~ /update/}
-      callback_types << :create if options_on.detect{|o| o =~ /create/}
-      callback_types << [:update, :create]   if options_on.detect{|o| o =~ /save/}
+      options_on = options[:on] ? [options[:on]].flatten.map( &:to_s ) : %w(after_create)
+      callback_types << :update if options_on.detect {| o | o =~ /update/ }
+      callback_types << :create if options_on.detect {| o | o =~ /create/ }
+      callback_types << [:update, :create] if options_on.detect {| o | o =~ /save/ }
       callback_method = options[:with] || :notify_subscribers_of
       attr_accessor :skip_updates
-      after_commit on: callback_types.flatten.uniq do |record|
+
+      after_commit on: callback_types.flatten.uniq do | record |
+        raise if record != self
+
         unless_skipped = options[:unless] ? options[:unless].call( self ) : false
-        unless record.skip_updates || record.try(:unsubscribable?) || unless_skipped
-          if options[:queue_if].blank? || options[:queue_if].call(record)
-            if options[:delay] == false
-              record.send(callback_method, subscribable_association)
-            else
-              record.delay(priority: options[:priority], run_at: 5.seconds.from_now).
-                send(callback_method, subscribable_association)
-            end
+        unless unless_skipped ||
+            record.skip_updates ||
+            record.try( :unsubscribable? )
+          if options[:delay] == false
+            record.send( callback_method, subscribable_association )
+          else
+            record.delay( priority: options[:priority], run_at: 5.seconds.from_now ).
+              send( callback_method, subscribable_association )
           end
         end
         true

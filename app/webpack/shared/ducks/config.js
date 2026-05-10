@@ -1,5 +1,7 @@
 import _ from "lodash";
 import { fetch } from "../util";
+import CurrentUser from "../models/current_user";
+import Config from "../models/config";
 
 // ACTIONS
 const CONFIG = "CONFIG";
@@ -7,16 +9,24 @@ const TOGGLE_CONFIG = "TOGGLE_CONFIG";
 const UPDATE_CURRENT_USER = "config/update_current_user";
 
 // REDUCER
-export default function reducer( state = {}, action ) {
+export default function reducer( state = new Config( { } ), action ) {
+  let updatedState;
   switch ( action.type ) {
     case CONFIG:
-      return Object.assign( {}, state, action.config );
+      updatedState = { ...action.config };
+      if ( action.config.currentUser && action.config.currentUser.constructor !== CurrentUser ) {
+        updatedState.currentUser = new CurrentUser( action.config.currentUser );
+      }
+      return new Config( Object.assign( state, updatedState ) );
     case TOGGLE_CONFIG:
-      return Object.assign( {}, state, { [action.key]: !state[action.key] } );
+      return new Config( Object.assign( state, { [action.key]: !state[action.key] } ) );
     case UPDATE_CURRENT_USER: {
       if ( !state.currentUser ) return state;
       if ( !state.currentUser.id ) return state;
-      const prefUpdates = _.pickBy( action.updates, ( v, k ) => ( k.match( /prefers_/ ) || k.match( /preferred_/ ) ) );
+      const prefUpdates = _.pickBy(
+        action.updates,
+        ( v, k ) => ( k.match( /prefers_/ ) || k.match( /preferred_/ ) )
+      );
       if ( _.keys( prefUpdates ).length > 0 ) {
         const body = new FormData( );
         body.append( "authenticity_token", $( "meta[name=csrf-token]" ).attr( "content" ) );
@@ -28,10 +38,11 @@ export default function reducer( state = {}, action ) {
           body
         } );
       }
-      return Object.assign(
-        { },
-        state,
-        { currentUser: Object.assign( { }, state.currentUser, action.updates ) }
+      return new Config(
+        Object.assign(
+          state,
+          { currentUser: Object.assign( state.currentUser, action.updates ) }
+        )
       );
     }
     default:
@@ -58,6 +69,14 @@ export function updateCurrentUser( updates ) {
   return {
     type: UPDATE_CURRENT_USER,
     updates
+  };
+}
+
+export function setCurrentUser( currentUser ) {
+  return dispatch => {
+    dispatch( setConfig( {
+      currentUser: new CurrentUser( currentUser )
+    } ) );
   };
 }
 

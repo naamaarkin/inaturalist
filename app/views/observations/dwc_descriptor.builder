@@ -12,10 +12,16 @@ else
   if @include_uuid
     core_terms << DarwinCore::Occurrence::OTHER_CATALOGUE_NUMBERS_TERM
   end
+  if @include_county
+    core_terms << DarwinCore::Occurrence::COUNTY_TERM
+  end
+  if @include_public_coordinates
+    core_terms += DarwinCore::Occurrence::PUBLIC_COORDINATES_TERMS
+  end
 end
 xml.instruct!
 xml.archive :xmlns => "http://rs.tdwg.org/dwc/text/",
-    :metadata => "metadata.eml.xml" do
+    :metadata => "eml.xml" do
   xml.core :encoding => "UTF-8", 
       :linesTerminatedBy => "\\n", 
       :fieldsTerminatedBy => ",",

@@ -26,9 +26,9 @@ class ProviderOauthController < ApplicationController
       Timeout.timeout( 10 ) do
         case assertion_type
         when /google/
-          oauth_access_token_from_google_token( params[:client_id], params[:assertion] )
+          oauth_access_token_from_google_token( client, params[:assertion] )
         when /apple/
-          oauth_access_token_from_apple_assertion( params[:client_id], params[:assertion] )
+          oauth_access_token_from_apple_assertion( client, params[:assertion] )
         else
           raise INat::Auth::BadAssertionTypeError
         end
@@ -51,11 +51,10 @@ class ProviderOauthController < ApplicationController
         error_description: t( :provider_without_email_error_generic ).to_s.gsub( /\s+/, " " )
       }
       return
-    rescue INat::Auth::SuspendedError
-      return render status: :bad_request, json: {
-        error: "invalid_grant",
-        error_description: t( :this_user_has_been_suspended )
-      }
+    rescue INat::Auth::SuspendedError => e
+      # Note that this status code is different from the 401 returned by devise/doorkeeper
+      # for suspended users making requests.
+      return render status: :bad_request, json: e.to_h
     rescue INat::Auth::ChildWithoutPermissionError
       render status: :bad_request, json: {
         error: "invalid_grant",
@@ -104,8 +103,7 @@ class ProviderOauthController < ApplicationController
 
   private
 
-  def oauth_access_token_from_google_token( client_id, provider_token )
-    client = Doorkeeper::Application.find_by_uid( client_id )
+  def oauth_access_token_from_google_token( client, provider_token )
     user = if ( pa = ProviderAuthorization.where( provider_name: "google_oauth2", token: provider_token ).first )
       pa.user
     end
@@ -142,7 +140,7 @@ class ProviderOauthController < ApplicationController
             "token" => provider_token
           }
         }
-        user = User.create_from_omniauth( auth_info )
+        user = User.create_from_omniauth( auth_info, client )
         raise INat::Auth::MissingEmailError if !user.valid? && !user.errors[:email].blank?
       end
       user
@@ -155,19 +153,7 @@ class ProviderOauthController < ApplicationController
     assertion_access_token_for_client_and_user( client, user )
   end
 
-  def oauth_access_token_from_apple_assertion( client_id, assertion )
-    client = Doorkeeper::Application.find_by_uid( client_id )
-    if client.blank?
-      error_message = "Client does not exist for Apple assertion: #{client_id}"
-      Rails.logger.error = error_message
-      LogStasher.write_hash(
-        error_message: error_message,
-        request: request,
-        session: session,
-        user: current_user
-      )
-      return
-    end
+  def oauth_access_token_from_apple_assertion( client, assertion )
     # Note that the assertion we are expecting from our own iPhone app is a JSON
     # string that contains the identity token as well as name details that are
     # (apprently) only available to the app
@@ -181,7 +167,7 @@ class ProviderOauthController < ApplicationController
     id_token = assertion_json["id_token"]
     if id_token.blank?
       error_message = "Failed to parse id_token out of Apple assertion"
-      Rails.logger.error = error_message
+      Rails.logger.error error_message
       LogStasher.write_hash(
         error_message: error_message,
         request: request,
@@ -197,26 +183,26 @@ class ProviderOauthController < ApplicationController
     # CONFIG.apple.client_id is the client ID for the *web*. Assertions from the
     # app will use the package ID... which should probably be specified
     # separately in the config, but this works for now
-    iphone_app_id = CONFIG.apple.app_id
+    app_bundle_ids = CONFIG.apple.app_bundle_ids || []
     # JWT is handling the JWS signature verification using the JWKs. That's a
     # lot of JW
-    id_token_conents, _header = ::JWT.decode( id_token, nil, true, {
+    id_token_contents, _header = ::JWT.decode( id_token, nil, true, {
       verify_iss: true,
       iss: "https://appleid.apple.com",
       verify_iat: true,
       verify_aud: true,
-      aud: [iphone_app_id], # .concat(options.authorized_client_ids),
+      aud: app_bundle_ids,
       algorithms: ["RS256"],
       jwks: jwks
     } )
     # Verify the contents of the token
-    issuer_is_apple = id_token_conents["iss"] == "https://appleid.apple.com"
-    audience_is_inat = id_token_conents["aud"] == iphone_app_id
-    token_is_current = Time.now < Time.at( id_token_conents["exp"] )
+    issuer_is_apple = id_token_contents["iss"] == "https://appleid.apple.com"
+    audience_is_inat = app_bundle_ids.include?( id_token_contents["aud"] )
+    token_is_current = Time.now < Time.at( id_token_contents["exp"] )
     unless issuer_is_apple && audience_is_inat && token_is_current
       error_message = <<~MSG
-        Invalid identity token. iss: #{id_token_conents['iss']},
-        aud: #{id_token_conents['aud']}, exp: #{id_token_conents['exp']}
+        Invalid identity token. iss: #{id_token_contents['iss']},
+        aud: #{id_token_contents['aud']}, exp: #{id_token_contents['exp']}
       MSG
       Rails.logger.error = error_message
       LogStasher.write_hash(
@@ -228,7 +214,7 @@ class ProviderOauthController < ApplicationController
       return
     end
     # Get the Apple unique user identifier (the "sub"ject)
-    provider_uid = id_token_conents["sub"]
+    provider_uid = id_token_contents["sub"]
     if provider_uid.blank?
       error_message = "No user identifier in the Apple identity token"
       Rails.logger.error = error_message
@@ -242,18 +228,18 @@ class ProviderOauthController < ApplicationController
     end
     existing_pa = ProviderAuthorization.where( provider_name: "apple", provider_uid: provider_uid ).first
     user = existing_pa&.user
-    user ||= User.find_by_email( id_token_conents["email"] ) unless id_token_conents["email"].blank?
+    user ||= User.find_by_email( id_token_contents["email"].downcase ) unless id_token_contents["email"].blank?
     unless user
       auth_info = {
         "provider" => "apple",
         "uid" => provider_uid,
         "info" => {
-          "email" => id_token_conents["email"],
+          "email" => id_token_contents["email"],
           "name" => assertion_json["name"],
-          "verified" => id_token_conents["email_verified"] == "true"
+          "verified" => id_token_contents["email_verified"] == "true"
         }
       }
-      user = User.create_from_omniauth( auth_info )
+      user = User.create_from_omniauth( auth_info, client )
       raise INat::Auth::MissingEmailError if !user.valid? && !user.errors[:email].blank?
     end
     return nil unless user&.persisted?
@@ -279,11 +265,12 @@ class ProviderOauthController < ApplicationController
   end
 
   def assertion_access_token_for_client_and_user( client, user )
+    user.unsuspend_if_timed_suspension_expired!
     unless user.active_for_authentication?
-      raise INat::Auth::SuspendedError if user.suspended?
+      if user.suspended?
+        raise INat::Auth::SuspendedError.new( user.inactive_message, suspended_until: user.suspended_until )
+      end
       raise INat::Auth::ChildWithoutPermissionError if user.child_without_permission?
-      raise INat::Auth::UnconfirmedAfterGracePeriodError if user.unconfirmed_grace_period_expired?
-      raise INat::Auth::UnconfirmedError unless user.confirmed?
     end
     access_token = Doorkeeper::AccessToken.
       where( application_id: client.id, resource_owner_id: user.id, revoked_at: nil ).

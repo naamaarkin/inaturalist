@@ -17,9 +17,11 @@ module FlagsHelper
     capture do
       if flaggable
         concat link_to_if( flaggable.respond_to?( :to_plain_s ), flaggable.to_plain_s, flaggable )
-        concat flaggable_edit( flaggable ) unless options[:no_edit]
-        concat flaggable_with_body( flaggable ) unless options[:no_body]
-        concat flaggable_user( flaggable )
+        if flag.viewable_by?( current_user )
+          concat flaggable_edit( flaggable ) unless options[:no_edit]
+          concat flaggable_with_body( flaggable ) unless options[:no_body]
+          concat flaggable_user( flaggable )
+        end
       else
         concat t "deleted_#{flag.flaggable_type}"
         if flag.flaggable_content_viewable_by?( current_user )
@@ -27,7 +29,7 @@ module FlagsHelper
         end
         if flag.flaggable_parent
           txt = t :bold_label_colon_value_html,
-            label: t(:parent),
+            label: t( :parent ),
             value: link_to( flag.flaggable_parent.to_plain_s, flag.flaggable_parent )
           concat content_tag :div, "[#{txt}]".html_safe
         end
@@ -118,7 +120,7 @@ module FlagsHelper
   private
 
   def editable?( flaggable )
-    flaggable.respond_to?( :editable_by? ) && flaggable.editable_by?( current_user ) \
-      && defined? "edit_#{flaggable.class.name.underscore}_path"
+    flaggable.respond_to?( :editable_by? ) && flaggable.editable_by?( current_user ) &&
+      respond_to?( "edit_#{flaggable.class.name.underscore}_path" )
   end
 end

@@ -12,11 +12,10 @@ import SaveButtonContainer from "../containers/save_button_container";
 import ApplicationsContainer from "../containers/applications_container";
 import RelationshipsContainer from "../containers/relationships_container";
 import RevokeAccessModalContainer from "../containers/revoke_access_modal_container";
-import ThirdPartyTrackingModalContainer from "../containers/third_party_tracking_modal_container";
 import CreativeCommonsLicensingModalContainer from "../containers/cc_licensing_modal_container";
 import DropdownMenuMobile from "./dropdown_menu_mobile";
 import DeleteRelationshipModalContainer from "../containers/delete_relationship_modal_container";
-import ConfirmModalContainer from "../containers/confirm_modal_container";
+import ConfirmModalContainer from "../../../shared/containers/confirm_modal_container";
 
 class App extends Component {
   constructor( ) {
@@ -35,9 +34,9 @@ class App extends Component {
 
   handleUnload( e ) {
     if ( !this.props ) return;
-    const { profile } = this.props;
+    const { userSettings } = this.props;
 
-    if ( profile && profile.saved_status === "unsaved" ) {
+    if ( userSettings?.saved_status === "unsaved" ) {
       // preventing default within this if statement makes this work on both Chrome and Firefox
       // https://developer.mozilla.org/en-US/docs/Web/API/Window/beforeunload_event#browser_compatibility
       e.preventDefault( );
@@ -68,20 +67,20 @@ class App extends Component {
 
     return (
       <div className="container" id="UserSettings">
-        <div className="row vertical-align">
-          <div className="col-xs-12 col-sm-6">
+        <div className="settings-head row vertical-align">
+          <div className="h1col col-xs-12 col-sm-6">
             <h1>{I18n.t( "settings" )}</h1>
           </div>
-          <div className="col-xs-12 col-sm-6">
+          <div className="btncol col-xs-12 col-sm-6">
             <SaveButtonContainer />
           </div>
-          <div className="col-xs-12 visible-xs settings-item">
+          <div className="navcol col-xs-12 visible-xs settings-item">
             <ErrorBoundary>
               <DropdownMenuMobile menuIndex={section} handleInputChange={this.handleInputChange} />
             </ErrorBoundary>
           </div>
         </div>
-        <div className="row">
+        <div className="settings-body row">
           <div className="col-sm-2 menu hidden-xs">
             <ErrorBoundary>
               <Menu setContainerIndex={setContainerIndex} currentContainer={section} />
@@ -94,13 +93,12 @@ class App extends Component {
             { userSettings[section] }
           </div>
         </div>
-        <div className="row vertical-align">
+        <div className="settings-foot row vertical-align">
           <div className="col-xs-12">
             <SaveButtonContainer />
           </div>
         </div>
         <RevokeAccessModalContainer />
-        <ThirdPartyTrackingModalContainer />
         <CreativeCommonsLicensingModalContainer />
         <DeleteRelationshipModalContainer />
         <ConfirmModalContainer />
@@ -111,9 +109,9 @@ class App extends Component {
 }
 
 App.propTypes = {
-  profile: PropTypes.object,
   section: PropTypes.number,
-  setContainerIndex: PropTypes.func
+  setContainerIndex: PropTypes.func,
+  userSettings: PropTypes.object
 };
 
 export default App;

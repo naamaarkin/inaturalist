@@ -1,18 +1,21 @@
+# frozen_string_literal: true
+
 class SubscriptionsController < ApplicationController
   before_action :authenticate_user!
-  before_action :load_subscription, :except => [:new, :create, :index, :edit, :subscribe]
+  before_action :load_subscription, except: [:new, :create, :index, :edit, :subscribe]
   before_action :load_resource, only: [:subscribe]
-  before_action :require_owner, :except => [:new, :create, :index, :edit, :subscribe]
-  before_action :return_here, :only => [:index]
-  
+  before_action :require_owner, except: [:new, :create, :index, :edit, :subscribe]
+  before_action :return_here, only: [:index]
+
   def index
     @type = params[:type]
-    @type = "place" unless Subscription.subscribable_classes.map(&:underscore).include?(@type)
+    @type = "place" unless Subscription.subscribable_classes.map( &:underscore ).include?( @type )
     resource_type = @type.camelcase
-    @subscriptions = current_user.subscriptions.includes(:resource).
-      where("resource_type = ?", resource_type).
-      order("subscriptions.id desc").
-      page(params[:page])
+    @subscriptions = current_user.subscriptions.includes( :resource ).
+      where( "resource_type = ?", resource_type ).
+      order( "subscriptions.id desc" ).
+      limit( 100 ).
+      page( params[:page] )
   end
 
   def new
@@ -104,19 +107,30 @@ class SubscriptionsController < ApplicationController
   end
 
   def subscribe
-    @subscription = current_user.subscriptions.where(resource: @resource).first
-    if !@subscription && (params[:subscribe].nil? || params[:subscribe].yesish?)
-      @subscription = Subscription.create(resource: @resource, user: current_user)
+    @subscription = current_user.subscriptions.where( resource: @resource ).first
+    if !@subscription && ( params[:subscribe].nil? || params[:subscribe].yesish? )
+      @subscription = Subscription.create( resource: @resource, user: current_user )
     elsif @subscription
       @subscription.destroy
     end
-    respond_to do |format|
+    respond_to do | format |
+      if @subscription&.errors&.any?
+        format.html do
+          flash[:error] = "Failed to create subscription: #{@subscription.errors.full_messages.to_sentence}"
+          return redirect_back_or_default( @subscription.resource || "/" )
+        end
+        format.json do
+          render status: :unprocessable_entity, json: { error: @subscription.errors.full_messages }
+          return
+        end
+      end
       format.html { redirect_to @resource }
       format.json { head :no_content }
     end
   end
-  
+
   private
+
   def load_subscription
     @subscription = if params[:id]
       Subscription.find_by_id(params[:id])

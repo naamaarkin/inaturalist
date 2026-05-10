@@ -59,7 +59,7 @@ module Inaturalist
     config.assets.enabled = true
 
     # Version of your assets, change this if you want to expire all your assets
-    config.assets.version = "3.1"
+    config.assets.version = "3.4"
 
     # Compile localized CSS:
     config.assets.precompile += ["*.css", "*.js"]
@@ -117,6 +117,9 @@ module Inaturalist
 
     config.action_mailer.preview_path = "#{Rails.root}/test/mailers/previews"
 
+    require_dependency "blocked_ips_middleware"
+    config.middleware.use BlockedIpsMiddleware
+
     config.middleware.use Rack::MobileDetect
 
     config.middleware.insert_before 0, Rack::Cors do
@@ -153,6 +156,9 @@ ActiveRecord::Base.include_root_in_json = false
 ActiveRecord::SessionStore::Session.primary_key = "session_id"
 
 Rack::Utils.multipart_part_limit = 2048
+# allow 4x the default amount of multipart request parts. Some endpoints, like updating a collection
+# project with thousands of rules, while updating its icon or banner, need this increased limit
+Rack::Utils.multipart_total_part_limit = 16_384
 
 # load SiteConfig class and config
 require "site_config"
@@ -197,6 +203,7 @@ require "elasticsearch/rails/instrumentation"
 require "inat_api_service"
 require "google_recaptcha"
 require "custom_log_formatter"
+require "taxonomy_parser"
 
 # elasticsearch-model won't load its WillPaginate support unless WillPaginate is
 # loaded before it is. You can do this by specifying will_paginate before

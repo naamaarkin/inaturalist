@@ -15,9 +15,11 @@ class Projects extends React.Component {
 
   constructor( props ) {
     super( props );
+    const { context } = props;
     const currentUser = props.config && props.config.currentUser;
+    this.collapsePreference = `prefers_hide_${context}_projects`;
     this.state = {
-      open: currentUser ? !currentUser.prefers_hide_obs_show_projects : true
+      open: currentUser ? !currentUser[this.collapsePreference] : true
     };
     this.setUpProjectAutocomplete = this.setUpProjectAutocomplete.bind( this );
   }
@@ -26,17 +28,24 @@ class Projects extends React.Component {
     this.setUpProjectAutocomplete( );
   }
 
-  componentDidUpdate( ) {
+  componentDidUpdate( prevProps, prevState ) {
     this.setUpProjectAutocomplete( );
+    if ( prevState.open === this.state.open ) {
+      this.setOpenStateOnConfigUpdate( );
+    }
+  }
+
+  setOpenStateOnConfigUpdate( ) {
+    const { config } = this.props;
+    if ( config.currentUser
+      && config.currentUser[this.collapsePreference] === this.state.open ) {
+      this.setState( { open: !config.currentUser[this.collapsePreference] } );
+    }
   }
 
   setUpProjectAutocomplete( ) {
     const input = $( ".Projects .form-group input" );
-    if ( input.data( "uiAutocomplete" ) ) {
-      input.autocomplete( "destroy" );
-      input.removeData( "uiAutocomplete" );
-    }
-    input.projectAutocomplete( {
+    const opts = {
       resetOnChange: false,
       idEl: $( "<input/>" ),
       notIDs: _.map( this.props.observation.project_observations, "project_id" ),
@@ -59,18 +68,23 @@ class Projects extends React.Component {
         }
         input.val( "" ).blur( );
       }
-    } );
+    };
+    try {
+      input.autocomplete( "option", opts );
+    } catch {
+      input.projectAutocomplete( opts );
+    }
   }
 
   render( ) {
     const {
       observation,
       config,
-      collapsible,
       updateSession
     } = this.props;
     const { open } = this.state;
     const loggedIn = config && config.currentUser;
+    const userCanInteract = config?.currentUserCanInteractWithResource( observation );
 
     const projectsOrProjObs = observation.non_traditional_projects
       ? _.cloneDeep( observation.non_traditional_projects )
@@ -92,14 +106,14 @@ class Projects extends React.Component {
       !observation
       || !observation.user
       || (
-        !loggedIn
+        !userCanInteract
         && projectsOrProjObs.length === 0
       )
     ) {
       return ( <span /> );
     }
     let addProjectInput;
-    if ( loggedIn ) {
+    if ( userCanInteract ) {
       let projectAdditionNotice;
       if ( config.currentUser.id !== observation.user.id && observation.user.preferences ) {
         if ( observation.user.preferences.prefers_project_addition_by === "none" ) {
@@ -138,13 +152,6 @@ class Projects extends React.Component {
         ) ) }
       </div>
     );
-    if ( !collapsible ) {
-      return (
-        <div className="Projects">
-          { panelContent }
-        </div>
-      );
-    }
 
     const count = projectsOrProjObs.length > 0
       ? `(${projectsOrProjObs.length})`
@@ -155,7 +162,7 @@ class Projects extends React.Component {
           className="collapsible"
           onClick={( ) => {
             if ( loggedIn ) {
-              updateSession( { prefers_hide_obs_show_projects: open } );
+              updateSession( { [this.collapsePreference]: open } );
             }
             this.setState( { open: !open } );
           }}
@@ -183,11 +190,11 @@ Projects.propTypes = {
   setErrorModalState: PropTypes.func,
   updateSession: PropTypes.func,
   showProjectFieldsModal: PropTypes.func,
-  collapsible: PropTypes.bool
+  context: PropTypes.string
 };
 
 Projects.defaultProps = {
-  collapsible: true
+  context: "obs_show"
 };
 
 export default Projects;

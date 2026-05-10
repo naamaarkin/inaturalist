@@ -12,6 +12,8 @@ NonStupidDigestAssets.whitelist += [
   /^homepage-/,
   /^donate-/,
   /^copyright-infringement/,
+  /^artificially-generated-content/,
   /^media-hidden/,
+  "walrus.svg",
   /yir-background-.*/
 ]

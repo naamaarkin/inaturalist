@@ -16,6 +16,7 @@ describe TaxaController do
       expect( response ).to be_redirect
     end
   end
+
   describe "show" do
     render_views
     let( :taxon ) { Taxon.make! }
@@ -40,6 +41,12 @@ describe TaxaController do
       expect( response.body ).to have_tag(
         "link[rel=canonical][href='#{taxon_url( taxon, host: Site.default.url )}']"
       )
+    end
+
+    it "does not raise an error if preferred_taxon_page_place_id session variable is a string" do
+      expect( INatAPIService ).to receive( "get_json" ) { {}.to_json }
+      session[:preferred_taxon_page_place_id] = "string"
+      expect { get( :show, params: { id: taxon.id } ) }.not_to raise_error
     end
   end
 
@@ -284,6 +291,13 @@ describe TaxaController do
       get :search, params: { q: t.name, per_page: "foo" }
       expect( response ).to be_successful
     end
+    it "does not raise an exception when faceted_iconic_taxa is empty" do
+      t = Taxon.make!
+      get :search, params: { iconic_taxa: t.id }
+      expect( response ).to be_successful
+      expect( assigns( :iconic_taxa ) ).not_to be_empty
+      expect( assigns( :faceted_iconic_taxa ) ).to be_nil
+    end
   end
 
   describe "observation_photos" do
@@ -377,6 +391,137 @@ describe TaxaController do
       expect( response ).to be_ok
       es_taxon = Taxon.elastic_search( where: { id: taxon.id } ).results.results[0]
       expect( es_taxon.default_photo.id ).to eq photo.id
+    end
+
+    it "prevents access to users with content creation restrictions" do
+      allow( CONFIG ).to receive( :content_creation_restriction_days ).and_return( 1 )
+      taxon = Taxon.make!( photos_locked: true )
+      sign_in( User.make!( created_at: Time.now ) )
+      photo = LocalPhoto.make!
+      post :set_photos, format: :json, params: { id: taxon.id, photos: [
+        { id: photo.id, type: "LocalPhoto", native_photo_id: photo.id }
+      ] }
+      expect( response.response_code ).to eq 403
+      expect( JSON.parse( response.body ) ).to eq( {
+        "error" => I18n.t( :you_dont_have_permission_to_do_that )
+      } )
+    end
+  end
+
+  describe "describe" do
+    let( :taxon ) { create :taxon, name: "Homo sapiens" }
+
+    it "should create a TaxonDescription if one does not exist" do
+      expect( taxon.taxon_descriptions ).to be_blank
+      after_delayed_job_finishes do
+        get :describe, params: { id: taxon.id }
+      end
+      taxon.reload
+      expect( taxon.taxon_descriptions ).not_to be_blank
+      expect( taxon.taxon_descriptions.first.body ).to include "Human"
+    end
+
+    it "should not create a new TaxonDescription if one does exist" do
+      create :taxon_description, taxon: taxon
+      expect( taxon.taxon_descriptions.size ).to eq 1
+      after_delayed_job_finishes do
+        get :describe, params: { id: taxon.id }
+      end
+      taxon.reload
+      expect( taxon.taxon_descriptions.size ).to eq 1
+    end
+
+    it "should create a localized TaxonDescription if one does not exist" do
+      create :taxon_description, taxon: taxon
+      expect( taxon.taxon_descriptions.size ).to eq 1
+      expect( taxon.taxon_descriptions.detect {| td | td.locale == "fi" } ).to be_blank
+      after_delayed_job_finishes do
+        get :describe, params: { id: taxon.id, locale: "fi" }
+      end
+      taxon.reload
+      expect( taxon.taxon_descriptions.size ).to eq 2
+      fi_desc = taxon.taxon_descriptions.detect {| td | td.locale == "fi" }
+      expect( fi_desc ).not_to be_blank
+      expect( fi_desc.body ).to include "Ihminen"
+    end
+  end
+
+  describe "map" do
+    render_views
+    before { load_test_taxa( iconic: true ) }
+    it "should render for two taxa with the same iconic taxon" do
+      clarkia = Taxon.find_by_name( "Clarkia" )
+      clarkia_amoena = Taxon.find_by_name( "Clarkia amoena" )
+      get :map, params: { taxa: [clarkia.id, clarkia_amoena.id] }
+      expect( response ).to be_successful
+    end
+
+    it "should render for two taxa with different iconic taxa" do
+      clarkia = Taxon.find_by_name( "Clarkia" )
+      pseudacris = Taxon.find_by_name( "Pseudacris" )
+      get :map, params: { taxa: [clarkia.id, pseudacris.id] }
+      expect( response ).to be_successful
+    end
+
+    it "should render for fgive taxa" do
+      get :map, params: { taxa: Taxon.order( "rank_level ASC" ).limit( 5 ).pluck( :id ) }
+      expect( response ).to be_successful
+    end
+  end
+
+  describe "provisional" do
+    before do
+      load_test_taxa( iconic: true )
+    end
+    let( :fungi ) { Taxon::ICONIC_TAXA_BY_NAME["Fungi"] }
+    let( :cortinariaceae ) do
+      Taxon.make!( name: "Cortinariaceae", rank: Taxon::FAMILY, parent: fungi, iconic_taxon: fungi )
+    end
+    let( :cortinarius ) do
+      Taxon.make!( name: "Cortinarius", rank: Taxon::GENUS, parent: cortinariaceae, iconic_taxon: fungi )
+    end
+
+    it "should be updateable by curators" do
+      t = Taxon.make!( name: "Cortinarius testus", rank: Taxon::SPECIES, parent: cortinarius, provisional: false )
+      curator = make_curator
+      sign_in curator
+      expect( t.provisional ).to be( false )
+      put :update, params: { id: t.id, taxon: { provisional: true, name: "Cortinarius sp. 'test'" } }
+      t.reload
+      expect( t.provisional ).to be( true )
+    end
+
+    it "should allow curators to set provisional to false on existing provisional taxon with minor changes" do
+      t = Taxon.make!( name: "Cortinarius sp. 'test'", rank: Taxon::SPECIES, parent: cortinarius, provisional: true )
+      curator = make_curator
+      sign_in curator
+      expect( t.provisional ).to be( true )
+      put :update, params: { id: t.id, taxon: { provisional: false, name: "Cortinarius testi" } }
+      t.reload
+      expect( t.provisional ).to be( false )
+      expect( t.name ).to eq( "Cortinarius testi" )
+    end
+
+    it "should not allow curators to set provisional to false on existing prov taxon with major epithet changes" do
+      t = Taxon.make!( name: "Cortinarius sp. 'test'", rank: Taxon::SPECIES, parent: cortinarius, provisional: true )
+      curator = make_curator
+      sign_in curator
+      expect( t.provisional ).to be( true )
+      put :update, params: { id: t.id, taxon: { provisional: false, name: "Cortinarius validus" } }
+      t.reload
+      expect( t.provisional ).to be( true )
+      expect( t.name ).to eq( "Cortinarius sp. 'test'" )
+    end
+
+    it "should not allow curators to change genus when setting provisional to false" do
+      t = Taxon.make!( name: "Cortinarius sp. 'test'", rank: Taxon::SPECIES, parent: cortinarius, provisional: true )
+      curator = make_curator
+      sign_in curator
+      expect( t.provisional ).to be( true )
+      put :update, params: { id: t.id, taxon: { provisional: false, name: "Amanita test" } }
+      t.reload
+      expect( t.provisional ).to be( true )
+      expect( t.name ).to eq( "Cortinarius sp. 'test'" )
     end
   end
 end

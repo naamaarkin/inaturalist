@@ -48,7 +48,9 @@ const Project = class Project extends inatjs.Project {
     const start = this.rule_observed_on || this.rule_d1;
     const end = this.rule_observed_on || this.rule_d2;
     this.startDate = util.momentDateFromString( start );
+    this.startDateIncludesTime = !util.isDate( start );
     this.endDate = util.momentDateFromString( end );
+    this.endDateIncludesTime = !util.isDate( end );
     this.started = false;
     this.ended = false;
     this.durationToEvent = null;
@@ -72,6 +74,38 @@ const Project = class Project extends inatjs.Project {
     // TODO don't hardcode default color
     this.banner_color = this.banner_color || "#74ac00";
     this.errors = this.errors || { };
+    this.validateDates( );
+  }
+
+  validateDates( ) {
+    if ( this.date_type === "range" ) {
+      _.each( ["d1", "d2"], dateField => {
+        const ruleName = `rule_${dateField}`;
+        if ( this[ruleName] && !(
+          moment( this[ruleName].trim( ), "YYYY-MM-DD HH:mm Z", true ).isValid( )
+            || moment( this[ruleName].trim( ), "YYYY-MM-DD", true ).isValid( )
+        ) ) {
+          this.errors[dateField] = I18n.t( "invalid_date" );
+        } else {
+          delete this.errors[dateField];
+        }
+      } );
+    } else {
+      delete this.errors.d1;
+      delete this.errors.d2;
+    }
+
+    if ( this.date_type === "exact" ) {
+      if ( this.rule_observed_on
+        && !moment( this.rule_observed_on.trim( ), "YYYY-MM-DD", true ).isValid( )
+      ) {
+        this.errors.observed_on = I18n.t( "invalid_date" );
+      } else {
+        delete this.errors.observed_on;
+      }
+    } else {
+      delete this.errors.observed_on;
+    }
   }
 
   hasInsufficientRequirements( ) {
@@ -190,7 +224,8 @@ const Project = class Project extends inatjs.Project {
           r => r.operand_id
         ).join( "," );
       }
-    } else {
+    }
+    if ( !this.is_umbrella || this.is_delegated_umbrella ) {
       this.previewSearchParamsObject = _.fromPairs(
         _.map( _.filter( this.rule_preferences, p => p.value !== null ), p => [p.field, p.value] )
       );

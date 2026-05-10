@@ -119,7 +119,7 @@ class ProjectMembershipButton extends React.Component {
                   <div className="col-xs-3 admin-user" key={`admin-${manager.id}`}>
                     <UserImage user={manager.user} />
                     { " " }
-                    <UserLink user={manager.user} />
+                    <UserLink noInativersary user={manager.user} />
                   </div>
                 ) ) }
               </div>
@@ -206,7 +206,6 @@ class ProjectMembershipButton extends React.Component {
             <button
               type="button"
               className="btn btn-default pull-left"
-              confirm="Are you sure?"
               onClick={( ) => {
                 this.setState( { modalVisible: false } );
                 leaveProject( );

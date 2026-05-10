@@ -1,16 +1,21 @@
+# frozen_string_literal: true
+
 class IdentificationsController < ApplicationController
-  before_action :doorkeeper_authorize!, :only => [ :create, :update, :destroy ], :if => lambda { authenticate_with_oauth? }
-  before_action :authenticate_user!, :except => [:by_login], :unless => lambda { authenticated_with_oauth? }
-  before_action :load_user_by_login, :only => [:by_login]
-  load_only = [ :show, :edit, :update, :destroy ]
+  before_action :doorkeeper_authorize!, only: [
+    :create, :update, :destroy, :nominate, :unnominate
+  ], if: -> { authenticate_with_oauth? }
+  before_action :authenticate_user!, except: [:by_login], unless: -> { authenticated_with_oauth? }
+  before_action :load_user_by_login, only: [:by_login]
+  load_only = [:show, :edit, :update, :destroy, :nominate, :unnominate]
   before_action :load_record, only: load_only
-  blocks_spam :only => load_only, :instance => :identification
+  blocks_spam only: load_only, instance: :identification
   check_spam only: [:create, :update], instance: :identification
-  before_action :require_owner, :only => [:edit, :update, :destroy]
-  cache_sweeper :comment_sweeper, :only => [:create, :update, :destroy, :agree]
-  caches_action :bold, :expires_in => 6.hours, :cache_path => Proc.new {|c| 
-    c.params.merge(:sequence => Digest::MD5.hexdigest(c.params[:sequence]))
+  before_action :require_owner, only: [:edit, :update, :destroy]
+  cache_sweeper :comment_sweeper, only: [:create, :update, :destroy, :agree]
+  caches_action :bold, expires_in: 6.hours, cache_path: proc {| c |
+    c.params.merge( sequence: Digest::MD5.hexdigest( c.params[:sequence] ) )
   }
+  prepend_around_action :enable_replica, only: [:by_login]
 
   def index
     per_page = 50
@@ -42,6 +47,7 @@ class IdentificationsController < ApplicationController
     elsif params[:for] == "self"
       search_params[:own_observation] = "true"
     end
+    search_params[:taxon_change_id] = params[:taxon_change_id] if params[:taxon_change_id]
     search_params[:taxon_id] = params[:taxon_id] if params[:taxon_id]
     api_response = INatAPIService.identifications(search_params)
     ids = Identification.where(id: api_response.results.map{ |r| r["id"] }).
@@ -51,7 +57,7 @@ class IdentificationsController < ApplicationController
         :user,
         { taxon: [
           { taxon_names: :place_taxon_names },
-          { photos: [:flags, :file_prefix,] }
+          { photos: [:flags, :file_prefix] }
         ] }
       ).order(id: :desc)
     Observation.preload_for_component(ids.map(&:observation), logged_in: logged_in?)
@@ -65,11 +71,18 @@ class IdentificationsController < ApplicationController
       format.html { render layout: "bootstrap" }
     end
   end
-    
+
   def show
-    redirect_to observation_url(@identification.observation, :anchor => "identification-#{@identification.uuid}")
+    anchor = "identification-#{@identification.uuid}"
+    if params[:_action]
+      anchor += ":#{params[:_action]}"
+    end
+    redirect_to observation_url(
+      @identification.observation,
+      anchor: anchor
+    )
   end
-  
+
   def by_login
     block_if_spammer(@selected_user) && return
     params[:page] = params[:page].to_i
@@ -105,11 +118,24 @@ class IdentificationsController < ApplicationController
       h._source.id
     end
     # fetch the Identification instances and preload
-    instances = Identification.where(id: ids).order(id: :desc).includes(
-      { observation: [ :user, :photos, { taxon: [{taxon_names: :place_taxon_names}, :photos] } ] },
-      { taxon: [{taxon_names: :place_taxon_names}, :photos] },
-      :user
-    )
+    instances = Identification.where( id: ids ).order( id: :desc ).includes( {
+      observation: [
+        { identifications: :moderator_actions },
+        :user,
+        :sounds,
+        { photos: [:file_prefix, :file_extension, :flags, :moderator_actions] },
+        { taxon: [
+          { taxon_names: :place_taxon_names },
+          :photos
+        ] }
+      ]
+    }, {
+      taxon: [
+        { taxon_names: :place_taxon_names },
+        { photos: [:file_prefix, :file_extension, :flags, :moderator_actions] }
+      ]
+    },
+      :user, :moderator_actions )
     # turn the instances into a WillPaginate Collection
     @identifications = WillPaginate::Collection.create(params[:page], limited_per_page,
       result.response.hits.total.value) do |pager|
@@ -175,6 +201,10 @@ class IdentificationsController < ApplicationController
         raise e unless e =~ /index_identifications_on_current/
         duplicate_key_violation = true
       end
+      if @identification.nominate
+        @identification.wait_for_index_refresh = true
+        @identification.nominate_as_exemplar_by( current_user )
+      end
       if @identification.valid? && duplicate_key_violation == false
         format.html do
           flash[:notice] = t(:identification_saved)
@@ -183,13 +213,19 @@ class IdentificationsController < ApplicationController
           end
           redirect_to @identification.observation and return
         end
-        
+
         format.json do
-          @identification.html = view_context.render_in_format(:html, :partial => "identifications/identification")
-          render :json => @identification.to_json(
-            :methods => [:html, :vision], 
-            :include => {
-              :observation => {:methods => [:iconic_taxon_name]}
+          response_methods = [:vision]
+          unless params[:no_html]
+            @identification.html = view_context.render_in_format(
+              :html, partial: "identifications/identification"
+            )
+            response_methods << :html
+          end
+          render json: @identification.to_json(
+            methods: response_methods,
+            include: {
+              observation: { methods: [:iconic_taxon_name] }
             }
           ).html_safe
         end
@@ -253,7 +289,6 @@ class IdentificationsController < ApplicationController
       end
     end
   end
-  
 
   # DELETE identification_url
   def destroy
@@ -347,9 +382,65 @@ class IdentificationsController < ApplicationController
       format.xml { render :xml => xml }
     end
   end
-  
+
+  def nominate
+    @identification.wait_for_index_refresh = true
+    @identification.nominate_as_exemplar_by( current_user )
+    if @identification.exemplar_identification&.errors&.any?
+      msg = t(
+        :there_was_a_problem_nominating_this_identification,
+        error: @identification.exemplar_identification.errors.full_messages.join( ", " )
+      )
+      respond_to do | format |
+        format.html do
+          flash[:error] = msg
+          redirect_to @identification.observation
+        end
+        format.json do
+          render status: :unprocessable_entity, json: {
+            errors: @identification.exemplar_identification.errors.full_messages
+          }
+        end
+      end
+    else
+      respond_to do | format |
+        format.html do
+          redirect_to @record
+        end
+        format.json { head :no_content }
+      end
+    end
+  end
+
+  def unnominate
+    @identification.wait_for_index_refresh = true
+    @identification.unnominate_as_exemplar
+    if @identification.errors.any?
+      msg = t(
+        :there_was_a_problem_saving_your_identification,
+        error: @identification.errors.full_messages.join( ", " )
+      )
+      respond_to do | format |
+        format.html do
+          flash[:error] = msg
+          redirect_to @identification.observation
+        end
+        format.json do
+          render status: :unprocessable_entity, json: { errors: @identification.errors.full_messages }
+        end
+      end
+    else
+      respond_to do | format |
+        format.html do
+          redirect_to @record
+        end
+        format.json { head :no_content }
+      end
+    end
+  end
+
   private
-  
+
   def agree_respond_to_html
     flash[:notice] = t(:identification_saved)
     if params[:return_to]

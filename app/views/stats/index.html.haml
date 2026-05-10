@@ -15,6 +15,7 @@
     });
   = javascript_include_tag :stats, "d3.min"
 .container
+  = render "stats/staff_stats_bar"
   %h2=t :site_stats
   .row.sparks
     .col-md-12
@@ -55,7 +56,7 @@
         %dt=t "views.stats.index.obs_cid_d_to_genus"
         %dd=t "views.stats.index.obs_cid_d_to_genus_desc"
         %dt=t "views.stats.index.obs_1_day"
-        %dt=t "views.stats.index.obs_1_day_desc"
+        %dd=t "views.stats.index.obs_1_day_desc"
   .row
     .col-md-12
       %h3=t :observations_by_app
@@ -67,27 +68,16 @@
         %dd=t "views.stats.index.website_desc_html", url: site_url( "network" )
         %dt=t :iphone
         %dd=t "views.stats.index.iphone_desc_html", url: @site.iphone_app_url
-    .col-md-6
-      %dl.meta
         %dt=t :android
         %dd=t "views.stats.index.android_desc_html", url: @site.android_app_url
+    .col-md-6
+      %dl.meta
+        %dt=t :seek
+        %dd=t "views.stats.index.seek_desc_html", url: wiki_page_url( :seek_app )
+        %dt=t :inat_next
+        %dd=t "views.stats.index.inat_next_desc_html", url: @site.inat_next_app_url
         %dt= t(:other).capitalize
         %dd=t "views.stats.index.other_desc_html", url: wiki_page_url( "developers" )
-  .row
-    .col-md-12
-      %h3=t "views.stats.index.time_to_id_desc"
-      #ttid.stacked.vis
-        .loading.status=t :loading
-    .col-md-6
-      %dl.meta
-        %dt=t "views.stats.index.TTID"
-        %dd=t "views.stats.index.TTID_desc"
-    .col-md-6
-      %dl.meta
-        %dt=t "views.stats.index.TTCID"
-        %dd=t "views.stats.index.TTCID_desc"
-    .col-md-12
-      %p.meta=t "views.stats.index.TTID_note"
   .row
     .col-md-12
       %h3=t :active_users
@@ -128,6 +118,23 @@
         %dt=t :identifiers
         %dd=t "views.stats.index.identifiers_desc"
   .row
+    .col-md-12
+      %h3=t :identifications
+      #identifications.stacked.vis
+        .loading.status=t :loading
+    .col-md-6
+      %dl.meta
+        %dt=t "views.stats.index.ids_last_7_days"
+        %dd=t "views.stats.index.ids_last_7_days_desc"
+        %dt=t "views.stats.index.ids_today"
+        %dd=t "views.stats.index.ids_today_desc"
+    .col-md-6
+      %dl.meta
+        %dt=t "views.stats.index.ids_last_7_days_for_others"
+        %dd=t "views.stats.index.ids_last_7_days_for_others_desc"
+        %dt=t "views.stats.index.ids_today_for_others"
+        %dd=t "views.stats.index.ids_today_for_others_desc"
+  .row
     .col-md-6
       %h3=t :observations
       #observations.stacked.vis
@@ -135,6 +142,29 @@
     .col-md-6
       %h3=t :observations_by_app
       #cumulative-platforms.stacked.vis
+        .loading.status=t :loading
+  .row
+    .col-md-6
+      %h3=t "views.stats.index.today_identified_by_others"
+      #today-identified-by-others.stacked.vis
+        .loading.status=t :loading
+    .col-md-6
+      %h3=t "views.stats.index.today_identified_by_others_by_iconic_taxon"
+      #today-identified-by-others-iconic.stacked.vis
+        .loading.status=t :loading
+  .row
+    .col-md-6
+      %h3=t :identifications
+      #cumulative-identifications.stacked.vis
+        .loading.status=t :loading
+  .row
+    .col-md-6
+      %h3=t "views.stats.index.observations_unknown"
+      #observations-unknown.stacked.vis
+        .loading.status=t :loading
+    .col-md-6
+      %h3=t "views.stats.index.observations_total_unknown_ratio"
+      #observations-total-unknown-ratio.stacked.vis
         .loading.status=t :loading
   .row
     .col-md-6

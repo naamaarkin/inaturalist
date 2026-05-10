@@ -30,6 +30,22 @@ describe ProjectUser, "creation" do
     expect(pu.user.subscriptions.where(:resource_type => "AssessmentSection", :resource_id => as)).to be_blank
   end
 
+  it "should be invalid of the user has blocked the project owner" do
+    user_block = UserBlock.make!
+    project = Project.make!(project_type: 'umbrella', user: user_block.user)
+    project_user = ProjectUser.new(project: project, user: user_block.blocked_user)
+    expect(project_user.save).to be_falsey
+    expect(project_user.errors.first.message).to include("has been blocked")
+  end
+
+  it "should be invalid of the project owner has blocked the user" do
+    user_block = UserBlock.make!
+    project = Project.make!(project_type: 'umbrella', user: user_block.blocked_user)
+    project_user = ProjectUser.new(project: project, user: user_block.user)
+    expect(project_user.save).to be_falsey
+    expect(project_user.errors.first.message).to include("has blocked the owner")
+  end
+
   it "should set curator_coordinate_access to observer by default" do
     expect( ProjectUser.make!.preferred_curator_coordinate_access ).to eq ProjectUser::CURATOR_COORDINATE_ACCESS_OBSERVER
   end
@@ -131,7 +147,11 @@ describe ProjectUser do
       po = make_project_observation
       pu = po.project.project_users.where(:user_id => po.observation.user_id).first
       expect(pu.taxa_count).to eq 0
-      puc = ProjectUser.make!(:project => po.project, :role => ProjectUser::CURATOR)
+      puc = ProjectUser.make!(
+        project: po.project,
+        role: ProjectUser::CURATOR,
+        user: make_user_with_privilege( UserPrivilege::INTERACTION )
+      )
       i = without_delay do
         Identification.make!(:observation => po.observation, :user => puc.user, :taxon => t)
       end
@@ -156,9 +176,9 @@ describe ProjectUser do
       }.to change(project_user, :observations_count).by(1)
     end
   end
-  
+
   describe "updating role" do
-    before(:each) do
+    before( :each ) do
       @project_user = ProjectUser.make!
       Delayed::Job.delete_all
       @now = Time.now
@@ -167,32 +187,32 @@ describe ProjectUser do
     after { disable_has_subscribers }
 
     it "should queue a job to update identifications if became curator" do
-      @project_user.update(:role => ProjectUser::CURATOR)
-      jobs = Delayed::Job.where("created_at >= ?", @now)
-      expect(jobs.select{|j| j.handler =~ /Project.*update_curator_idents_on_make_curator/m}).not_to be_blank
+      @project_user.update( role: ProjectUser::CURATOR )
+      jobs = Delayed::Job.all
+      expect( jobs.select {| j | j.handler =~ /Project.*update_curator_idents_on_make_curator/m } ).not_to be_blank
     end
-    
+
     it "should queue a job to update identifications if became manager" do
-      @project_user.update(:role => ProjectUser::MANAGER)
-      jobs = Delayed::Job.where("created_at >= ?", @now)
-      expect(jobs.select{|j| j.handler =~ /Project.*update_curator_idents_on_make_curator/m}).not_to be_blank
+      @project_user.update( role: ProjectUser::MANAGER )
+      jobs = Delayed::Job.all
+      expect( jobs.select {| j | j.handler =~ /Project.*update_curator_idents_on_make_curator/m } ).not_to be_blank
     end
-    
+
     it "should queue a job to update identifications if no longer curator" do
-      @project_user.update(:role => ProjectUser::CURATOR)
+      @project_user.update( role: ProjectUser::CURATOR )
       Delayed::Job.delete_all
-      @project_user.update(:role => nil)
-      jobs = Delayed::Job.where("created_at >= ?", @now)
-      expect(jobs.select{|j| j.handler =~ /Project.*update_curator_idents_on_remove_curator/m}).not_to be_blank
+      @project_user.update( role: nil )
+      jobs = Delayed::Job.all
+      expect( jobs.select {| j | j.handler =~ /Project.*update_curator_idents_on_remove_curator/m } ).not_to be_blank
     end
-    
+
     it "should not queue a job to update identifications if moving btwn manager and curator" do
-      @project_user.update(:role => ProjectUser::CURATOR)
+      @project_user.update( role: ProjectUser::CURATOR )
       Delayed::Job.delete_all
-      @project_user.update(:role => ProjectUser::MANAGER)
-      jobs = Delayed::Job.where("created_at >= ?", @now)
-      expect(jobs.select{|j| j.handler =~ /Project.*update_curator_idents_on_remove_curator/m}).to be_blank
-      expect(jobs.select{|j| j.handler =~ /Project.*update_curator_idents_on_make_curator/m}).to be_blank
+      @project_user.update( role: ProjectUser::MANAGER )
+      jobs = Delayed::Job.all
+      expect( jobs.select {| j | j.handler =~ /Project.*update_curator_idents_on_remove_curator/m } ).to be_blank
+      expect( jobs.select {| j | j.handler =~ /Project.*update_curator_idents_on_make_curator/m } ).to be_blank
     end
 
     it "should notify project members of new curators" do

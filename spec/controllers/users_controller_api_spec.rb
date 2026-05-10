@@ -45,9 +45,11 @@ shared_examples_for "a signed in UsersController" do
         user.update( preferred_observation_license: Observation::CC_BY )
         o = Observation.make!( user: user )
         expect( o.license ).to eq Observation::CC_BY
-        put :update, format: :json, params: {
-          id: user.id, user: { preferred_observation_license: Observation::CC0, make_observation_licenses_same: "1" }
-        }
+        after_delayed_job_finishes( ignore_run_at: true ) do
+          put :update, format: :json, params: {
+            id: user.id, user: { preferred_observation_license: Observation::CC0, make_observation_licenses_same: "1" }
+          }
+        end
         o.reload
         expect( o.license ).to eq Observation::CC0
       end
@@ -66,14 +68,16 @@ shared_examples_for "a signed in UsersController" do
       end
     end
     describe "photo license preference" do
-      it "should update past observations if requested" do
+      it "should update past photos if requested" do
         user.update( preferred_photo_license: Observation::CC_BY )
         p = LocalPhoto.make!( user: user )
         expect( p.license_code ).to eq Observation::CC_BY
-        put :update, format: :json, params: { id: user.id, user: {
-          preferred_photo_license: Observation::CC0,
-          make_photo_licenses_same: "1"
-        } }
+        after_delayed_job_finishes( ignore_run_at: true ) do
+          put :update, format: :json, params: { id: user.id, user: {
+            preferred_photo_license: Observation::CC0,
+            make_photo_licenses_same: "1"
+          } }
+        end
         p.reload
         expect( p.license_code ).to eq Observation::CC0
       end
@@ -275,7 +279,7 @@ shared_examples_for "a signed in UsersController" do
 end
 
 describe UsersController, "oauth authentication" do
-  let( :user ) { User.make! }
+  let( :user ) { make_user_with_privilege( UserPrivilege::INTERACTION ) }
   let( :token ) do
     Doorkeeper::AccessToken.create!(
       application: OauthApplication.make!,
@@ -442,6 +446,76 @@ describe UsersController, "oauth authentication with the account_delete scope" d
       expect( response.code.to_i ).to be >= 400
       Delayed::Worker.new.work_off
       expect( User.find_by_id( user.id ) ).not_to be_blank
+    end
+  end
+end
+
+describe UsersController, "email_available" do
+  describe "with valid application token" do
+    before do
+      request.env["HTTP_AUTHORIZATION"] = JsonWebToken.applicationToken
+    end
+
+    def expect_email_available_to_eq( email, value )
+      get :email_available, format: :json, params: { email: email }
+      expect( response ).to be_successful
+      json = JSON.parse( response.body )
+      expect( json["available"] ).to eq value
+    end
+
+    it "should respond in the affirmative if email is available" do
+      email = Faker::Internet.email
+      expect( User.find_by_email( email ) ).to be_blank
+      expect_email_available_to_eq( email, true )
+    end
+
+    it "should respond in the affirmative if email is available but otherwise invalid" do
+      email = "not an email"
+      expect( User.find_by_email( email ) ).to be_blank
+      expect_email_available_to_eq( email, true )
+    end
+
+    it "should respond in the negative if email is not available" do
+      user = create( :user )
+      expect( user ).to be_persisted
+      expect_email_available_to_eq( user.email, false )
+    end
+
+    it "should ignore case" do
+      email = Faker::Internet.email.capitalize
+      expect( email ).not_to eq email.downcase
+      create( :user, email: email )
+      expect_email_available_to_eq( email, false )
+    end
+
+    it "should respond with unprocessable entity if email param is blank" do
+      get :email_available, format: :json
+      expect( response.status ).to eq 422
+    end
+  end
+
+  describe "without valid application token" do
+    it "should respond with unauthorized" do
+      get :email_available, format: :json, params: { email: Faker::Internet.email }
+      expect( response ).to be_unauthorized
+    end
+
+    it "should respond with forbidden with a non-application token" do
+      user = create :user
+      request.env["HTTP_AUTHORIZATION"] = JsonWebToken.encode( user_id: user.id )
+      get :email_available, format: :json, params: { email: Faker::Internet.email }
+      expect( response ).to be_forbidden
+    end
+  end
+
+  describe "with a bad application token" do
+    before do
+      request.env["HTTP_AUTHORIZATION"] = "#{JsonWebToken.applicationToken}bad"
+    end
+
+    it "should respond with unauthorized" do
+      get :email_available, format: :json, params: { email: Faker::Internet.email }
+      expect( response ).to be_unauthorized
     end
   end
 end

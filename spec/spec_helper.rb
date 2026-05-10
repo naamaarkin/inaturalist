@@ -45,12 +45,14 @@ RSpec.configure do | config |
     Elasticsearch::Model.client.ping
     es_classes = [
       ControlledTerm,
+      ExemplarIdentification,
       Identification,
       ObservationField,
       Observation,
       Place,
       Project,
       Taxon,
+      TaxonPhoto,
       UpdateAction,
       User
     ].freeze
@@ -73,6 +75,7 @@ RSpec.configure do | config |
     Delayed::Job.delete_all
     make_default_site
     CONFIG.has_subscribers = :disabled
+    CONFIG.content_creation_restriction_days = nil
   end
 
   config.after( :each ) do
@@ -239,26 +242,46 @@ end
 # Turn on elastic indexing for certain models. We do this selectively b/c
 # updating ES slows down the specs.
 def enable_elastic_indexing( *args )
+  options = args.last.is_a?( Hash ) ? args.pop : {}
   classes = [args].flatten
   classes.each do | klass |
-    try_and_try_again( Elasticsearch::Transport::Transport::Errors::Conflict, sleep: 0.1, tries: 20 ) do
+    try_and_try_again(
+      [
+        Elastic::Transport::Transport::Errors::Conflict,
+        Faraday::ConnectionFailed
+      ], sleep: 0.1, tries: 20
+    ) do
       klass.__elasticsearch__.client.delete_by_query( index: klass.index_name, body: { query: { match_all: {} } } )
     end
-    klass.send :after_save, :elastic_index!
+    next if options[:use_transactional_fixtures] == false
+
+    unless klass == TaxonPhoto
+      klass.send :after_save, :elastic_index!
+      klass.send :after_touch, :elastic_index!
+    end
     klass.send :after_destroy, :elastic_delete!
-    klass.send :after_touch, :elastic_index!
   end
 end
 
 # Turn off elastic indexing for certain models. Make sure to do this after
 # specs if you used enable_elastic_indexing
 def disable_elastic_indexing( *args )
+  options = args.last.is_a?( Hash ) ? args.pop : {}
   classes = [args].flatten
   classes.each do | klass |
-    klass.send :skip_callback, :save, :after, :elastic_index!
-    klass.send :skip_callback, :destroy, :after, :elastic_delete!
-    klass.send :skip_callback, :touch, :after, :elastic_index!
-    try_and_try_again( Elasticsearch::Transport::Transport::Errors::Conflict, sleep: 0.1, tries: 20 ) do
+    unless options[:use_transactional_fixtures] == false
+      unless klass == TaxonPhoto
+        klass.send :skip_callback, :save, :after, :elastic_index!
+        klass.send :skip_callback, :touch, :after, :elastic_index!
+      end
+      klass.send :skip_callback, :destroy, :after, :elastic_delete!
+    end
+    try_and_try_again(
+      [
+        Elastic::Transport::Transport::Errors::Conflict,
+        Faraday::ConnectionFailed
+      ], sleep: 0.1, tries: 20
+    ) do
       klass.__elasticsearch__.client.delete_by_query( index: klass.index_name, body: { query: { match_all: {} } } )
     end
   end

@@ -336,17 +336,12 @@
               "<span class='#{css_class}'>#{@without_observations_taxon.name}</span>"
             end
           -%>
-          <%= hidden_field_tag :without_taxon_id, @without_observations_taxon.try(:id),
+          <%= hidden_field_tag :without_taxon_id, @without_observations_taxon.try(:id) || @without_taxon_id,
             :alt => alt_attr,
             :rel => (@without_observations_taxon ? taxon_image_url(@without_observations_taxon) : nil) %>
         </div>
       </div>
     </div>
-    <% if @filters_open -%>
-      <script type="text/javascript" charset="utf-8">
-        $( "#filters input[name=without_taxon_name]" ).taxonAutocomplete( { idEl: $( "#without_taxon_id" ) } );
-      </script>
-    <% end -%>
   </div>
 <% end %>
 
@@ -572,6 +567,7 @@
 <input type="hidden" name="list_id" id="list_id" value="<%= @list.try(:id) %>"/>
 <input type="hidden" name="filters_open" id="filters_open" value="<%= @filters_open == false ? 'false' : 'true' %>"/>
 <input type="hidden" name="view" id="view_input" value="<%= @view %>"/>
+<input type="hidden" name="week" id="week"/>
 
 <% if @spam -%>
   <input type="hidden" name="spam" id="spam" value="<%= @spam %>" />

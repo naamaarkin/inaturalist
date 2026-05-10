@@ -87,7 +87,7 @@ describe Users::RegistrationsController, "create" do
   end
 
   it "should assign a user to a site using inat_site_id param" do
-    site1 = Site.make!( url: "http://test.host" )
+    Site.make!( url: "http://test.host" )
     site2 = Site.make!
     u = User.make
     post :create, params: { inat_site_id: site2.id, user: {
@@ -106,7 +106,7 @@ describe Users::RegistrationsController, "create" do
   end
 
   it "should give the user the locale of the site specified by inat_site_id" do
-    site1 = Site.make!( url: "http://test.host" )
+    Site.make!( url: "http://test.host" )
     site2 = Site.make!( preferred_locale: "es-MX" )
     u = User.make
     post :create, params: { inat_site_id: site2.id, user: {
@@ -168,7 +168,8 @@ describe Users::RegistrationsController, "create" do
   it "should set the oauth_application_id based on the Seek User-Agent" do
     a = OauthApplication.make!( name: "iNaturalist Android App" )
     request.env["HTTP_USER_AGENT"] =
-      "iNaturalist/1.23.4 (Build 493; Android 4.14.190-20973144-abA715WVLU2CUB5 A715WVLU2CUB5; SDK 30; a71 SM-A715W a71cs; OS Version 11)"
+      "iNaturalist/1.23.4 (Build 493; Android 4.14.190-20973144-abA715WVLU2CUB5 A715WVLU2CUB5; SDK 30; " \
+        "a71 SM-A715W a71cs; OS Version 11)"
     u = register_user_with_params
     expect( u.oauth_application_id ).to eq a.id
   end
@@ -189,5 +190,65 @@ describe Users::RegistrationsController, "create" do
   it "should accept pi_consent" do
     u = register_user_with_params( pi_consent: true )
     expect( u.pi_consent_at ).not_to be_blank
+  end
+
+  it "should not create UserSignup if no browser ID" do
+    u = register_user_with_params
+    expect( u ).not_to be_nil
+    signup = UserSignup.find_by_user_id( u.id )
+    expect( signup ).to be_nil
+  end
+
+  it "should create UserSignup with browser ID" do
+    u = register_user_with_params( browser_id: "browser123" )
+    expect( u ).not_to be_nil
+    signup = UserSignup.find_by_user_id( u.id )
+    expect( signup ).not_to be_nil
+    expect( signup.browser_id ).to eq( "browser123" )
+    expect( signup.ip ).to eq( u.last_ip )
+    expect( signup.mobile ).to be false
+  end
+
+  it "should create UserSignup with incognito mode true" do
+    u = register_user_with_params( browser_id: "browser123", incognito_mode: true )
+    expect( u ).not_to be_nil
+    signup = UserSignup.find_by_user_id( u.id )
+    expect( signup ).not_to be_nil
+    expect( signup.incognito ).to be true
+  end
+
+  it "should create UserSignup with incognito mode false" do
+    u = register_user_with_params( browser_id: "browser123", incognito_mode: false )
+    expect( u ).not_to be_nil
+    signup = UserSignup.find_by_user_id( u.id )
+    expect( signup ).not_to be_nil
+    expect( signup.incognito ).to be false
+  end
+
+  it "should not create UserSignup if no installation ID in mobile mode" do
+    allow( Ambidextrous ).to receive( :is_mobile_app ).and_return( true )
+    u = register_user_with_params
+    expect( u ).not_to be_nil
+    signup = UserSignup.find_by_user_id( u.id )
+    expect( signup ).to be_nil
+  end
+
+  it "should create UserSignup with installation ID in mobile mode" do
+    allow( controller ).to receive( :is_mobile_app? ).and_return( true )
+    request.headers["HTTP_X_INSTALLATION_ID"] = "installation123"
+    u = User.make
+    post :create, format: "json", params: { user: {
+      login: u.login,
+      password: "zomgbar",
+      password_confirmation: "zomgbar",
+      email: u.email
+    } }
+    u_created = User.find_by_login( u.login )
+    expect( u_created ).not_to be_nil
+    signup = UserSignup.find_by_user_id( u_created.id )
+    expect( signup ).not_to be_nil
+    expect( signup.browser_id ).to eq( "installation123" )
+    expect( signup.ip ).to eq( u_created.last_ip )
+    expect( signup.mobile ).to be true
   end
 end

@@ -6,7 +6,7 @@ import { handleCheckboxChange } from "../ducks/user_settings";
 
 function mapStateToProps( state ) {
   return {
-    profile: state.profile
+    userSettings: state.userSettings
   };
 }
 
@@ -33,7 +33,10 @@ function mapDispatchToProps( dispatch ) {
       } ) );
     },
     showModalDescription: ( description, options = { } ) => dispatch(
-      showAlert( description, { title: options.title || I18n.t( "about" ) } )
+      showAlert( description, {
+        ...options,
+        title: options.title || I18n.t( "about" )
+      } )
     )
   };
 }

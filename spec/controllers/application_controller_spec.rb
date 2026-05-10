@@ -161,9 +161,39 @@ describe ApplicationController do
         expect( I18n.locale.to_s ).to eq "pt-BR"
       end
     end
-  end
 
-  describe WelcomeController do
+    describe "set_site" do
+      let!( :site2 ) { Site.make!( url: "https://testingsetsite" ) }
+
+      it "uses default site by default" do
+        get :index
+        expect( assigns( :site ) ).to eq Site.default
+      end
+
+      it "can set site via inat_site_id parameter" do
+        get :index, params: { inat_site_id: site2.id }
+        expect( assigns( :site ) ).to eq site2
+      end
+
+      it "can set site via request host" do
+        request.headers["Host"] = "testingsetsite"
+        get :index
+        expect( assigns( :site ) ).to eq site2
+      end
+
+      it "can set site via request x-forwarded-host" do
+        request.headers["X-Forwarded-Host"] = "testingsetsite"
+        get :index
+        expect( assigns( :site ) ).to eq site2
+      end
+
+      it "reverts to default host if requested host not found" do
+        request.headers["X-Forwarded-Host"] = "test'); select 1; --"
+        get :index
+        expect( assigns( :site ) ).to eq Site.default
+      end
+    end
+
     describe "network affiliation prompt" do
       describe "for user in partner site place" do
         let( :place ) { make_place_with_geom }
@@ -220,6 +250,229 @@ describe ApplicationController do
           expect( session[:potential_site] ).to be_blank
         end
       end
+    end
+
+    describe "sign_out_suspended_users" do
+      it "signs out a suspended user" do
+        user = User.make!( suspended_at: Time.now )
+        sign_in( user )
+        get :index
+        expect( controller.send( :current_user ) ).to be_nil
+      end
+
+      it "does not sign out a non-suspended user" do
+        user = User.make!
+        sign_in( user )
+        get :index
+        expect( controller.send( :current_user ) ).to eq user
+      end
+
+      it "does not sign out a user whose timed suspension has expired" do
+        user = User.make!( suspended_at: 2.days.ago, suspended_until: 1.day.ago )
+        sign_in( user )
+        get :index
+        expect( controller.send( :current_user ) ).to eq user
+      end
+    end
+  end
+
+  describe "sign_out_suspended_users" do
+    describe ObservationsController do
+      elastic_models( Observation )
+
+      describe "for JSON requests" do
+        it "returns 401 with suspension details for a suspended user" do
+          user = User.make!( suspended_at: Time.now, suspension_reason: "spam", suspended_until: 1.week.from_now )
+          sign_in( user )
+          get :index, format: :json
+          expect( response.status ).to eq 401
+          json = JSON.parse( response.body )
+          expect( json["error"] ).not_to be_blank
+        end
+
+        it "includes suspension reason in error for timed suspension" do
+          user = User.make!( suspended_at: Time.now, suspension_reason: "spam", suspended_until: 1.week.from_now )
+          sign_in( user )
+          get :index, format: :json
+          json = JSON.parse( response.body )
+          expect( json["error"] ).to match( /spam/ )
+        end
+
+        it "does not include reason for indefinite suspension" do
+          user = User.make!( suspended_at: Time.now, suspension_reason: "spam" )
+          sign_in( user )
+          get :index, format: :json
+          json = JSON.parse( response.body )
+          expect( json["error"] ).not_to match( /spam/ )
+        end
+
+        it "does not return an error for a non-suspended user" do
+          user = User.make!
+          sign_in( user )
+          get :index, format: :json
+          expect( response ).to be_successful
+        end
+
+        it "does not return an error for a user whose timed suspension has expired" do
+          user = User.make!( suspended_at: 2.days.ago, suspended_until: 1.day.ago )
+          sign_in( user )
+          get :index, format: :json
+          expect( response ).to be_successful
+        end
+      end
+
+      describe "for OAuth requests" do
+        let( :user ) { User.make! }
+        let( :app ) { OauthApplication.make! }
+        before do
+          ActionController::Base.allow_forgery_protection = true
+        end
+        after { ActionController::Base.allow_forgery_protection = false }
+
+        # Token requests return 400 for suspended users,
+        # other API requests for suspended users return 401
+        it "returns 401 for a suspended OAuth user whose token was revoked" do
+          token = Doorkeeper::AccessToken.create!(
+            application: app,
+            resource_owner_id: user.id,
+            scopes: Doorkeeper.configuration.default_scopes
+          )
+          user.suspend!( reason: "spam" )
+          token.reload
+          expect( token ).to be_revoked
+          request.env["HTTP_AUTHORIZATION"] = "Bearer #{token.token}"
+          post :create, format: :json
+          expect( response.status ).to eq 401
+        end
+
+        it "does not return 401 for a non-suspended OAuth user" do
+          token = Doorkeeper::AccessToken.create!(
+            application: app,
+            resource_owner_id: user.id,
+            scopes: Doorkeeper.configuration.default_scopes
+          )
+          request.env["HTTP_AUTHORIZATION"] = "Bearer #{token.token}"
+          get :index, format: :json
+          expect( response ).to be_successful
+        end
+      end
+    end
+  end
+
+  describe "allow_external_iframes" do
+    describe ObservationsController do
+      describe "Content-Security-Policy header" do
+        it "Content-Security-Policy is set by default" do
+          expect_any_instance_of( ActionDispatch::ContentSecurityPolicy ).
+            to_not receive( :frame_ancestors )
+          # the Observations#index endpoint does not call allow_external_iframes
+          # and impliments the default content security policy
+          get :index, format: :html
+          expect( request.content_security_policy.directives ).
+            to include( "frame-ancestors" => ["'self'"] )
+        end
+
+        it "Content-Security-Policy is set by default" do
+          expect_any_instance_of( ActionDispatch::ContentSecurityPolicy ).
+            to receive( :frame_ancestors ).with( "https:" )
+          # the Observations#stats endpoint calls allow_external_iframes
+          get :stats, format: :html
+        end
+      end
+    end
+  end
+
+  describe "cannot_have_content_creation_restrictions" do
+    shared_examples_for "access is denied" do
+      describe TaxonNamesController do
+        let( :taxon ) { Taxon.make! }
+        before do
+          if user
+            allow( CONFIG ).to receive( :content_creation_restriction_days ).and_return( 1 )
+            sign_in( user )
+          end
+        end
+
+        it "redirects HTML requests with a flash message" do
+          get :new, format: :html, params: { id: taxon.id }
+          expect( response ).to be_redirect
+          expect( response ).to redirect_to( root_url )
+          expect( flash[:notice] ).to eq I18n.t( :you_dont_have_permission_to_do_that )
+        end
+
+        it "returns an error for JS requests" do
+          get :new, format: :js, params: { id: taxon.id }
+          expect( response.response_code ).to eq 403
+          expect( JSON.parse( response.body ) ).to eq( {
+            "error" => I18n.t( :you_dont_have_permission_to_do_that )
+          } )
+        end
+
+        it "returns an error for JSON requests" do
+          get :new, format: :json, params: { id: taxon.id }
+          expect( response.response_code ).to eq 403
+          expect( JSON.parse( response.body ) ).to eq( {
+            "error" => I18n.t( :you_dont_have_permission_to_do_that )
+          } )
+        end
+
+        it "renders an error for all other formats" do
+          get :new, format: :nonsense, params: { id: taxon.id }
+          expect( response.response_code ).to eq 403
+          expect( response.body ).to eq I18n.t( :you_dont_have_permission_to_do_that )
+        end
+      end
+    end
+
+    shared_examples_for "access is allowed" do
+      describe TaxonNamesController do
+        let( :taxon ) { Taxon.make! }
+        before do
+          if user
+            allow( CONFIG ).to receive( :content_creation_restriction_days ).and_return( 1 )
+            sign_in( user )
+          end
+        end
+
+        it "redirects HTML requests with a flash message" do
+          get :new, format: :html, params: { id: taxon.id }
+          expect( response.response_code ).to eq 200
+        end
+
+        it "returns an error for JS requests" do
+          get :new, format: :js, params: { id: taxon.id }
+          expect( response.response_code ).to eq 200
+        end
+
+        it "renders an error for all other formats" do
+          get :new, format: :nonsense, params: { id: taxon.id }
+          expect( response.response_code ).to eq 200
+        end
+      end
+    end
+
+    describe "new users" do
+      let( :user ) { User.make!( created_at: Time.now ) }
+      it_behaves_like "access is denied"
+    end
+
+    describe "admins" do
+      let( :user ) { make_admin }
+      it_behaves_like "access is allowed"
+    end
+
+    describe "curators" do
+      let( :user ) { make_curator }
+      it_behaves_like "access is allowed"
+    end
+
+    describe "older users with organizer privilege" do
+      let( :user ) do
+        user = User.make!( created_at: 2.days.ago )
+        UserPrivilege.make!( privilege: UserPrivilege::ORGANIZER, user: user )
+        user
+      end
+      it_behaves_like "access is allowed"
     end
   end
 end

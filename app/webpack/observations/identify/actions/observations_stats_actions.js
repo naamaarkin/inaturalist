@@ -1,3 +1,4 @@
+import _ from "lodash";
 import iNaturalistJS from "inaturalistjs";
 import { paramsForSearch } from "../reducers/search_params_reducer";
 
@@ -18,19 +19,35 @@ function resetObservationsStats( ) {
   };
 }
 
+function prepareParamersForAPIRequest( apiParams ) {
+  _.each( apiParams, ( v, k ) => {
+    if ( ( _.isNull( v ) || v === "" || v === "any" ) && !_.startsWith( k, "field:" ) ) {
+      delete apiParams[k];
+    } else if ( /license$/.test( k ) ) {
+      apiParams[k] = _.toLower( v );
+    }
+  } );
+  delete apiParams.createdDateType;
+  return apiParams;
+}
+
 function fetchObservationsStats( force = false ) {
   return function ( dispatch, getState ) {
     const s = getState();
+    if ( !s.observationsStats ) {
+      return;
+    }
     if ( !force && (
       s.observationsStats.status === "loading" || s.observationsStats.status === "loaded"
     ) ) {
       return;
     }
-    const apiParams = {
+    let apiParams = {
       viewer_id: s.config.currentUser ? s.config.currentUser.id : null,
       ttl: -1,
       ...paramsForSearch( s.searchParams.params )
     };
+    apiParams = prepareParamersForAPIRequest( apiParams );
     const reviewedParams = {
       ...apiParams,
       reviewed: true,
@@ -90,5 +107,6 @@ export {
   fetchObservationsStats,
   incrementReviewed,
   decrementReviewed,
-  resetObservationsStats
+  resetObservationsStats,
+  prepareParamersForAPIRequest
 };

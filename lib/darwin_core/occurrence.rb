@@ -1,5 +1,7 @@
 # frozen_string_literal: true
 
+# rubocop:disable Naming/MethodName
+
 module DarwinCore
   class Occurrence
     # Terms are tuples of (
@@ -16,7 +18,9 @@ module DarwinCore
     ANNOTATION_TERMS = [
       ["sex", "http://rs.tdwg.org/dwc/terms/sex", nil, "gbif_sex", "http://rs.gbif.org/vocabulary/gbif/sex"],
       ["lifeStage", "http://rs.tdwg.org/dwc/terms/lifeStage", nil, "gbif_lifeStage", "http://rs.gbif.org/vocabulary/gbif/life_stage"],
-      ["reproductiveCondition", "http://rs.tdwg.org/dwc/terms/reproductiveCondition", nil]
+      ["reproductiveCondition", "http://rs.tdwg.org/dwc/terms/reproductiveCondition", nil],
+      ["vitality", "http://rs.tdwg.org/dwc/terms/vitality", nil],
+      ["dynamicProperties", "http://rs.tdwg.org/dwc/terms/dynamicProperties", nil]
     ].freeze
     TERMS = [
       %w(id id),
@@ -34,7 +38,7 @@ module DarwinCore
       %w(recordedByID http://rs.tdwg.org/dwc/terms/recordedByID),
       %w(identifiedBy http://rs.tdwg.org/dwc/terms/identifiedBy),
       %w(identifiedByID http://rs.tdwg.org/dwc/terms/identifiedByID),
-      %w(captive https://www.inaturalist.org/schema/terms/captive),
+      %w(captive https://www.inaturalist.org/terminology/captive_cultivated),
       %w(eventDate http://rs.tdwg.org/dwc/terms/eventDate),
       %w(eventTime http://rs.tdwg.org/dwc/terms/eventTime),
       %w(verbatimEventDate http://rs.tdwg.org/dwc/terms/verbatimEventDate),
@@ -60,7 +64,8 @@ module DarwinCore
       ["license", "http://purl.org/dc/terms/license", nil, "dwc_license"],
       %w(rightsHolder http://purl.org/dc/terms/rightsHolder),
       %w(inaturalistLogin http://xmlns.com/foaf/0.1/nick),
-      %w(publishingCountry http://rs.gbif.org/terms/1.0/publishingCountry)
+      %w(publishingCountry http://rs.gbif.org/terms/1.0/publishingCountry),
+      %w(projectId http://rs.gbif.org/terms/1.0/projectId)
     ] + ANNOTATION_TERMS
     cattr_accessor :annotation_controlled_attributes do
       {}
@@ -69,15 +74,24 @@ module DarwinCore
 
     ALA_EXTRA_TERMS = [
       %w(identificationVerificationStatus http://rs.tdwg.org/dwc/terms/identificationVerificationStatus),
-      %w(numIdentificationAgreements https://www.inaturalist.org/terms/numIdentificationAgreements),
-      %w(numIdentificationDisagreements https://www.inaturalist.org/terms/numIdentificationDisagreements),
-      %w(positioningDevice https://www.inaturalist.org/terms/positioningDevice),
-      %w(positioningMethod https://www.inaturalist.org/terms/positioningMethod)
+      %w(numIdentificationAgreements https://www.inaturalist.org/terminology/num_identification_agreements),
+      %w(numIdentificationDisagreements https://www.inaturalist.org/terminology/num_identification_disagreements),
+      %w(positioningDevice https://www.inaturalist.org/terminology/positioning_device),
+      %w(positioningMethod https://www.inaturalist.org/terminology/positioning_method)
     ].freeze
 
     OTHER_CATALOGUE_NUMBERS_TERM = %w(
       otherCatalogueNumbers http://rs.tdwg.org/dwc/terms/otherCatalogNumbers
-    )
+    ).freeze
+
+    COUNTY_TERM = %w(
+      county http://rs.tdwg.org/dwc/terms/county
+    ).freeze
+
+    PUBLIC_COORDINATES_TERMS = [
+      %w(publicLatitude https://www.inaturalist.org/terminology/latitude),
+      %w(publicLongitude https://www.inaturalist.org/terminology/longitude)
+    ].freeze
 
     GBIF_LIFE_STAGES = %w(
       adult
@@ -142,8 +156,14 @@ module DarwinCore
     ANNOTATION_CONTROLLED_TERM_MAPPING = {
       sex: "Sex",
       lifeStage: "Life Stage",
-      reproductiveCondition: "Plant Phenology"
-    }
+      reproductiveCondition: "Flowers and Fruits",
+      vitality: "Alive or Dead"
+    }.freeze
+
+    ANNOTATION_ATTRIBUTES_FOR_DYNAMIC_PROPERTIES = [
+      "Evidence of Presence",
+      "Leaves"
+    ].freeze
 
     # Extend observation with DwC methods.  For reasons unclear to me, url
     # methods are protected if you instantiate a view *outside* a model, but not
@@ -179,7 +199,6 @@ module DarwinCore
         @dwc_use_community_taxon = true
       end
 
-      # rubocop:disable Naming/MethodName
       def occurrenceID
         uri
       end
@@ -213,14 +232,24 @@ module DarwinCore
       end
 
       def informationWithheld
-        if @show_private_coordinates
-          nil
-        elsif geoprivacy_private?
-          "Coordinates hidden at the request of the observer"
+        if geoprivacy_private?
+          if @show_private_coordinates
+            "Coordinates included here but private on iNaturalist"
+          else
+            "Coordinates hidden at the request of the observer"
+          end
         elsif geoprivacy_obscured?
-          "Coordinate uncertainty increased to #{public_positional_accuracy}m at the request of the observer"
+          if @show_private_coordinates
+            "Coordinates not obscured here but publicly obscured on iNaturalist"
+          else
+            "Coordinate uncertainty increased to #{public_positional_accuracy}m at the request of the observer"
+          end
         elsif coordinates_obscured?
-          "Coordinate uncertainty increased to #{public_positional_accuracy}m to protect threatened taxon"
+          if @show_private_coordinates
+            "Coordinates not obscured here but publicly obscured on iNaturalist due to taxon geoprivacy"
+          else
+            "Coordinate uncertainty increased to #{public_positional_accuracy}m to protect threatened taxon"
+          end
         end
       end
 
@@ -351,6 +380,12 @@ module DarwinCore
         observations_places.map( &:place ).compact.detect {| p | p.admin_level == Place::STATE_LEVEL }.try( :name )
       end
 
+      def county
+        return if latitude.blank?
+
+        place_county_name
+      end
+
       def identificationID
         first_improving_identification.try( :id )
       end
@@ -465,7 +500,35 @@ module DarwinCore
         end.join( "|" )
         v == "cannot be determined" ? nil : v
       end
-      # rubocop:enable Naming/MethodName
+
+      # dynamicProperties can be used to list additional measurements, facts, etc in a format
+      # such as JSON. Currently the values for selected annotation categories, those in
+      # ANNOTATION_ATTRIBUTES_FOR_DYNAMIC_PROPERTIES, are included as a JSON string
+      def dynamicProperties
+        dynamic_properties = {}
+        ANNOTATION_ATTRIBUTES_FOR_DYNAMIC_PROPERTIES.each do | label |
+          values = winning_annotations_for_term( label ).map do | annotation |
+            annotation.controlled_value.label.downcase
+          end
+          next if values.empty?
+
+          dynamic_property_label = label.downcase.tr( " ", "_" ).camelize( :lower )
+          dynamic_properties[dynamic_property_label] = values.size == 1 ? values.first : values.sort
+        end
+        return nil if dynamic_properties.blank?
+
+        dynamic_properties.to_json
+      end
+
+      def vitality
+        winning_value = winning_annotation_value_for_term( "vitality" )
+        case winning_value
+        when "cannot be determined"
+          "undetermined"
+        else
+          winning_value
+        end
+      end
 
       def otherCatalogueNumbers
         uuid
@@ -502,6 +565,29 @@ module DarwinCore
 
         site.place.code.upcase
       end
+
+      def projectId
+        projects.map {| project | FakeView.project_url( project ) }.join( "|" )
+      end
+
+      # public latitude for when decimalLatitude contains the private latitude
+      def publicLatitude
+        return unless @show_private_coordinates
+        return if private_latitude.blank?
+        return if latitude.blank?
+
+        latitude.to_f
+      end
+
+      # public longitude for when decimalLongitude contains the private longitude
+      def publicLongitude
+        return unless @show_private_coordinates
+        return if private_longitude.blank?
+        return if longitude.blank?
+
+        longitude.to_f
+      end
     end
   end
 end
+# rubocop:enable Naming/MethodName

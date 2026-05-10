@@ -1,42 +1,66 @@
+# frozen_string_literal: true
+
 class SiteStatistic < ApplicationRecord
+  STAT_TYPES = [
+    :observations, :users, :projects,
+    :taxa, :identifications, :identifier, :platforms,
+    :platforms_cumulative
+  ]
 
-  STAT_TYPES = [ :observations, :users, :projects,
-    :taxa, :identifications, :identifier, :platforms, :platforms_cumulative ]
-
-  def self.generate_stats_for_day(at_time = Time.now, options = {})
-    at_time = at_time.utc.end_of_day
-    if options[:force]
-      SiteStatistic.where("DATE(created_at) = DATE(?)", at_time.utc).delete_all
-    elsif stats_generated_for_day?(at_time)
-      return
-    end
-    sleep 1
-    SiteStatistic.create!(
-      data: Hash[
-        STAT_TYPES.map{ |st| [ st, send("#{ st }_stats", at_time) ] }
-      ],
-      created_at: at_time.beginning_of_day
-    )
+  def self.record_for( stat_date: nil )
+    records = SiteStatistic.order( created_at: :desc )
+    record = record_for_date( records, stat_date )
+    [record, records.to_a]
   end
 
-  def self.generate_stats_for_date_range(start_time, end_time = Time.now, options = {})
+  def self.generate_stats_for_day( at_time = Time.now, options = {} )
+    at_time = at_time.utc.end_of_day
+    if options[:force]
+      SiteStatistic.where( "DATE(created_at) = DATE(?)", at_time.utc ).delete_all
+    elsif stats_generated_for_day?( at_time )
+      return
+    end
+    site_statistic_data = STAT_TYPES.to_h {| st | [st, send( "#{st}_stats", at_time )] }
+    daily_active_user_model_data = generate_daily_active_user_model_data( at_time )
+    site_statistic_data[:daily_active_user_model] = daily_active_user_model_data[:statistic]
+    site_statistic_data[:retention_metrics] = UserInstallationStatistic.calculate_all_retention_metrics( at_time )
+    SiteStatistic.create!(
+      data: site_statistic_data,
+      created_at: at_time.beginning_of_day
+    )
+    update_user_daily_categories( daily_active_user_model_data )
+    UserInstallationStatistic.update_today_installation_ids( at_time )
+  end
+
+  def self.generate_stats_for_date_range( start_time, end_time = Time.now, options = {} )
     start_time = start_time.utc.end_of_day
     end_time = end_time.utc.end_of_day
     until end_time < start_time
-      generate_stats_for_day(end_time, options)
+      generate_stats_for_day( end_time, options )
       end_time -= 1.day
     end
   end
 
-  def self.stats_generated_for_day?(at_time = Time.now)
-    SiteStatistic.where("DATE(created_at) = DATE(?)", at_time.utc).exists?
+  def self.stats_generated_for_day?( at_time = Time.now )
+    SiteStatistic.where( "DATE(created_at) = DATE(?)", at_time.utc ).exists?
   end
 
   def self.first_stat
-    @@first_stat ||= SiteStatistic.order("created_at asc").first
+    @@first_stat ||= SiteStatistic.order( "created_at asc" ).first
   end
 
-  private
+  def self.record_for_date( records, stat_date )
+    return records.first unless stat_date.present?
+
+    parsed_date = begin
+      Time.zone.parse( stat_date )
+    rescue StandardError
+      nil
+    end
+    record = records.where( "DATE(created_at) = DATE(?)", parsed_date ).first if parsed_date
+    record || records.first
+  end
+  private_class_method :record_for_date
 
   def self.observations_stats(at_time = Time.now)
     at_time = at_time.utc
@@ -110,6 +134,118 @@ class SiteStatistic < ApplicationRecord
         }
       ]
     ).total_entries
+    created_30_days = Observation.elastic_search(
+      size: 0,
+      track_total_hits: true,
+      filters: [
+        {
+          range: {
+            created_at: {
+              lte: at_time - 30.days
+            }
+          }
+        }
+      ]
+    ).total_entries
+    created_30_days_not_identified = Observation.elastic_search(
+      size: 0,
+      track_total_hits: true,
+      filters: [
+        {
+          range: {
+            created_at: {
+              lte: at_time - 30.days
+            }
+          }
+        },
+        {
+          bool: {
+            must_not: {
+              exists: {
+                field: "taxon"
+              }
+            }
+          }
+        }
+      ]
+    ).total_entries
+    today_identified_by_others = Identification.elastic_search(
+      size: 0,
+      track_total_hits: true,
+      filters: [
+        {
+          range: {
+            created_at: {
+              gte: at_time - 1.days,
+              lte: at_time
+            }
+          }
+        },
+        {
+          term: { own_observation: false }
+        },
+        {
+          bool: {
+            must_not: {
+              exists: {
+                field: "taxon_change.id"
+              }
+            }
+          }
+        }
+      ],
+      aggs: {
+        distinct_observations: {
+          cardinality: {
+            field: "observation.id"
+          }
+        }
+      }
+    ).aggregations.distinct_observations.value
+    today_identified_by_others_by_iconic_taxon = {}
+    Identification.elastic_search(
+      size: 0,
+      track_total_hits: true,
+      filters: [
+        {
+          range: {
+            created_at: {
+              gte: at_time - 1.days,
+              lte: at_time
+            }
+          }
+        },
+        {
+          term: { own_observation: false }
+        },
+        {
+          bool: {
+            must_not: {
+              exists: {
+                field: "taxon_change.id"
+              }
+            }
+          }
+        }
+      ],
+      aggs: {
+        iconic_taxa: {
+          terms: {
+            field: "taxon.iconic_taxon_id",
+            size: 50
+          },
+          aggs: {
+            distinct_observations: {
+              cardinality: {
+                field: "observation.id"
+              }
+            }
+          }
+        }
+      }
+    ).aggregations.iconic_taxa.buckets.each do | bucket |
+      today_identified_by_others_by_iconic_taxon[bucket["key"]] = bucket["distinct_observations"]["value"]
+    end
     community_identified = Observation.elastic_search(
       size: 0,
       track_total_hits: true,
@@ -178,6 +314,10 @@ class SiteStatistic < ApplicationRecord
       today: today,
       # identified: Observation.where("taxon_id IS NOT NULL AND created_at BETWEEN ? AND ?", at_time - 7.days, at_time).count,
       identified: identified,
+      created_30_days: created_30_days,
+      created_30_days_not_identified: created_30_days_not_identified,
+      today_identified_by_others: today_identified_by_others,
+      today_identified_by_others_by_iconic_taxon: today_identified_by_others_by_iconic_taxon,
       # community_identified: Observation.where("community_taxon_id IS NOT NULL AND created_at BETWEEN ? AND ?", at_time - 7.days, at_time).count,
       community_identified: community_identified,
       community_identified_to_genus: community_identified_to_genus
@@ -190,21 +330,45 @@ class SiteStatistic < ApplicationRecord
       size: 0,
       track_total_hits: true,
       filters: [
-        range: {
-          created_at: {
-            lte: at_time
+        {
+          range: {
+            created_at: {
+              lte: at_time
+            }
+          }
+        },
+        {
+          bool: {
+            must_not: {
+              exists: {
+                field: "taxon_change.id"
+              }
+            }
           }
         }
       ]
     ).total_entries
-    last_7_days = Identification.elastic_search(
+    count_for_others = Identification.elastic_search(
       size: 0,
       track_total_hits: true,
       filters: [
-        range: {
-          created_at: {
-            gte: at_time - 7.days,
-            lte: at_time
+        {
+          range: {
+            created_at: {
+              lte: at_time
+            }
+          }
+        },
+        {
+          term: { own_observation: false }
+        },
+        {
+          bool: {
+            must_not: {
+              exists: {
+                field: "taxon_change.id"
+              }
+            }
           }
         }
       ]
@@ -213,18 +377,107 @@ class SiteStatistic < ApplicationRecord
       size: 0,
       track_total_hits: true,
       filters: [
-        range: {
-          created_at: {
-            gte: at_time - 1.days,
-            lte: at_time
+        {
+          range: {
+            created_at: {
+              gte: at_time - 1.days,
+              lte: at_time
+            }
+          }
+        },
+        {
+          bool: {
+            must_not: {
+              exists: {
+                field: "taxon_change.id"
+              }
+            }
+          }
+        }
+      ]
+    ).total_entries
+    last_7_days = Identification.elastic_search(
+      size: 0,
+      track_total_hits: true,
+      filters: [
+        {
+          range: {
+            created_at: {
+              gte: at_time - 7.days,
+              lte: at_time
+            }
+          }
+        },
+        {
+          bool: {
+            must_not: {
+              exists: {
+                field: "taxon_change.id"
+              }
+            }
+          }
+        }
+      ]
+    ).total_entries
+    today_for_others = Identification.elastic_search(
+      size: 0,
+      track_total_hits: true,
+      filters: [
+        {
+          range: {
+            created_at: {
+              gte: at_time - 1.days,
+              lte: at_time
+            }
+          }
+        },
+        {
+          term: { own_observation: false }
+        },
+        {
+          bool: {
+            must_not: {
+              exists: {
+                field: "taxon_change.id"
+              }
+            }
+          }
+        }
+      ]
+    ).total_entries
+    last_7_days_for_others = Identification.elastic_search(
+      size: 0,
+      track_total_hits: true,
+      filters: [
+        {
+          range: {
+            created_at: {
+              gte: at_time - 7.days,
+              lte: at_time
+            }
+          }
+        },
+        {
+          term: { own_observation: false }
+        },
+        {
+          bool: {
+            must_not: {
+              exists: {
+                field: "taxon_change.id"
+              }
+            }
           }
         }
       ]
     ).total_entries
     {
       count: count,
+      count_for_others: count_for_others,
+      today: today,
+      today_for_others: today_for_others,
       last_7_days: last_7_days,
-      today: today
+      last_7_days_for_others: last_7_days_for_others
     }
   end
 
@@ -305,6 +558,15 @@ class SiteStatistic < ApplicationRecord
               lte: at_time
             }
           }
+        },
+        {
+          bool: {
+            must_not: {
+              exists: {
+                field: "taxon_change.id"
+              }
+            }
+          }
         }
       ],
       aggregate: {
@@ -367,6 +629,15 @@ class SiteStatistic < ApplicationRecord
         },
         {
           term: { own_observation: false }
+        },
+        {
+          bool: {
+            must_not: {
+              exists: {
+                field: "taxon_change.id"
+              }
+            }
+          }
         }
       ],
       aggs: {
@@ -607,6 +878,29 @@ class SiteStatistic < ApplicationRecord
   end
 
   def self.identifier_stats(at_time = Time.now)
+    if ss = SiteStatistic.last
+      return ss.data["identifier"]
+    end
+    return {
+      "avg_ttid" => 0,
+      "med_ttid" => 0,
+      "min_ttid" => 0,
+      "max_ttid" => 0,
+      "avg_ttcid" => 0,
+      "med_ttcid" => 0,
+      "min_ttcid" => 0,
+      "max_ttcid" => 0,
+      "percent_id" => 0,
+      "percent_cid" => 0,
+      "percent_cid_to_genus" => 0
+    }
+  end
+
+  # this method is now too slow to run in a production environment. If we want to maintain
+  # identifier statistics like this in production, we need to be able to fetch it with more
+  # performant queries. Preserving this method for now until we refactor it, or decide to
+  # remove this stats section entirely (pleary 2024-03-13)
+  def self.legacy_identifier_stats(at_time = Time.now)
     at_time = at_time.utc
     sql = <<-SQL
     SELECT 
@@ -664,8 +958,10 @@ class SiteStatistic < ApplicationRecord
   def self.platforms_stats(at_time = Time.now)
     at_time = at_time.utc
     date_filter = { range: { created_at: { gte: at_time - 1.day, lt: at_time } } }
-    iphone_app_id = OauthApplication.inaturalist_iphone_app.try(:id) || -1
-    android_app_id = OauthApplication.inaturalist_android_app.try(:id) || -1
+    iphone_app_id = OauthApplication.inaturalist_iphone_app.try( :id ) || -1
+    android_app_id = OauthApplication.inaturalist_android_app.try( :id ) || -1
+    seek_app_id = OauthApplication.seek_app.try( :id ) || -1
+    inat_next_app_id = OauthApplication.inat_next_app.try( :id ) || -1
     {
       web: Observation.elastic_search(
         filters: [
@@ -691,6 +987,22 @@ class SiteStatistic < ApplicationRecord
         size: 0,
         track_total_hits: true
       ).total_entries,
+      seek: Observation.elastic_search(
+        filters: [
+          date_filter,
+          { term: { "oauth_application_id.keyword": seek_app_id } }
+        ],
+        size: 0,
+        track_total_hits: true
+      ).total_entries,
+      inat_next: Observation.elastic_search(
+        filters: [
+          date_filter,
+          { term: { "oauth_application_id.keyword": inat_next_app_id } }
+        ],
+        size: 0,
+        track_total_hits: true
+      ).total_entries,
       other: Observation.elastic_search(
         filters: [
           date_filter,
@@ -699,7 +1011,9 @@ class SiteStatistic < ApplicationRecord
               must: { exists: { field: "oauth_application_id" } },
               must_not: { terms: { "oauth_application_id.keyword": [
                 iphone_app_id,
-                android_app_id
+                android_app_id,
+                seek_app_id,
+                inat_next_app_id
               ] } }
             }
           }
@@ -710,11 +1024,13 @@ class SiteStatistic < ApplicationRecord
     }
   end
 
-  def self.platforms_cumulative_stats(at_time = Time.now)
+  def self.platforms_cumulative_stats( at_time = Time.now )
     at_time = at_time.utc
     date_filter = { range: { created_at: { lte: at_time } } }
-    iphone_app_id = OauthApplication.inaturalist_iphone_app.try(:id) || -1
-    android_app_id = OauthApplication.inaturalist_android_app.try(:id) || -1
+    iphone_app_id = OauthApplication.inaturalist_iphone_app.try( :id ) || -1
+    android_app_id = OauthApplication.inaturalist_android_app.try( :id ) || -1
+    seek_app_id = OauthApplication.seek_app.try( :id ) || -1
+    inat_next_app_id = OauthApplication.inat_next_app.try( :id ) || -1
     {
       web: Observation.elastic_search(
         filters: [
@@ -740,6 +1056,22 @@ class SiteStatistic < ApplicationRecord
         size: 0,
         track_total_hits: true
       ).total_entries,
+      seek: Observation.elastic_search(
+        filters: [
+          date_filter,
+          { term: { oauth_application_id: seek_app_id } }
+        ],
+        size: 0,
+        track_total_hits: true
+      ).total_entries,
+      inat_next: Observation.elastic_search(
+        filters: [
+          date_filter,
+          { term: { oauth_application_id: inat_next_app_id } }
+        ],
+        size: 0,
+        track_total_hits: true
+      ).total_entries,
       other: Observation.elastic_search(
         filters: [
           date_filter,
@@ -748,7 +1080,9 @@ class SiteStatistic < ApplicationRecord
               must: { exists: { field: "oauth_application_id" } },
               must_not: { terms: { oauth_application_id: [
                 iphone_app_id,
-                android_app_id
+                android_app_id,
+                seek_app_id,
+                inat_next_app_id
               ] } }
             }
           }
@@ -759,4 +1093,147 @@ class SiteStatistic < ApplicationRecord
     }
   end
 
+  def self.generate_daily_active_user_model_data( at_time = Time.now )
+    at_time = at_time.utc
+    day_0 = at_time.end_of_day - 1.day
+
+    # Define the date sets
+    # Define date ranges for each case
+    date_ranges = [
+      { d1: day_0 - 1.day, d2: day_0, use_db: true }, # Active 0
+      { d1: day_0 - 2.days, d2: day_0 - 1.day, use_db: true }, # Active 1
+      { d1: day_0 - 7.days, d2: day_0 - 2.days }, # Active 2-6
+      { d1: day_0 - 8.days, d2: day_0 - 7.days }, # Active 7
+      { d1: day_0 - 9.days, d2: day_0 - 8.days }, # Active 8
+      { d1: day_0 - 30.days, d2: day_0 - 9.days }, # Active 9-29
+      { d1: day_0 - 31.days, d2: day_0 - 30.days }, # Active 30
+      { d1: day_0 - 32.days, d2: day_0 - 31.days } # Active 31
+    ]
+
+    # Generate data for each case
+    active_data = date_ranges.map do | date_range |
+      SegmentationStatistic.generate_daily_active_user_model_data(
+        date_range[:d1],
+        date_range[:d2],
+        use_database: date_range[:use_db]
+      )
+    end
+
+    # Extract required data for analysis
+    active_0, active_1, active_2_6, active_7, active_8, active_9_29, active_30, active_31 = active_data
+    active_0_new_users = active_0.select {| _, v | v[:created_at].zero? }.keys
+    active_1_new_users = active_1.select {| _, v | v[:created_at].zero? }.keys
+
+    # Extract required data for analysis
+    # Day 0
+    dau_0 = active_0.keys
+    current_users_d0 = dau_0 & ( active_1.keys | active_2_6.keys )
+    new_sensu_lato_d0 = dau_0 - ( active_1.keys | active_2_6.keys )
+    at_risk_waus_d0 = ( active_1.keys | active_2_6.keys ) - current_users_d0 - new_sensu_lato_d0
+    at_risk_maus_d0 = ( active_7.keys | active_8.keys | active_9_29.keys ) -
+      at_risk_waus_d0 - current_users_d0 - new_sensu_lato_d0
+    new_users_d0 = new_sensu_lato_d0 & active_0_new_users
+    new_other_d0 = new_sensu_lato_d0 - new_users_d0
+
+    # Day 1
+    dau_1 = active_1.keys
+    current_users_d1 = dau_1 & ( active_2_6.keys | active_7.keys )
+    new_sensu_lato_d1 = dau_1 - ( active_2_6.keys | active_7.keys )
+    at_risk_waus_d1 = ( active_2_6.keys | active_7.keys ) - current_users_d1 - new_sensu_lato_d1
+    at_risk_maus_d1 = ( active_8.keys | active_9_29.keys | active_30.keys ) -
+      at_risk_waus_d1 - current_users_d1 - new_sensu_lato_d1
+    new_users_d1 = new_sensu_lato_d1 & active_1_new_users
+    new_other_d1 = ( new_sensu_lato_d1 - new_users_d1 )
+
+    # Reengaged and reactivated
+    at_risk_maus_d2 = ( active_9_29.keys | active_30.keys | active_31.keys ) -
+      ( active_2_6.keys | active_7.keys | active_8.keys )
+    reactivated_users_d0 = new_other_d0 & at_risk_maus_d1
+    reengaged_users_d0 = new_other_d0 - reactivated_users_d0
+    reactivated_users_d1 = new_other_d1 & at_risk_maus_d2
+    reengaged_users_d1 = new_other_d1 - reactivated_users_d1
+
+    # Unengaged users
+    total_user = User.where( "suspended_at IS NULL" ).pluck( :id )
+    unengaged_users_d0 = total_user - current_users_d0 - at_risk_waus_d0 - at_risk_maus_d0 -
+      new_users_d0 - reactivated_users_d0 - reengaged_users_d0
+
+    # Calculate counts
+    current_users = current_users_d0.count
+    at_risk_waus = at_risk_waus_d0.count
+    at_risk_maus = at_risk_maus_d0.count
+    new_users = new_users_d0.count
+    reactivated_users = reactivated_users_d0.count
+    reengaged_users = reengaged_users_d0.count
+    unengaged_users = unengaged_users_d0.count
+
+    # Calculate rates
+    nurr = ( current_users_d0 & new_users_d1 ).count / new_users_d1.count.to_f
+    surr = ( current_users_d0 & reengaged_users_d1 ).count / reengaged_users_d1.count.to_f
+    rurr = ( current_users_d0 & reactivated_users_d1 ).count / reactivated_users_d1.count.to_f
+    curr = ( current_users_d0 & current_users_d1 ).count / current_users_d1.count.to_f
+    iwaurr = ( current_users_d0 & at_risk_waus_d1 ).count / at_risk_waus_d1.count.to_f
+    wau = ( at_risk_maus_d0 & at_risk_waus_d1 ).count / at_risk_waus_d1.count.to_f
+    imaurr = ( reactivated_users_d0 & at_risk_maus_d1 ).count / at_risk_maus_d1.count.to_f
+    mau = ( at_risk_maus_d1 - at_risk_maus_d0 - reactivated_users_d0 ).count / at_risk_maus_d1.count.to_f
+    rr = reengaged_users_d0.count / unengaged_users_d0.count.to_f
+
+    {
+      current_users: current_users_d0,
+      at_risk_waus: at_risk_waus_d0,
+      at_risk_maus: at_risk_maus_d0,
+      new_users: new_users_d0,
+      reactivated_users: reactivated_users_d0,
+      reengaged_users: reengaged_users_d0,
+      unengaged_users: unengaged_users_d0,
+      statistic: {
+        date: day_0,
+        current_users: current_users,
+        at_risk_waus: at_risk_waus,
+        at_risk_maus: at_risk_maus,
+        new_users: new_users,
+        reactivated_users: reactivated_users,
+        reengaged_users: reengaged_users,
+        unengaged_users: unengaged_users,
+        nurr: nurr,
+        surr: surr,
+        rurr: rurr,
+        curr: curr,
+        iwaurr: iwaurr,
+        wau: wau,
+        imaurr: imaurr,
+        mau: mau,
+        rr: rr
+      }
+    }
+  end
+
+  def self.update_user_daily_categories( daily_active_user_model_data )
+    update_user_daily_category( daily_active_user_model_data[:current_users], :current_user )
+    update_user_daily_category( daily_active_user_model_data[:at_risk_waus], :at_risk_wau )
+    update_user_daily_category( daily_active_user_model_data[:at_risk_maus], :at_risk_mau )
+    update_user_daily_category( daily_active_user_model_data[:new_users], :new_user )
+    update_user_daily_category( daily_active_user_model_data[:reactivated_users], :reactivated_user )
+    update_user_daily_category( daily_active_user_model_data[:reengaged_users], :reengaged_user )
+    update_user_daily_category( daily_active_user_model_data[:unengaged_users], :unengaged_user )
+  end
+
+  def self.update_user_daily_category( user_ids, new_category )
+    user_ids.in_groups_of( 1000, false ).each do | group_ids |
+      User.transaction do
+        existing_records = UserDailyActiveCategory.where( user_id: group_ids )
+        unrecorded_ids = group_ids - existing_records.map( &:user_id )
+        new_records = unrecorded_ids.map do | user_id |
+          UserDailyActiveCategory.new( user_id: user_id )
+        end
+        ( existing_records + new_records ).each do | user_dac |
+          user_dac.yesterday_category = user_dac.today_category
+          user_dac.today_category = new_category
+          next unless user_dac.changed?
+
+          user_dac.save!
+        end
+      end
+    end
+  end
 end

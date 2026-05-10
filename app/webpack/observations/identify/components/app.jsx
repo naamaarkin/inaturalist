@@ -11,22 +11,13 @@ import AlertModalContainer from "../../../shared/containers/alert_modal_containe
 import FlaggingModalContainer from "../containers/flagging_modal_container";
 import DisagreementAlertContainer from "../containers/disagreement_alert_container";
 import ModeratorActionModalContainer from "../containers/moderator_action_modal_container";
-import TestGroupToggle from "../../../shared/components/test_group_toggle";
-import FlashMessage from "../../show/components/flash_message";
-import ConfirmModalContainer from "../../show/containers/confirm_modal_container";
+import WebinarBannerContainer from "../containers/webinar_banner_container";
+import ConfirmModalContainer from "../../../shared/containers/confirm_modal_container";
 import ProjectFieldsModalContainer from "../containers/project_fields_modal_container";
 
 const App = ( { sideBarHidden, setSideBarHidden, config } ) => (
   <div id="Identify" className={config.blind ? "blind" : ""}>
-    { config && config.testingApiV2 && (
-      <FlashMessage
-        key="testing_apiv2"
-        title="Testing API V2"
-        message="This page is using V2 of the API. Please report any differences from using the page w/ API v1 at https://forum.inaturalist.org/t/v2-feedback/21215"
-        type="warning"
-        html
-      />
-    ) }
+    <WebinarBannerContainer />
     <Grid fluid>
       <Row>
         <Col xs={12}>
@@ -41,14 +32,18 @@ const App = ( { sideBarHidden, setSideBarHidden, config } ) => (
       <Row className={`mainrow ${sideBarHidden && "side-bar-hidden"}`}>
         <div className="main-col">
           <ObservationsGridContainer />
-          <PaginationControlContainer />
+          { config?.currentUser?.privilegedWith( "interaction" ) && (
+            <PaginationControlContainer />
+          ) }
           <FinishedModalContainer />
         </div>
-        <SideBar
-          blind={config.blind}
-          hidden={sideBarHidden}
-          setSideBarHidden={setSideBarHidden}
-        />
+        { config?.currentUser?.privilegedWith( "interaction" ) && (
+          <SideBar
+            blind={config.blind}
+            hidden={sideBarHidden}
+            setSideBarHidden={setSideBarHidden}
+          />
+        ) }
       </Row>
       <ObservationModalContainer />
       <AlertModalContainer />

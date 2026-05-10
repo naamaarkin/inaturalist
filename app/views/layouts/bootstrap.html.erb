@@ -22,13 +22,28 @@
     <!-- Bootstrap -->
     <%= stylesheet_link_tag 'bootstrap_bundle' %>
     <%= stylesheet_link_tag 'bootstrap-rtl' if @rtl %>
+    <% # Bump font size so Safari doesn't auto-zoom on input selection. %>
+    <% if is_inatrn_app? %>
+      <style type="text/css">
+        body,
+        .bootstrap,
+        .bootstrap .form-control {
+          font-size: 16px;
+        }
+      </style>
+    <% end -%>
+    <% if params[:noh1] %>
+      <style type="text/css">
+        h1 { display: none; }
+      </style>
+    <% end -%>
     <%= csrf_meta_tag %>
     <meta name="config:inaturalist_api_url" content="<%= CONFIG.public_node_api_url || CONFIG.node_api_url %>">
     <% if logged_in? -%>
       <meta name="inaturalist-api-token" content="<%= JsonWebToken.encode( user_id: current_user.id ) %>">
     <% end -%>
-    <% if !@site&.twitter_username.blank? -%>
-      <meta name="twitter:site" content="<%= @site.twitter_username %>">
+    <% if !@site&.x_username.blank? -%>
+      <meta name="twitter:site" content="<%= @site.x_username %>">
     <% end -%>
     <meta property="og:site_name" content="<%= @site&.name %>"/>
     <meta property="og:type" content="website"/>
@@ -44,8 +59,9 @@
       <meta property="og:image" content="<%= image_url @site.shareable_image.url %>"/>
     <% end %>
   </head>
-  <body>
-    <div id="bodywrapper"<%=raw " class='no-footer-gap'" if @no_footer_gap %>>
+  <body class="<%= responsive? ? 'responsive' : '' %><%= skip_min_width? ? ' skip-min-width' : '' %>">
+    <div id="bodywrapper" class="<%=raw 'no-footer-gap' if @no_footer_gap %> <%=raw 'noh1' if params[:noh1] %>">
+      <%= render partial: "shared/confirmation_banner" %>
       <% unless @headless -%>
         <%= render :partial => 'shared/header' %>
       <% end -%>
@@ -148,6 +164,8 @@
         CURRENT_USER = {
           id: <%= current_user.id %>,
           login: '<%= current_user.login %>',
+          email: "<%= current_user.email %>",
+          content_creation_restrictions: <%= current_user.content_creation_restrictions? %>,
           icon_url: '<%= current_user.icon.file? ? current_user.icon.url(:medium) : "null" %>',
           roles: <%= current_user.roles.map(&:name).to_json.html_safe %>,
           prefers_scientific_name_first: <%= current_user.prefers_scientific_name_first %>,
@@ -159,8 +177,12 @@
           sites_admined: [<%= current_user.site_admins.pluck(:site_id).join( "," ) %>],
           testGroups: <%= current_user.test_groups_array.to_json.html_safe %>,
           donor: <%= current_user.donor? %>,
-          monthlyDonor: <%= current_user.monthly_donor? %>
+          monthlyDonor: <%= current_user.monthly_donor? %>,
+          privileges: []
         };
+        <% if current_user&.privileged_with?( UserPrivilege::INTERACTION ) -%>
+          CURRENT_USER.privileges = [<%= UserPrivilege::INTERACTION.inspect.html_safe %>];
+        <% end -%>
       <% end -%>
       var RAILS_FLASH = <%= flash.to_hash.compact.to_json.html_safe %>;
       var TIMEZONE = "<%= Time.zone.tzinfo.name %>";
@@ -176,6 +198,13 @@
           medium: "<%= image_url("copyright-infringement-medium.png") %>",
           small: "<%= image_url("copyright-infringement-small.png") %>",
           square: "<%= image_url("copyright-infringement-square.png") %>"
+        },
+        artificial_media_image_urls: {
+          original: "<%= image_url( "artificially-generated-content-original.png" ) %>",
+          large: "<%= image_url( "artificially-generated-content-large.png" ) %>",
+          medium: "<%= image_url( "artificially-generated-content-medium.png" ) %>",
+          small: "<%= image_url( "artificially-generated-content-small.png" ) %>",
+          square: "<%= image_url( "artificially-generated-content-square.png" ) %>"
         },
         processing_image_urls: {
           small: "<%= image_url(LocalPhoto.new.file.url(:small)) %>",
@@ -196,12 +225,17 @@
       }
     </script>
     <% unless @skip_external_connections || @asynchronous_google_maps_loading %>
-      <%= javascript_include_tag google_maps_loader_uri(libraries: %w(places geometry drawing)) %>
+      <%= javascript_include_tag google_maps_loader_uri(libraries: %w(places geometry)) %>
       <%= javascript_include_tag "map_bundle" %>
     <% end %>
     <% if @asynchronous_google_maps_loading %>
       <%= javascript_include_tag "map_bundle" %>
       <%= google_maps_async_js %>
+    <% end %>
+    <% unless @skip_react %>
+      <%= javascript_include_tag "webpack/runtime-webpack" %>
+      <%= javascript_include_tag "webpack/react-main-webpack" %>
+      <%= javascript_include_tag "webpack/users-confirmation-banner-webpack" %>
     <% end %>
     <%= yield :extrajs %>
     <% if logged_in? -%>

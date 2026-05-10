@@ -8,9 +8,25 @@ const config = {
   target: ["web", "es5"],
   context: path.resolve( webpackAssetsPath ),
   entry: {
+    "terra-draw": {
+      import: "./terra_draw/webpack-entry",
+      runtime: "runtime"
+    },
     "computer-vision": {
-      import: "./computer_vision/webpack-entry",
+      import: "./computer_vision/demo/webpack-entry",
       dependOn: ["react-main", "react-dropzone"]
+    },
+    "computer-vision-eval": {
+      import: "./computer_vision/eval/webpack-entry",
+      dependOn: ["react-main", "react-dropzone"]
+    },
+    "language-demo": {
+      import: "./computer_vision/language/webpack-entry",
+      dependOn: ["react-main"]
+    },
+    "id-summaries-demo": {
+      import: "./id_summaries_demo/webpack-entry",
+      dependOn: ["react-main"]
     },
     "geo-model-explain": {
       import: "./geo_model/explain/webpack-entry",
@@ -76,6 +92,10 @@ const config = {
       import: "./users/edit/webpack-entry",
       dependOn: ["react-main", "react-dnd", "react-dropzone"]
     },
+    "users-confirmation-banner": {
+      import: "./users/confirmation_banner/webpack-entry",
+      dependOn: ["react-main"]
+    },
     "react-main": {
       import: [
         "core-js/stable",
@@ -115,7 +135,7 @@ const config = {
     "user-text": {
       import: [
         "html-truncate",
-        "linkifyjs/html",
+        "linkify-html",
         "sanitize-html",
         "markdown-it"
       ],

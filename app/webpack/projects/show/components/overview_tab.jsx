@@ -27,30 +27,30 @@ const OverviewTab = props => {
     <div className="OverviewTab">
       <LazyLoad
         debounce={false}
-        height={229}
         verticalOffset={100}
       >
         <OverviewRecentObservations {...props} />
       </LazyLoad>
-      <Grid className="leaders-grid">
-        <LazyLoad
-          debounce={false}
-          height={229}
-          verticalOffset={100}
-        >
-          <Row>
-            <Col xs={4} className="no-padding">
-              <TopObserversPanelContainer />
-            </Col>
-            <Col xs={4} className="no-padding">
-              <TopSpeciesObserversPanelContainer />
-            </Col>
-            <Col xs={4} className="no-padding">
-              <TopSpeciesPanelContainer />
-            </Col>
-          </Row>
-        </LazyLoad>
-      </Grid>
+      { !project.hide_leaderboard && (
+        <Grid className="leaders-grid">
+          <LazyLoad
+            debounce={false}
+            verticalOffset={100}
+          >
+            <Row>
+              <Col xs={4} className="no-padding">
+                <TopObserversPanelContainer />
+              </Col>
+              <Col xs={4} className="no-padding">
+                <TopSpeciesObserversPanelContainer />
+              </Col>
+              <Col xs={4} className="no-padding">
+                <TopSpeciesPanelContainer />
+              </Col>
+            </Row>
+          </LazyLoad>
+        </Grid>
+      ) }
       <Grid className="info-grid">
         <LazyLoad
           debounce={false}

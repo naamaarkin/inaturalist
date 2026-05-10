@@ -13,11 +13,17 @@ import moment from "moment-timezone";
 import SplitTaxon from "../../../shared/components/split_taxon";
 import UserText from "../../../shared/components/user_text";
 import UserImage from "../../../shared/components/user_image";
+import UserLink from "../../../shared/components/user_link";
+import Inativersary from "../../../shared/components/inativersary";
 import ActivityItemMenu from "./activity_item_menu";
 import util from "../util";
 import { urlForTaxon } from "../../../taxa/shared/util";
 import TextEditor from "../../../shared/components/text_editor";
 import HiddenContentMessageContainer from "../../../shared/containers/hidden_content_message_container";
+import HiddenActivityItem from "./hidden_activity_item";
+import UsersPopover from "./users_popover";
+
+/* eslint-disable react/no-danger */
 
 class ActivityItem extends React.Component {
   constructor( props ) {
@@ -30,6 +36,39 @@ class ActivityItem extends React.Component {
       editing: false,
       textareaContent: item.body
     };
+  }
+
+  componentDidMount( ) {
+    const {
+      item,
+      performOrOpenConfirmationModal,
+      setFlaggingModalState,
+      hideContent
+    } = this.props;
+    let targetHash = window.location.hash;
+    let targetID;
+    let action;
+    const actionMatches = targetHash.match( /(.*):(.*)/ );
+    if ( actionMatches !== null ) {
+      targetHash = actionMatches[1];
+      action = actionMatches[2];
+    }
+    if ( targetHash ) {
+      targetID = _.replace( targetHash, /^#[a-z]+-/, "" );
+    }
+    if ( item?.uuid === targetID && action ) {
+      if ( action === "flag" ) {
+        performOrOpenConfirmationModal( ( ) => (
+          setFlaggingModalState( { item, show: true } )
+        ), {
+          permitOwnerOf: item
+        } );
+        history.replaceState( window.history.state, "", window.location.href.replace( /:[^:]*$/, "" ) );
+      } else if ( action === "hide" && hideContent && !item.hidden ) {
+        hideContent( item );
+        history.replaceState( window.history.state, "", window.location.href.replace( /:[^:]*$/, "" ) );
+      }
+    }
   }
 
   componentDidUpdate( ) {
@@ -117,6 +156,118 @@ class ActivityItem extends React.Component {
     this.setState( { editing: !editing } );
   }
 
+  // Is this an activity item for an identification that disagrees with a
+  // taxon in a hidden identification? If so, it's not particularly important
+  // to show that since that hidden ident isn't counting toward the Community
+  // Taxon, and it might be important to hide the taxon if it was added to
+  // cause harm
+  isDisagreementWithHiddenIdent( ) {
+    if ( !this.isID ) return false;
+    const { item, observation } = this.props;
+    if (
+      !observation
+      || !observation.identifications
+      || observation.identifications.length === 0
+    ) return false;
+    if ( !item || !item.previous_observation_taxon_id || !item.disagreement ) return false;
+    const hiddenIdents = observation.identifications.filter( i => i.hidden );
+    const publicIdents = observation.identifications.filter( i => !i.hidden );
+    if ( hiddenIdents.length === 0 ) return false;
+    const selfAndAncestors = i => [i.taxon.id, i.taxon.ancestor_ids];
+    const hiddenIdentTaxonIds = hiddenIdents.map( selfAndAncestors ).flat( Infinity );
+    const publicIdentTaxonIds = publicIdents.map( selfAndAncestors ).flat( Infinity );
+    // Basic logic here is that if this ident disagrees with a taxon from a
+    // hidden identification that isn't among the remaining, non-hidden
+    // idents, we should probably hide it
+    return (
+      hiddenIdentTaxonIds.includes( item.previous_observation_taxon_id )
+      && !publicIdentTaxonIds.includes( item.previous_observation_taxon_id )
+    );
+  }
+
+  identificationHasNomination( ) {
+    const {
+      item
+    } = this.props;
+    return ( item.exemplar_identification && item.exemplar_identification.nominated_by_user );
+  }
+
+  identificationVotes( ) {
+    const {
+      item,
+      config,
+      voteIdentification,
+      unvoteIdentification
+    } = this.props;
+    if ( !this.identificationHasNomination( ) ) {
+      return null;
+    }
+
+    const votesFor = [];
+    const votesAgainst = [];
+    let userVotedFor;
+    let userVotedAgainst;
+    _.each( item.exemplar_identification.votes, v => {
+      if ( v.vote_flag === true ) {
+        votesFor.push( v );
+      } else if ( v.vote_flag === false ) {
+        votesAgainst.push( v );
+      }
+      if ( v.user?.id === config.currentUser.id ) {
+        userVotedFor = ( v.vote_flag === true );
+        userVotedAgainst = ( v.vote_flag === false );
+      }
+    } );
+    const voteAction = () => (
+      userVotedFor
+        ? unvoteIdentification( item.exemplar_identification.id )
+        : voteIdentification( item.exemplar_identification.id )
+    );
+    const unvoteAction = () => (
+      userVotedAgainst
+        ? unvoteIdentification( item.exemplar_identification.id )
+        : voteIdentification( item.exemplar_identification.id, "bad" )
+    );
+    const agreeClass = userVotedFor ? "fa-thumbs-up" : "fa-thumbs-o-up";
+    const disagreeClass = userVotedAgainst ? "fa-thumbs-down" : "fa-thumbs-o-down";
+    return (
+      <div className="votes">
+        <button
+          type="button"
+          className="btn btn-nostyle"
+          onClick={voteAction}
+          aria-label={I18n.t( "agree_" )}
+          title={I18n.t( "agree_" )}
+        >
+          <i className={`fa ${agreeClass}`} />
+        </button>
+        { !_.isEmpty( votesFor ) && (
+          <UsersPopover
+            users={_.map( votesFor, "user" )}
+            keyPrefix={`votes-against-${item.uuid}`}
+            contents={( <span>{votesFor.length === 0 ? null : votesFor.length}</span> )}
+          />
+        ) }
+        <button
+          type="button"
+          onClick={unvoteAction}
+          className="btn btn-nostyle"
+          aria-label={I18n.t( "disagree_" )}
+          title={I18n.t( "disagree_" )}
+        >
+          <i className={`fa ${disagreeClass}`} />
+        </button>
+        { !_.isEmpty( votesAgainst ) && (
+          <UsersPopover
+            users={_.map( votesAgainst, "user" )}
+            keyPrefix={`votes-against-${item.uuid}`}
+            contents={( <span>{votesAgainst.length === 0 ? null : votesAgainst.length}</span> )}
+          />
+        ) }
+      </div>
+    );
+  }
+
   render( ) {
     const {
       observation,
@@ -141,7 +292,10 @@ class ActivityItem extends React.Component {
       showHidden,
       hideContent,
       unhideContent,
-      withdrawID
+      withdrawID,
+      performOrOpenConfirmationModal,
+      nominateIdentification,
+      unnominateIdentification
     } = this.props;
     const { editing } = this.state;
 
@@ -149,7 +303,9 @@ class ActivityItem extends React.Component {
       return ( <div /> );
     }
     const { taxon } = item;
-    const loggedIn = config && config.currentUser;
+    const { currentUser } = config;
+    const loggedIn = config?.currentUser;
+    const userCanInteract = config?.currentUserCanInteractWithResource( observation );
     const canSeeHidden = config && config.currentUser && (
       config.currentUser.roles.indexOf( "admin" ) >= 0
       || config.currentUser.roles.indexOf( "curator" ) >= 0
@@ -161,48 +317,25 @@ class ActivityItem extends React.Component {
     let className = "comment";
     if ( item.hidden && ( !canSeeHidden || !config.showHidden ) ) {
       return (
-        <div className="ActivityItem">
-          { hideUserIcon ? null : (
-            <div className="icon">
-              <UserImage user={viewerIsActor ? item.user : null} />
-            </div>
-          ) }
-          <Panel className="moderator-hidden">
-            <Panel.Heading>
-              <Panel.Title>
-                <span className="title_text text-muted">
-                  <i>
-                    <HiddenContentMessageContainer
-                      key={`hidden-tooltip-${item.uuid}`}
-                      item={item}
-                      itemType={this.isID ? "identifications" : "comments"}
-                    />
-                  </i>
-                </span>
-                {canSeeHidden && (
-                  <button
-                    href="#"
-                    type="button"
-                    className="btn btn-default btn-xs"
-                    onClick={() => showHidden()}
-                  >
-                    {I18n.t( "show_hidden_content" )}
-                  </button>
-                )}
-              </Panel.Title>
-            </Panel.Heading>
-          </Panel>
-        </div>
+        <HiddenActivityItem
+          canSeeHidden={canSeeHidden}
+          hideUserIcon={hideUserIcon}
+          isID={this.isID}
+          item={item}
+          showHidden={showHidden}
+          viewerIsActor={viewerIsActor}
+        />
       );
     }
     const userLink = (
-      <a
+      <UserLink
         className="user"
-        href={`/people/${item.user.login}`}
+        config={config}
+        noInativersary
         target={linkTarget}
-      >
-        {item.user.login}
-      </a>
+        uniqueKey={`ActivityItem-${item.id}`}
+        user={item.user}
+      />
     );
     if ( this.isID ) {
       className = "identification";
@@ -223,32 +356,28 @@ class ActivityItem extends React.Component {
           canAgree = true;
         }
       }
-      if ( loggedIn && item.firstDisplay && !hideCompare ) {
-        let compareTaxonID = taxon.id;
-        if ( taxon.rank_level <= 10 ) {
-          compareTaxonID = taxon.ancestor_ids[taxon.ancestor_ids.length - 1];
-        }
+      if ( userCanInteract && item.firstDisplay && !hideCompare ) {
         buttons.push( (
-          <a
+          <button
             key={`id-compare-${item.uuid}`}
-            href={`/observations/identotron?observation_id=${observation.id}&taxon=${compareTaxonID}`}
+            type="button"
+            className="btn btn-default btn-sm"
+            onClick={e => {
+              if ( onClickCompare ) {
+                return onClickCompare(
+                  e,
+                  taxon,
+                  observation,
+                  { currentUser: config.currentUser }
+                );
+              }
+              return true;
+            }}
           >
-            <button
-              type="button"
-              className="btn btn-default btn-sm"
-              onClick={e => {
-                if ( onClickCompare ) {
-                  return onClickCompare( e, taxon, observation,
-                    { currentUser: config.currentUser } );
-                }
-                return true;
-              }}
-            >
-              <i className="fa fa-exchange" />
-              {" "}
-              {I18n.t( "compare" )}
-            </button>
-          </a>
+            <i className="fa fa-exchange" />
+            {" "}
+            {I18n.t( "compare" )}
+          </button>
         ) );
       }
       if ( loggedIn && ( canAgree || userAgreedToThis ) && !hideAgree ) {
@@ -258,7 +387,9 @@ class ActivityItem extends React.Component {
             key={`id-agree-${item.uuid}`}
             className="btn btn-default btn-sm"
             onClick={() => {
-              addID( taxon, { agreedTo: item } );
+              performOrOpenConfirmationModal( ( ) => {
+                addID( taxon, { agreedTo: item } );
+              } );
             }}
             disabled={userAgreedToThis}
           >
@@ -277,9 +408,20 @@ class ActivityItem extends React.Component {
         </div>
       );
       const taxonImageTag = util.taxonImage( taxon );
-      header = I18n.t( "user_suggested_an_id", { user: ReactDOMServer.renderToString( userLink ) } );
-      if ( item.disagreement ) {
-        header += "*";
+      header = [
+        (
+          <span
+            dangerouslySetInnerHTML={{
+              __html: item.taxon_change
+                ? I18n.t( "inaturalist_updated_the_id_suggested_by_user", { user: ReactDOMServer.renderToString( userLink ) } )
+                : I18n.t( "user_suggested_an_id", { user: ReactDOMServer.renderToString( userLink ) } )
+            }}
+            key={`ActivityItem-UserLink-${item.id}`}
+          />
+        )
+      ];
+      if ( item.disagreement && !this.isDisagreementWithHiddenIdent( ) ) {
+        header.push( <span key={`ActivityItem-disagree-${item.id}`}>*</span> );
       }
       if ( !item.current ) {
         className = "withdrawn";
@@ -287,7 +429,7 @@ class ActivityItem extends React.Component {
       let idBody;
       if ( editing ) {
         idBody = this.editItemForm( );
-      } else if ( item.body && item.body.length > 0 ) {
+      } else if ( item.body && _.trim( item.body ).length > 0 ) {
         idBody = <UserText text={item.body} className="id_body" />;
       }
       contents = (
@@ -295,7 +437,11 @@ class ActivityItem extends React.Component {
           {buttonDiv}
           <div className="taxon">
             {noTaxonLink ? taxonImageTag : (
-              <a href={`/taxa/${taxon.id}`} target={linkTarget}>
+              <a
+                href={`/taxa/${taxon.id}`}
+                target={linkTarget}
+                rel={linkTarget === "_blank" ? "noopener noreferrer" : null}
+              >
                 {taxonImageTag}
               </a>
             )}
@@ -308,13 +454,33 @@ class ActivityItem extends React.Component {
               showMemberGroup
             />
           </div>
-          { idBody }
+          {!_.isEmpty( idBody ) && (
+            <div className="id-body-wrapper">
+              { idBody }
+            </div>
+          )}
         </div>
       );
     } else if ( !item.hidden || canSeeHidden ) {
-      header = I18n.t( "user_commented", { user: ReactDOMServer.renderToString( userLink ) } );
+      header = [
+        <span
+          dangerouslySetInnerHTML={{
+            __html: I18n.t( "user_commented", { user: ReactDOMServer.renderToString( userLink ) } )
+          }}
+          key={`ActivityItem-UserLink-${item.id}`}
+        />
+      ];
       contents = editing ? this.editItemForm( ) : ( <UserText text={item.body} /> );
     }
+    const inativersary = (
+      <Inativersary
+        config={config}
+        key={`ActivityItem-iNativersary-${item.uuid}`}
+        user={item.user}
+        uniqueKey={`ActivityItem-${item.uuid}`}
+      />
+    );
+    if ( inativersary ) header.push( inativersary );
     const relativeTime = moment.parseZone( item.created_at ).fromNow();
     let panelClass;
     const headerItems = [];
@@ -463,8 +629,9 @@ class ActivityItem extends React.Component {
       );
     }
     const byClass = viewerIsActor ? "by-current-user" : "by-someone-else";
-    let footer;
-    if ( item.disagreement && !hideDisagreement ) {
+    const footers = {};
+
+    if ( item.disagreement && !hideDisagreement && !this.isDisagreementWithHiddenIdent( ) ) {
       const previousTaxonLink = (
         <SplitTaxon
           taxon={item.previous_observation_taxon}
@@ -477,7 +644,7 @@ class ActivityItem extends React.Component {
         user: ReactDOMServer.renderToString( userLink ),
         taxon: ReactDOMServer.renderToString( previousTaxonLink )
       } );
-      footer = (
+      footers.disagreement = (
         <span
           className="title_text"
           dangerouslySetInnerHTML={{
@@ -490,13 +657,31 @@ class ActivityItem extends React.Component {
       const footerText = I18n.t( "user_disagrees_with_previous_finer_identifications", {
         user: ReactDOMServer.renderToString( userLink )
       } );
-      footer = (
+      footers.disagreement = (
         <span
           className="title_text"
           dangerouslySetInnerHTML={{
             __html: `* ${footerText}`
           }}
         />
+      );
+    }
+    if ( currentUser?.canViewHelpfulIDTips( ) && this.identificationHasNomination( ) ) {
+      footers.nomination = (
+        <>
+          <span className="footer-text">
+            <b>{item.exemplar_identification.nominated_by_user.login}</b>
+            &nbsp;nominated this as an ID tip
+          </span>
+          <time
+            className="time"
+            dateTime={item.exemplar_identification.nominated_at}
+            title={moment( item.exemplar_identification.nominated_at ).format( I18n.t( "momentjs.datetime_with_zone" ) )}
+          >
+            {moment.parseZone( item.exemplar_identification.nominated_at ).fromNow( )}
+          </time>
+          {this.identificationVotes( )}
+        </>
       );
     }
     const elementID = this.isID ? `activity_identification_${item.uuid}` : `activity_comment_${item.uuid}`;
@@ -507,7 +692,13 @@ class ActivityItem extends React.Component {
         dateTime={item.created_at}
         title={moment( item.created_at ).format( I18n.t( "momentjs.datetime_with_zone" ) )}
       >
-        <a href={itemURL} target={linkTarget}>{relativeTime}</a>
+        <a
+          href={itemURL}
+          target={linkTarget}
+          rel={linkTarget === "_blank" ? "noopener noreferrer" : null}
+        >
+          {relativeTime}
+        </a>
       </time>
     );
     if (
@@ -547,6 +738,9 @@ class ActivityItem extends React.Component {
         untrustUser={untrustUser}
         hideContent={hideContent}
         unhideContent={unhideContent}
+        performOrOpenConfirmationModal={performOrOpenConfirmationModal}
+        nominateIdentification={nominateIdentification}
+        unnominateIdentification={unnominateIdentification}
       />
     );
     return (
@@ -561,7 +755,9 @@ class ActivityItem extends React.Component {
         <Panel className={`${panelClass}${item.api_status ? " loading" : ""}${hideUserIcon ? " no-user-icon" : ""}`}>
           <Panel.Heading>
             <Panel.Title>
-              <span className="title_text" dangerouslySetInnerHTML={{ __html: header }} />
+              <span className="title_text">
+                { header }
+              </span>
               { headerItems }
               { time }
               { menu }
@@ -573,7 +769,11 @@ class ActivityItem extends React.Component {
               {contents}
             </div>
           </Panel.Body>
-          {footer ? <Panel.Footer>{footer}</Panel.Footer> : null}
+          { _.map( footers, ( footer, key ) => (
+            <Panel.Footer key={`${elementID}-footer-${key}`}>
+              {footer}
+            </Panel.Footer>
+          ) ) }
         </Panel>
       </div>
     );
@@ -581,33 +781,38 @@ class ActivityItem extends React.Component {
 }
 
 ActivityItem.propTypes = {
-  inlineEditing: PropTypes.bool,
-  item: PropTypes.object,
-  config: PropTypes.object,
-  currentUserID: PropTypes.object,
-  observation: PropTypes.object,
   addID: PropTypes.func,
+  config: PropTypes.object,
+  confirmDeleteID: PropTypes.func,
+  currentUserID: PropTypes.object,
   deleteComment: PropTypes.func,
   editComment: PropTypes.func,
-  confirmDeleteID: PropTypes.func,
-  withdrawID: PropTypes.func,
   editID: PropTypes.func,
+  hideAgree: PropTypes.bool,
+  hideCategory: PropTypes.bool,
+  hideCompare: PropTypes.bool,
+  hideContent: PropTypes.func,
+  hideDisagreement: PropTypes.bool,
+  hideMenu: PropTypes.bool,
+  hideUserIcon: PropTypes.bool,
+  inlineEditing: PropTypes.bool,
+  item: PropTypes.object,
+  linkTarget: PropTypes.string,
+  noTaxonLink: PropTypes.bool,
+  observation: PropTypes.object,
+  onClickCompare: PropTypes.func,
+  performOrOpenConfirmationModal: PropTypes.func,
   restoreID: PropTypes.func,
   setFlaggingModalState: PropTypes.func,
-  linkTarget: PropTypes.string,
-  hideUserIcon: PropTypes.bool,
-  hideAgree: PropTypes.bool,
-  hideCompare: PropTypes.bool,
-  hideDisagreement: PropTypes.bool,
-  hideCategory: PropTypes.bool,
-  hideMenu: PropTypes.bool,
-  noTaxonLink: PropTypes.bool,
-  onClickCompare: PropTypes.func,
-  trustUser: PropTypes.func,
-  untrustUser: PropTypes.func,
   showHidden: PropTypes.func,
-  hideContent: PropTypes.func,
-  unhideContent: PropTypes.func
+  trustUser: PropTypes.func,
+  unhideContent: PropTypes.func,
+  untrustUser: PropTypes.func,
+  withdrawID: PropTypes.func,
+  nominateIdentification: PropTypes.func,
+  unnominateIdentification: PropTypes.func,
+  voteIdentification: PropTypes.func,
+  unvoteIdentification: PropTypes.func
 };
 
 export default ActivityItem;

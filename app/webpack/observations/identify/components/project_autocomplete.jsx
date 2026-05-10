@@ -14,6 +14,11 @@ class ProjectAutocomplete extends React.Component {
   }
 
   componentDidUpdate( prevProps ) {
+    // Update the jQuery UI autocomplete with the new options
+    const domNode = ReactDOM.findDOMNode( this );
+    $( "input[name='project_title']", domNode ).autocomplete( "option", this.props );
+
+    // Fetch the new project if necessary
     const { initialProjectID } = this.props;
     if ( initialProjectID
          && initialProjectID !== prevProps.initialProjectID ) {
@@ -22,9 +27,17 @@ class ProjectAutocomplete extends React.Component {
   }
 
   fetchProject( ) {
-    const { initialProjectID } = this.props;
+    const { initialProjectID, config } = this.props;
     if ( initialProjectID ) {
-      inaturalistjs.projects.fetch( initialProjectID ).then( r => {
+      const params = { };
+      if ( config && config.testingApiV2 ) {
+        params.fields = {
+          id: true,
+          title: true,
+          slug: true
+        };
+      }
+      inaturalistjs.projects.fetch( initialProjectID, params ).then( r => {
         if ( r.results.length > 0 ) {
           this.updateProject( { project: r.results[0] } );
         }
@@ -44,20 +57,22 @@ class ProjectAutocomplete extends React.Component {
     }
   }
 
+  // This does get used as a public instance method
+  // eslint-disable-next-line react/no-unused-class-component-methods
   inputElement( ) {
     const domNode = ReactDOM.findDOMNode( this );
     return $( "input[name='project_title']", domNode );
   }
 
   render( ) {
-    const { className, disabled } = this.props;
+    const { className, disabled, placeholder } = this.props;
     return (
       <span className="ProjectAutocomplete">
         <input
           type="search"
           name="project_title"
           className={`form-control ${className}`}
-          placeholder={I18n.t( "name_or_slug" )}
+          placeholder={placeholder || I18n.t( "name_or_slug" )}
           disabled={disabled}
         />
         <input type="hidden" name="project_id" />
@@ -72,7 +87,9 @@ ProjectAutocomplete.propTypes = {
     PropTypes.number,
     PropTypes.string
   ] ),
-  className: PropTypes.string
+  className: PropTypes.string,
+  placeholder: PropTypes.string,
+  config: PropTypes.object
 };
 
 export default ProjectAutocomplete;

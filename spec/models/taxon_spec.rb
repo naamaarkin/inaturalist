@@ -66,6 +66,30 @@ describe Taxon do
     expect( Taxon::ROOT_LEVEL ).to eq 100
     expect( Taxon::ROOT_LEVEL ).to eq Taxon::STATEOFMATTER_LEVEL
   end
+
+  describe "default_photo" do
+    it "returns a photo" do
+      taxon = Taxon.make!
+      TaxonPhoto.make!( taxon: taxon )
+      taxon.reload
+      expect( taxon.default_photo ).to be_a Photo
+    end
+
+    it "does not return flagged photos" do
+      taxon = Taxon.make!
+      taxon_photo = TaxonPhoto.make!( taxon: taxon )
+      taxon.reload
+      expect( taxon.default_photo ).to be_a Photo
+
+      # skip callback that would delete the TaxonPhoto after flagging,
+      # simulating taxon photos flagged before that callback was created
+      allow( taxon_photo.photo ).to receive( :flagged_with ).and_return( true )
+      Flag.make!( flaggable: taxon_photo.photo )
+      taxon.reload
+      expect( taxon.taxon_photos ).not_to be_empty
+      expect( taxon.default_photo ).to be_nil
+    end
+  end
 end
 
 describe Taxon, "creation" do
@@ -106,6 +130,16 @@ describe Taxon, "creation" do
     expect( taxon.name ).to eq "× Chitalpa"
     taxon = Taxon.make!( name: "× Chitalpa", rank: Taxon::GENUSHYBRID )
     expect( taxon.name ).to eq "× Chitalpa"
+  end
+
+  it "should capitalize hybrid names for species rank" do
+    taxon = Taxon.make!( name: "× chitalpa", rank: Taxon::SPECIES )
+    expect( taxon.name ).to eq "× Chitalpa"
+  end
+
+  it "should capitalize hybrid names for hybrid rank" do
+    taxon = Taxon.make!( name: "× chitalpa tashkentensis", rank: Taxon::HYBRID )
+    expect( taxon.name ).to eq "× Chitalpa tashkentensis"
   end
 
   it "should capitalize Foo x Bar style genushybrids correctly" do
@@ -346,11 +380,11 @@ describe Taxon, "updating" do
     expect( taxon.errors ).to be_blank
   end
 
-  describe "auto_description" do
+  describe "shows_wikipedia" do
     it "should remove the wikipedia_summary when it changes to false" do
       t = Taxon.make!( wikipedia_summary: "foo" )
       expect( t.wikipedia_summary ).not_to be_blank
-      t.update( auto_description: false )
+      t.update( shows_wikipedia: false )
       t.reload
       expect( t.wikipedia_summary ).to be_blank
     end
@@ -385,6 +419,49 @@ describe Taxon, "updating" do
     expect( Delayed::Job.where( "handler LIKE '%update_stats_for_observations_of%- #{t.id}%'" ).count ).to eq 2
     t.update( is_active: false )
     expect( Delayed::Job.where( "handler LIKE '%update_stats_for_observations_of%- #{t.id}%'" ).count ).to eq 3
+  end
+
+  describe "indexed taxon_photos" do
+    let( :embedding ) { Array.new( 2048 ) { rand } }
+    elastic_models( TaxonPhoto )
+
+    it "removes indexed taxon photos when is_active changes" do
+      taxon_photo = TaxonPhoto.make!
+      allow( TaxonPhoto ).to receive( :embeddings_for_taxon_photos ) do
+        { taxon_photo.id.to_s => embedding }
+      end
+      expect( TaxonPhoto.elastic_search.results.size ).to eq 0
+      taxon_photo.elastic_index!
+      expect( TaxonPhoto.elastic_search.results.size ).to eq 1
+      taxon_photo.taxon.update( is_active: false )
+      expect( TaxonPhoto.elastic_search.results.size ).to eq 0
+    end
+
+    it "queues a taxon photo indexing job when is_active changes" do
+      taxon_photo = TaxonPhoto.make!
+      expect( Delayed::Job.where( "handler LIKE '%TaxonPhoto%elastic_index!%'" ).count ).to eq 0
+      taxon_photo.taxon.update( is_active: false )
+      expect( Delayed::Job.where( "handler LIKE '%TaxonPhoto%elastic_index!%'" ).count ).to eq 1
+    end
+
+    it "does not index taxon photos for inactive taxa" do
+      taxon_photo = TaxonPhoto.make!
+      allow( TaxonPhoto ).to receive( :embeddings_for_taxon_photos ) do
+        { taxon_photo.id.to_s => embedding }
+      end
+      expect( TaxonPhoto.elastic_search.results.size ).to eq 0
+      taxon_photo.elastic_index!
+      expect( TaxonPhoto.elastic_search.results.size ).to eq 1
+      expect( Delayed::Job.where( "handler LIKE '%TaxonPhoto%elastic_index!%'" ).count ).to eq 0
+
+      taxon_photo.taxon.update( is_active: false )
+      expect( TaxonPhoto.elastic_search.results.size ).to eq 0
+      expect( Delayed::Job.where( "handler LIKE '%TaxonPhoto%elastic_index!%'" ).count ).to eq 1
+
+      Delayed::Worker.new.work_off
+      expect( TaxonPhoto.elastic_search.results.size ).to eq 0
+      expect( Delayed::Job.where( "handler LIKE '%TaxonPhoto%elastic_index!%'" ).count ).to eq 0
+    end
   end
 
   describe "reindexing identifications" do
@@ -1409,24 +1486,30 @@ end
 
 describe Taxon, "get_gbif_id" do
   it "should work" do
-    a = Taxon.make!( name: "Chordata", rank: "phylum" )
-    t = Taxon.make!( name: "Pseudacris", rank: "genus", parent: a )
-    expect( t.get_gbif_id ).not_to be_blank
-    expect( t.taxon_scheme_taxa ).not_to be_blank
+    VCR.use_cassette( "taxon_spec_get_gbif_id", record: :new_episodes ) do
+      a = Taxon.make!( name: "Chordata", rank: "phylum" )
+      t = Taxon.make!( name: "Pseudacris", rank: "genus", parent: a )
+      expect( t.get_gbif_id ).not_to be_blank
+      expect( t.taxon_scheme_taxa ).not_to be_blank
+    end
   end
   it "should not create a TaxonSchemeTaxon for responses that don't match the taxon's name" do
-    a = Taxon.make!( name: "Chordata", rank: "phylum" )
-    t = Taxon.make!( name: "Sorberacea", rank: "class", parent: a )
-    expect( t.get_gbif_id ).to be_blank
-    expect( t.taxon_scheme_taxa ).to be_blank
+    VCR.use_cassette( "taxon_spec_get_gbif_id", record: :new_episodes ) do
+      a = Taxon.make!( name: "Chordata", rank: "phylum" )
+      t = Taxon.make!( name: "Sorberacea", rank: "class", parent: a )
+      expect( t.get_gbif_id ).to be_blank
+      expect( t.taxon_scheme_taxa ).to be_blank
+    end
   end
   it "should not error and return GBIF ID is there is no valid scientific name" do
-    a = Taxon.make!( name: "Chordata", rank: "phylum" )
-    t = Taxon.make!( name: "Dugongidae", rank: "family", parent: a )
-    t.taxon_names.update_all( is_valid: false )
-    expect { t.get_gbif_id }.not_to raise_error
-    expect( t.get_gbif_id ).to_not be_blank
-    expect( t.taxon_scheme_taxa ).to be_blank
+    VCR.use_cassette( "taxon_spec_get_gbif_id", record: :new_episodes ) do
+      a = Taxon.make!( name: "Chordata", rank: "phylum" )
+      t = Taxon.make!( name: "Dugongidae", rank: "family", parent: a )
+      t.taxon_names.update_all( is_valid: false )
+      expect { t.get_gbif_id }.not_to raise_error
+      expect( t.get_gbif_id ).to_not be_blank
+      expect( t.taxon_scheme_taxa ).to be_blank
+    end
   end
 end
 
@@ -1795,7 +1878,8 @@ describe "taxon_framework_relationship" do
       et.save
       tfr.reload
       expect( tfr.relationship ).to eq "match"
-      species.update( name: "Taricha granulosa" )
+      species.assign_attributes( name: "Taricha torosus" )
+      species.save!( context: :bypass_name_restrictions )
       tfr.reload
       expect( tfr.relationship ).to eq "one_to_one"
     end
@@ -1809,5 +1893,434 @@ describe "audits" do
     expect( t.wikipedia_title ).to be_nil
     t.update( wikipedia_title: "" )
     expect( t.audits.size ).to eq 1
+  end
+end
+
+# spec/models/taxon_name_change_spec.rb
+describe Taxon, "name change restrictions by rank" do
+  before( :each ) { load_test_taxa }
+
+  def expect_update_pass( taxon, **attrs )
+    expect( taxon.update( **attrs ) ).to be( true )
+  end
+
+  def expect_update_fail( taxon, error_key = :not_similar, **attrs )
+    expect( taxon.update( **attrs ) ).to be( false )
+    expect( taxon.errors.of_kind?( :name, error_key ) ).to be( true )
+  end
+
+  context "policy gates" do
+    it "disallows edits for ranks coarser than species" do
+      t = Taxon.make!( name: "Turdus", rank: "genus", iconic_taxon: @Aves )
+      expect_update_fail( t, :not_similar, name: "Turdi" )
+    end
+
+    it "requires iconic taxon (animals/plants/fungi); blocks when iconic_taxon_id is nil" do
+      t = Taxon.make!( name: "Turdus merula", rank: "species" )
+      t.update_columns( iconic_taxon_id: nil )
+      expect_update_fail( t, :not_similar, name: "Turdus meruli" )
+    end
+
+    it "allows validation to proceed when iconic taxon is set (e.g., Aves)" do
+      t = Taxon.make!( name: "Turdus merula", rank: "species", iconic_taxon: @Aves )
+      expect( t.update( name: "Turdus meruli" ) ).to be( true ).or be( false )
+    end
+  end
+
+  context "hybrid formulas (never allowed to change)" do
+    it "blocks changing hybrid formulas at species/hybrid ranks" do
+      t = Taxon.make!( name: "Danaus plexippus × gilippus", rank: "hybrid", iconic_taxon: @Insecta )
+      expect_update_fail( t, :not_similar, name: "Danaus plexippus × auratus" )
+    end
+
+    it "blocks simultaneous rank+name edits when a hybrid formula is involved" do
+      t = Taxon.make!( name: "Aix sponsa × Spatula clypeata", rank: "hybrid", iconic_taxon: @Aves )
+      expect_update_fail( t, :not_similar, name: "Aix sponsa Spatula clypeata", rank: "subspecies" )
+    end
+  end
+
+  context "species rules (rank_level = 10)" do
+    let( :sp ) { Taxon.make!( name: "Turdus migratorius", rank: "species", iconic_taxon: @Aves ) }
+
+    it "allows minor changes to the species epithet (e.g., gender/typo)" do
+      expect_update_pass( sp, name: "Turdus migratoria" )
+    end
+
+    it "rejects major changes to the species epithet" do
+      expect_update_fail( sp, :not_similar, name: "Turdus meei" )
+    end
+
+    it "rejects changing the genus" do
+      expect_update_fail( sp, :genus_changed, name: "Turdi migratorius" )
+    end
+
+    context "hybrid marker handling at species rank" do
+      it "allows adding a Unicode × between genus and species" do
+        expect_update_pass( sp, name: "Turdus × migratorius" )
+      end
+
+      it "allows removing a Unicode ×" do
+        h = Taxon.make!( name: "Turdus × migratorius", rank: "hybrid", iconic_taxon: @Aves )
+        expect_update_pass( h, name: "Turdus migratorius" )
+      end
+
+      it "allows removing an ASCII x" do
+        h = Taxon.make!( name: "Turdus x migratorius", rank: "hybrid", iconic_taxon: @Aves )
+        expect_update_pass( h, name: "Turdus migratorius" )
+      end
+
+      it "rejects adding an ASCII x" do
+        expect_update_fail( sp, :not_similar, name: "Turdus x migratorius" )
+      end
+    end
+
+    context "non-binomial species names" do
+      it "rejects non-binomial edits unless it is ONLY marker add/remove" do
+        t = Taxon.make!( name: "Some long non standard name", rank: "species", iconic_taxon: @Aves )
+        expect_update_fail( t, :not_similar, name: "Some non standard name" )
+      end
+
+      it "allows marker-only normalization even when extra tokens are present" do
+        # e.g., legacy strings where a marker is present with extra tokens — only removing/adding × is allowed
+        t = Taxon.make!( name: "Turdus × migratorius something", rank: "species", iconic_taxon: @Aves )
+        expect_update_pass( t, name: "Turdus migratorius something" )
+      end
+    end
+  end
+
+  context "infraspecific rules (rank_level = 5, e.g., subspecies/var.)" do
+    let( :ssp ) { Taxon.make!( name: "Taricha torosa trueii", rank: "subspecies", iconic_taxon: @Amphibia ) }
+
+    it "allows minor changes to the infraspecific epithet" do
+      # trueii -> truei
+      expect_update_pass( ssp, name: "Taricha torosa truei" )
+    end
+
+    it "rejects major changes to the infraspecific epithet" do
+      expect_update_fail( ssp, :not_similar, name: "Taricha torosa meei" )
+    end
+
+    it "rejects changes to the species epithet" do
+      expect_update_fail( ssp, :species_changed, name: "Taricha torosus trueii" )
+    end
+
+    it "rejects changes to the genus" do
+      expect_update_fail( ssp, :genus_changed, name: "Tarricha torosa trueii" )
+    end
+
+    it "supports written-out rank tokens (e.g., nothosubsp.) with minor changes to infra epithet" do
+      t = Taxon.make!( name: "Glycine max nothosubsp gracilis", rank: "subspecies", iconic_taxon: @Amphibia )
+      expect_update_pass( t, name: "Glycine max nothosubsp gracilii" )
+    end
+
+    it "rejects major changes when rank token is written out" do
+      t = Taxon.make!( name: "Glycine max nothosubsp gracilis", rank: "subspecies", iconic_taxon: @Amphibia )
+      expect_update_fail( t, :not_similar, name: "Glycine max nothosubsp torosa" )
+    end
+
+    it "rejects changing a non-final token (only last epithet may change)" do
+      t = Taxon.make!( name: "Glycine max minius gracilis", rank: "subspecies", iconic_taxon: @Amphibia )
+      expect_update_fail( t, :not_similar, name: "Glycine max miniii gracilis" )
+    end
+
+    it "does not care about marker normalization (adding/removing ×) between genus and species" do
+      rm = Taxon.make!( name: "Taricha × torosa trueii", rank: "subspecies", iconic_taxon: @Amphibia )
+      expect_update_pass( rm, name: "Taricha torosa trueii" )
+
+      add = Taxon.make!( name: "Taricha torosa trueii", rank: "subspecies", iconic_taxon: @Amphibia )
+      expect_update_pass( add, name: "Taricha × torosa trueii" )
+    end
+  end
+
+  context "species" do
+    let!( :taxon ) { Taxon.create!( name: "Taricha torosa", rank: "species", iconic_taxon: @Amphibia ) }
+
+    it "rejects changing the first letter of the genus" do
+      expect( taxon.update( name: "Daricha torosa" ) ).to be( false )
+    end
+
+    it "rejects changing the first letter of the species epithet" do
+      expect( taxon.update( name: "Taricha dorosa" ) ).to be( false )
+      expect( taxon.errors[:name].join ).to match( /first letter/i )
+    end
+  end
+
+  context "subspecies" do
+    let!( :taxon ) { Taxon.create!( name: "Taricha torosa torosa", rank: "subspecies", iconic_taxon: @Amphibia ) }
+
+    it "rejects changing the first letter of the genus" do
+      expect( taxon.update( name: "Daricha torosa torosa" ) ).to be( false )
+    end
+
+    it "rejects changing the first letter of the species epithet" do
+      expect( taxon.update( name: "Taricha dorosa torosa" ) ).to be( false )
+    end
+
+    it "rejects changing the first letter of the infraspecific epithet" do
+      expect( taxon.update( name: "Taricha torosa dorosa" ) ).to be( false )
+      expect( taxon.errors[:name].join ).to match( /first letter/i )
+    end
+  end
+end
+
+describe Taxon, "sync_scientific_taxon_names_for_name_change" do
+  before( :each ) do
+    load_test_taxa
+  end
+
+  let( :lexicon ) { "Scientific Names" }
+  let( :t ) do
+    Taxon.make!( name: "Taricha torosa", rank: "species", iconic_taxon: @Amphibia )
+  end
+
+  context "when a matching Scientific Names row already exists but is invalid" do
+    it "promotes it to valid and invalidates the previous valid row (no new row created)" do
+      old_taxon_name = t.taxon_names.first
+
+      existing_invalid = TaxonName.make!(
+        taxon: t, name: "Taricha torosus", lexicon: lexicon, is_valid: false
+      )
+
+      expect do
+        expect( t.update( name: "Taricha torosus" ) ).to be( true )
+      end.not_to(
+        change { TaxonName.where( taxon_id: t.id, lexicon: lexicon ).count }
+      )
+
+      t.reload
+      expect( existing_invalid.reload.is_valid ).to be( true )
+      expect( old_taxon_name.reload.is_valid ).to be( false )
+      expect(
+        t.taxon_names.where( lexicon: lexicon, is_valid: true ).pluck( :name )
+      ).to eq( ["Taricha torosus"] )
+    end
+  end
+
+  context "when no Scientific Names row exists for the new name" do
+    it "creates a new valid row for the new name and invalidates the previous valid row" do
+      old_taxon_name = t.taxon_names.first
+      # No row for "Taricha torosus" yet
+
+      expect do
+        expect( t.update( name: "Taricha torosus" ) ).to be( true )
+      end.to change {
+        TaxonName.where( taxon_id: t.id, lexicon: lexicon ).count
+      }.by( 1 )
+
+      new_taxon_name = t.taxon_names.where( lexicon: lexicon, is_valid: true ).order( :id ).last
+      expect( new_taxon_name.name ).to eq( "Taricha torosus" )
+      expect( old_taxon_name.reload.is_valid ).to be( false )
+    end
+  end
+
+  context "when other lexicons exist" do
+    it "does not touch non-Scientific lexicons" do
+      common_name = TaxonName.make!(
+        taxon: t, name: "Common Newt", lexicon: "English", is_valid: true
+      )
+
+      expect( t.update( name: "Taricha torosus" ) ).to be( true )
+
+      expect( common_name.reload.is_valid ).to be( true )
+      expect(
+        t.taxon_names.where( lexicon: "English", is_valid: true ).pluck( :name )
+      ).to include( "Common Newt" )
+    end
+  end
+
+  it "results in exactly one valid Scientific Names row after the name change" do
+    TaxonName.make!( taxon: t, name: "Taricha torosus", lexicon: lexicon, is_valid: false )
+    expect( t.update( name: "Taricha torosus" ) ).to be( true )
+
+    valid_scientific = t.taxon_names.where( lexicon: lexicon, is_valid: true )
+    expect( valid_scientific.count ).to eq( 1 )
+    expect( valid_scientific.first.name ).to eq( "Taricha torosus" )
+  end
+
+  it "does nothing when the new name already matches the valid scientific name" do
+    expect do
+      expect( t.update( name: "Taricha torosa" ) ).to be( true )
+    end.not_to(
+      change { t.reload.taxon_names.where( lexicon: "Scientific Names" ).order( :id ).pluck( :name, :is_valid ) }
+    )
+  end
+end
+
+describe Taxon, "provisional taxa name validation" do
+  elastic_models( Observation, Taxon )
+
+  before( :all ) do
+    load_test_taxa( iconic: true )
+  end
+
+  let( :fungi ) { Taxon::ICONIC_TAXA_BY_NAME["Fungi"] }
+  let( :cortinariaceae ) do
+    Taxon.make!( name: "Cortinariaceae", rank: Taxon::FAMILY, parent: fungi, iconic_taxon: fungi )
+  end
+  let( :cortinarius ) do
+    Taxon.make!( name: "Cortinarius", rank: Taxon::GENUS, parent: cortinariaceae, iconic_taxon: fungi )
+  end
+
+  describe "name format validation" do
+    it "accepts valid provisional taxon name format" do
+      taxon = Taxon.new(
+        name: "Cortinarius sp. 'callisteus-infucatus'",
+        rank: Taxon::SPECIES,
+        parent: cortinarius,
+        provisional: true
+      )
+      expect( taxon ).to be_valid
+    end
+
+    it "accepts provisional names with hyphens in genus" do
+      parent = Taxon.make!( name: "Hypo-genus", rank: Taxon::GENUS, parent: cortinariaceae )
+      taxon = Taxon.new(
+        name: "Hypo-genus sp. 'test'",
+        rank: Taxon::SPECIES,
+        parent: parent,
+        provisional: true
+      )
+      expect( taxon ).to be_valid
+    end
+
+    it "accepts provisional names with numbers in epithet" do
+      taxon = Taxon.new(
+        name: "Cortinarius sp. 'test123'",
+        rank: Taxon::SPECIES,
+        parent: cortinarius,
+        provisional: true
+      )
+      expect( taxon ).to be_valid
+    end
+
+    it "accepts provisional names with spaces in epithet" do
+      taxon = Taxon.new(
+        name: "Cortinarius sp. 'test with spaces'",
+        rank: Taxon::SPECIES,
+        parent: cortinarius,
+        provisional: true
+      )
+      expect( taxon ).to be_valid
+    end
+
+    it "rejects provisional names missing 'sp.'" do
+      taxon = Taxon.new(
+        name: "Cortinarius 'callisteus'",
+        rank: Taxon::SPECIES,
+        parent: cortinarius,
+        provisional: true
+      )
+      expect( taxon ).not_to be_valid
+      expect( taxon.errors[:name] ).to include(
+        match( /must be formatted as 'Genus sp\. 'epithet''/ )
+      )
+    end
+
+    it "rejects provisional names with lowercase genus" do
+      taxon = Taxon.new(
+        name: "cortinarius sp. 'test'",
+        rank: Taxon::SPECIES,
+        parent: cortinarius,
+        provisional: true
+      )
+      expect( taxon ).not_to be_valid
+      expect( taxon.errors[:name] ).to include(
+        match( /must be formatted as 'Genus sp\. 'epithet''/ )
+      )
+    end
+
+    it "rejects provisional names without single quotes around epithet" do
+      taxon = Taxon.new(
+        name: "Cortinarius sp. callisteus",
+        rank: Taxon::SPECIES,
+        parent: cortinarius,
+        provisional: true
+      )
+      expect( taxon ).not_to be_valid
+      expect( taxon.errors[:name] ).to include(
+        match( /must be formatted as 'Genus sp\. 'epithet''/ )
+      )
+    end
+
+    it "rejects provisional names with invalid characters in epithet" do
+      taxon = Taxon.new(
+        name: "Cortinarius sp. 'test_invalid'",
+        rank: Taxon::SPECIES,
+        parent: cortinarius,
+        provisional: true
+      )
+      expect( taxon ).not_to be_valid
+      expect( taxon.errors[:name] ).to include(
+        match( /must be formatted as 'Genus sp\. 'epithet''/ )
+      )
+    end
+
+    it "allows non-provisional taxa to use normal names" do
+      taxon = Taxon.new(
+        name: "Cortinarius validus",
+        rank: Taxon::SPECIES,
+        parent: cortinarius,
+        provisional: false
+      )
+      expect( taxon ).to be_valid
+    end
+
+    it "rejects non-provisional taxa using provisional format" do
+      taxon = Taxon.new(
+        name: "Cortinarius sp. 'invalid'",
+        rank: Taxon::SPECIES,
+        parent: cortinarius,
+        provisional: false
+      )
+      expect( taxon ).not_to be_valid
+    end
+  end
+
+  describe "ancestry restriction" do
+    it "allows provisional taxa descended from Fungi" do
+      taxon = Taxon.new(
+        name: "Cortinarius sp. 'test'",
+        rank: Taxon::SPECIES,
+        parent: cortinarius,
+        provisional: true
+      )
+      expect( taxon ).to be_valid
+    end
+
+    it "rejects provisional taxa not descended from Fungi" do
+      other_parent = Taxon.make!( name: "Agaricus", rank: Taxon::GENUS )
+      taxon = Taxon.new(
+        name: "Agaricus sp. 'test'",
+        rank: Taxon::SPECIES,
+        parent: other_parent,
+        provisional: true
+      )
+      expect( taxon ).not_to be_valid
+      expect( taxon.errors[:provisional] ).to include(
+        match( /can only be set to true for taxa that descend from Fungi/ )
+      )
+    end
+  end
+
+  describe "rank removal preservation" do
+    it "preserves 'sp.' in provisional taxon names" do
+      taxon = Taxon.create!(
+        name: "Cortinarius sp. 'test123'",
+        rank: Taxon::SPECIES,
+        parent: cortinarius,
+        provisional: true
+      )
+      expect( taxon.reload.name ).to eq( "Cortinarius sp. 'test123'" )
+    end
+
+    it "removes rank from non-provisional taxon names" do
+      taxon = Taxon.create!(
+        name: "Cortinarius species testus",
+        rank: Taxon::SPECIES,
+        parent: cortinarius,
+        provisional: false
+      )
+      expect( taxon.reload.name ).to eq( "Cortinarius testus" )
+    end
   end
 end

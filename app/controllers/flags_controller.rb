@@ -5,6 +5,9 @@ class FlagsController < ApplicationController
   before_action :model_required, except: [:index, :update, :show, :on, :destroy]
   before_action :load_flag, only: [:show, :destroy, :update]
   before_action :check_update_permissions, only: [:update]
+  layout "bootstrap"
+
+  requires_privilege :interaction, only: [:new]
 
   PARTIALS = %w(dialog)
 
@@ -13,18 +16,21 @@ class FlagsController < ApplicationController
       @object = find_object
       if @object
         # The default acts_as_flaggable index route
-        @object = @object.becomes(Photo) if @object.is_a?(Photo)
-        @object = @object.becomes(Sound) if @object.is_a?(Sound)
-        @flags = @object.flags.includes(:user, :resolver).
-          paginate(page: params[:page]).
-          order(id: :desc)
-        @unresolved = @flags.select {|f| not f.resolved }
-        @resolved = @flags.select {|f| f.resolved }
-        @moderator_actions = if @object.respond_to?(:moderator_actions)
+        @object = @object.becomes( Photo ) if @object.is_a?( Photo )
+        @object = @object.becomes( Sound ) if @object.is_a?( Sound )
+        @flags = @object.flags.includes( :user, :resolver )
+        @moderator_actions = if @object.respond_to?( :moderator_actions )
           @object.moderator_actions.limit( 100 ).to_a
         end
-        respond_to do |format|
-          format.html { render layout: "bootstrap" }
+
+        @items = [@flags, @moderator_actions].flatten.
+          compact.
+          sort_by( &:created_at ).
+          reverse.
+          paginate( page: params[:page] )
+
+        respond_to do | format |
+          format.html
         end
         return
       end
@@ -82,13 +88,13 @@ class FlagsController < ApplicationController
       if @deleted == "yes"
         flaggable_klass = Object.const_get( @flaggable_type )
         @flags = @flags.
-          joins( "LEFT JOIN #{flaggable_klass.table_name} ON #{flaggable_klass.table_name}.id = flags.flaggable_id" ).
-          where( "#{flaggable_klass.table_name}.id IS NULL" )
+          joins( "LEFT JOIN #{flaggable_klass.table_name} as flags_deleted ON flags_deleted.id = flags.flaggable_id" ).
+          where( "flags_deleted.id IS NULL" )
       elsif @deleted == "no"
         flaggable_klass = Object.const_get( @flaggable_type )
         @flags = @flags.
-          joins( "LEFT JOIN #{flaggable_klass.table_name} ON #{flaggable_klass.table_name}.id = flags.flaggable_id" ).
-          where( "#{flaggable_klass.table_name}.id IS NOT NULL" )
+          joins( "LEFT JOIN #{flaggable_klass.table_name} as flags_deleted ON flags_deleted.id = flags.flaggable_id" ).
+          where( "flags_deleted.id IS NOT NULL" )
       end
     end
     if @flagger_type == "auto"
@@ -120,14 +126,15 @@ class FlagsController < ApplicationController
     @object = @object.becomes(Sound) if @object.is_a?(Sound)
     user_viewed_updates_for( @flag ) if logged_in?
     respond_to do |format|
-      format.html { render layout: "bootstrap" }
+      format.html
     end
   end
 
   def new
     @flag = Flag.new(params[:flag])
-    @object = @model.find(params[@object_key])
+    @object = find_object
     @object = @object.becomes(Photo) if @object.is_a?(Photo)
+    @object = @object.becomes( Sound ) if @object.is_a?( Sound )
     @flag.flaggable ||= @object
     @flags = @object.flags.where(resolved: false).includes(:user)
     if PARTIALS.include?(params[:partial])
@@ -146,15 +153,11 @@ class FlagsController < ApplicationController
     end
 
     @create_comment = false
-    if @flag = Flag.where( create_options.except( "initial_comment_body" ) ).where( resolved: true ).first
-      @flag.resolved = false
-    else
-      @flag = @object.flags.build(create_options)
-      @create_comment = create_options.key?( :initial_comment_body ) && create_options[:initial_comment_body].length > 0
-      if @create_comment
-        @comment_attributes = { parent: @flag, user: current_user, body: create_options[:initial_comment_body] }
-        @flag.comments.build( @comment_attributes )
-      end
+    @flag = @object.flags.build(create_options)
+    @create_comment = create_options.key?( :initial_comment_body ) && create_options[:initial_comment_body].length > 0
+    if @create_comment
+      @comment_attributes = { parent: @flag, user: current_user, body: create_options[:initial_comment_body] }
+      @flag.comments.build( @comment_attributes )
     end
     if @flag.flag == "other" && !params[:flag_explanation].blank?
       @flag.flag = params[:flag_explanation]
@@ -169,10 +172,6 @@ class FlagsController < ApplicationController
       flash[:error] = t(:we_had_a_problem_flagging_that_item, :flag_error => @flag.errors.full_messages.to_sentence.downcase)
     end
 
-    if @object.is_a?(Project)
-      Project.refresh_es_index
-    end
-
     respond_to do |format|
       format.html do
         if @object.is_a?(Comment)
@@ -183,6 +182,8 @@ class FlagsController < ApplicationController
           redirect_to messages_path
         elsif @object.is_a?(Photo)
           redirect_to @object.becomes(Photo)
+        elsif @object.is_a?( Sound )
+          redirect_to @object.becomes( Sound )
         else
           redirect_to @object
         end
@@ -212,9 +213,6 @@ class FlagsController < ApplicationController
         end
       rescue Photo::MissingPhotoError
         "Flag resolved, but the photo in question is gone and cannot be restored"
-      end
-      if @object.is_a?(Project)
-        Project.refresh_es_index
       end
       format.html do
         flash[:notice] = msg
@@ -251,9 +249,6 @@ class FlagsController < ApplicationController
     end
     @object = @flag.flaggable
     @flag.destroy
-    if @object.is_a?(Project)
-      Project.refresh_es_index
-    end
     respond_to do |format|
       format.html do
         flash[:notice] = t(:flag_deleted)

@@ -17,6 +17,7 @@ import ArticlesTabContainer from "../containers/articles_tab_container";
 import InteractionsTabContainer from "../containers/interactions_tab_container";
 import HighlightsTabContainer from "../containers/highlights_tab_container";
 import SimilarTabContainer from "../containers/similar_tab_container";
+import IdentificationsTabContainer from "../containers/identifications_tab_container";
 import RecentObservationsContainer from "../containers/recent_observations_container";
 
 class TaxonPageTabs extends React.Component {
@@ -60,11 +61,11 @@ class TaxonPageTabs extends React.Component {
     const genusOrSpecies = taxon && ( taxon.rank_level === 20 || taxon.rank_level === 10 );
     let curationTab;
     const flagsCount = taxon.flag_counts
-      ? parseInt( taxon.flag_counts.resolved, 0 ) + parseInt( taxon.flag_counts.unresolved, 0 )
+      ? parseInt( taxon.flag_counts.resolved, 10 ) + parseInt( taxon.flag_counts.unresolved, 10 )
       : 0;
-    if ( currentUser && currentUser.id ) {
-      const isCurator = currentUser.roles.indexOf( "curator" ) >= 0 || currentUser.roles.indexOf( "admin" ) >= 0;
-      const isAdmin = currentUser.roles.indexOf( "admin" ) >= 0;
+    const isCurator = currentUser?.roles.indexOf( "curator" ) >= 0 || currentUser?.roles.indexOf( "admin" ) >= 0;
+    const isAdmin = currentUser?.roles.indexOf( "admin" ) >= 0;
+    if ( currentUser?.privilegedWith( "interaction" ) ) {
       let atlasItem;
       if ( isCurator && taxon.rank_level <= 10 ) {
         atlasItem = taxon.atlas_id ? (
@@ -81,6 +82,32 @@ class TaxonPageTabs extends React.Component {
           </MenuItem>
         );
       }
+
+      let taxonPhotosItem;
+      if ( taxon.photos_locked && !isAdmin ) {
+        taxonPhotosItem = (
+          <MenuItem
+            className="disabled"
+            title={I18n.t( "photos_locked_desc" )}
+            eventKey="edit-photos-locked"
+          >
+            <i className="fa fa-picture-o" />
+            { " " }
+            { I18n.t( "photos_locked" ) }
+          </MenuItem>
+        );
+      } else if ( !currentUser.content_creation_restrictions ) {
+        taxonPhotosItem = (
+          <MenuItem
+            eventKey="edit-photos"
+          >
+            <i className="fa fa-picture-o" />
+            { " " }
+            { I18n.t( "edit_photos" ) }
+          </MenuItem>
+        );
+      }
+
       curationTab = (
         <li className="curation-tab">
           <Dropdown
@@ -139,27 +166,7 @@ class TaxonPageTabs extends React.Component {
                 { " " }
                 <span className="text-muted">{ `(${flagsCount})` }</span>
               </MenuItem>
-              { taxon.photos_locked && !isAdmin
-                ? (
-                  <MenuItem
-                    className="disabled"
-                    title={I18n.t( "photos_locked_desc" )}
-                    eventKey="edit-photos-locked"
-                  >
-                    <i className="fa fa-picture-o" />
-                    { " " }
-                    { I18n.t( "photos_locked" ) }
-                  </MenuItem>
-                )
-                : (
-                  <MenuItem
-                    eventKey="edit-photos"
-                  >
-                    <i className="fa fa-picture-o" />
-                    { " " }
-                    { I18n.t( "edit_photos" ) }
-                  </MenuItem>
-                ) }
+              { taxonPhotosItem }
               { atlasItem }
               <MenuItem
                 className={isCurator ? "" : "hidden"}
@@ -238,6 +245,14 @@ class TaxonPageTabs extends React.Component {
                     { speciesOrLower ? I18n.t( "similar_species" ) : I18n.t( "similar_taxa" ) }
                   </a>
                 </li>
+                { currentUser?.canViewHelpfulIDTips( ) && (
+                  <li
+                    role="presentation"
+                    className={`${speciesOrLower ? "" : "hidden"} ${chosenTab === "identifications" ? "active" : ""}`}
+                  >
+                    <a href="#identifications-tab" role="tab" data-toggle="tab">{ I18n.t( "identifications" ) }</a>
+                  </li>
+                ) }
                 { curationTab }
               </ul>
             </Col>
@@ -298,6 +313,7 @@ class TaxonPageTabs extends React.Component {
             id="status-tab"
           >
             <StatusTab
+              currentUser={currentUser}
               taxon={taxon}
               statuses={taxon.conservationStatuses}
               listedTaxaCount={taxon.listed_taxa_count}
@@ -310,6 +326,13 @@ class TaxonPageTabs extends React.Component {
             id="similar-tab"
           >
             <SimilarTabContainer />
+          </div>
+          <div
+            role="tabpanel"
+            className={`tab-pane ${speciesOrLower ? "" : "hidden"} ${chosenTab === "identifications" ? "active" : ""}`}
+            id="identifications-tab"
+          >
+            <IdentificationsTabContainer />
           </div>
         </div>
       </div>

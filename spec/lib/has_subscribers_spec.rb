@@ -8,8 +8,8 @@ describe HasSubscribers do
   it "notifies subscribers and owners" do
     UpdateAction.delete_all
     o = Observation.make!
-    s = Subscription.make!(resource: o, user: User.make!)
-    c = Comment.create(parent: o, user: User.make!, body: "thebody")
+    s = Subscription.make!(resource: o)
+    c = Comment.make!(parent: o, body: "thebody")
     expect( UpdateAction.count ).to eq 0
     expect( UpdateAction.unviewed_by_user_from_query(o.user_id, notifier: c) ).to eq false
     expect( UpdateAction.unviewed_by_user_from_query(s.user_id, notifier: c) ).to eq false
@@ -23,8 +23,9 @@ describe HasSubscribers do
   it "does not notify subscribers with suspended subscriptions" do
     UpdateAction.delete_all
     o = Observation.make!(user: User.make!(subscriptions_suspended_at: Time.now))
-    s = Subscription.make!(resource: o, user: User.make!(subscriptions_suspended_at: Time.now))
-    c = Comment.create(parent: o, user: User.make!, body: "thebody")
+    s = Subscription.make!(resource: o)
+    s.user.update( subscriptions_suspended_at: Time.now )
+    c = Comment.make!(parent: o, body: "thebody")
     expect( UpdateAction.unviewed_by_user_from_query(o.user_id, { }) ).to eq false
     expect( UpdateAction.unviewed_by_user_from_query(s.user_id, { }) ).to eq false
     expect( UpdateAction.count ).to eq 0
@@ -73,7 +74,128 @@ describe HasSubscribers do
       expect( UpdateAction.unviewed_by_user_from_query(user.id, { }) ).to eq true
       expect( UpdateAction.count ).to be > 1
     end
-
   end
 
+  describe Comment do
+    it "unsubscribes if there are no other auto-subscribed records" do
+      user = User.make!
+      observation = Observation.make!
+      comment = Comment.make!( parent: observation, user: user )
+      expect( Subscription.where( resource: observation, user: user ).exists? ).to be true
+      comment.destroy
+      expect( Subscription.where( resource: observation, user: user ).exists? ).to be false
+    end
+
+    it "does not unsubscribe if there are other auto-subscribed comments" do
+      user = User.make!
+      observation = Observation.make!
+      comment1 = Comment.make!( parent: observation, user: user )
+      Comment.make!( parent: observation, user: user )
+      expect( Subscription.where( resource: observation, user: user ).exists? ).to be true
+      comment1.destroy
+      expect( Subscription.where( resource: observation, user: user ).exists? ).to be true
+    end
+
+    it "does not unsubscribe if there are other auto-subscribed identifications" do
+      user = User.make!
+      observation = Observation.make!
+      comment = Comment.make!( parent: observation, user: user )
+      Identification.make!( observation: observation, user: user )
+      expect( Subscription.where( resource: observation, user: user ).exists? ).to be true
+      comment.destroy
+      expect( Subscription.where( resource: observation, user: user ).exists? ).to be true
+    end
+
+    it "does not unsubscribe if there are other auto-subscribed observation field values" do
+      user = User.make!
+      observation = Observation.make!
+      comment = Comment.make!( parent: observation, user: user )
+      ObservationFieldValue.make!( observation: observation, user: user )
+      expect( Subscription.where( resource: observation, user: user ).exists? ).to be true
+      comment.destroy
+      expect( Subscription.where( resource: observation, user: user ).exists? ).to be true
+    end
+  end
+
+  describe Identification do
+    it "unsubscribes if there are no other auto-subscribed records" do
+      user = User.make!
+      observation = Observation.make!
+      identification = Identification.make!( observation: observation, user: user )
+      expect( Subscription.where( resource: observation, user: user ).exists? ).to be true
+      identification.destroy
+      expect( Subscription.where( resource: observation, user: user ).exists? ).to be false
+    end
+
+    it "does not unsubscribe if there are other auto-subscribed identifications" do
+      user = User.make!
+      observation = Observation.make!
+      identification1 = Identification.make!( observation: observation, user: user )
+      Identification.make!( observation: observation, user: user )
+      expect( Subscription.where( resource: observation, user: user ).exists? ).to be true
+      identification1.destroy
+      expect( Subscription.where( resource: observation, user: user ).exists? ).to be true
+    end
+
+    it "does not unsubscribe if there are other auto-subscribed comments" do
+      user = User.make!
+      observation = Observation.make!
+      identification = Identification.make!( observation: observation, user: user )
+      Comment.make!( parent: observation, user: user )
+      expect( Subscription.where( resource: observation, user: user ).exists? ).to be true
+      identification.destroy
+      expect( Subscription.where( resource: observation, user: user ).exists? ).to be true
+    end
+
+    it "does not unsubscribe if there are other auto-subscribed observation field values" do
+      user = User.make!
+      observation = Observation.make!
+      identification = Identification.make!( observation: observation, user: user )
+      ObservationFieldValue.make!( observation: observation, user: user )
+      expect( Subscription.where( resource: observation, user: user ).exists? ).to be true
+      identification.destroy
+      expect( Subscription.where( resource: observation, user: user ).exists? ).to be true
+    end
+  end
+
+  describe ObservationFieldValue do
+    it "unsubscribes if there are no other auto-subscribed records" do
+      user = User.make!
+      observation = Observation.make!
+      ofv = ObservationFieldValue.make!( observation: observation, user: user )
+      expect( Subscription.where( resource: observation, user: user ).exists? ).to be true
+      ofv.destroy
+      expect( Subscription.where( resource: observation, user: user ).exists? ).to be false
+    end
+
+    it "does not unsubscribe if there are other auto-subscribed observation field values" do
+      user = User.make!
+      observation = Observation.make!
+      ofv1 = ObservationFieldValue.make!( observation: observation, user: user )
+      ObservationFieldValue.make!( observation: observation, user: user )
+      expect( Subscription.where( resource: observation, user: user ).exists? ).to be true
+      ofv1.destroy
+      expect( Subscription.where( resource: observation, user: user ).exists? ).to be true
+    end
+
+    it "does not unsubscribe if there are other auto-subscribed identifications" do
+      user = User.make!
+      observation = Observation.make!
+      ofv = ObservationFieldValue.make!( observation: observation, user: user )
+      Identification.make!( observation: observation, user: user )
+      expect( Subscription.where( resource: observation, user: user ).exists? ).to be true
+      ofv.destroy
+      expect( Subscription.where( resource: observation, user: user ).exists? ).to be true
+    end
+
+    it "does not unsubscribe if there are other auto-subscribed comments" do
+      user = User.make!
+      observation = Observation.make!
+      ofv = ObservationFieldValue.make!( observation: observation, user: user )
+      Comment.make!( parent: observation, user: user )
+      expect( Subscription.where( resource: observation, user: user ).exists? ).to be true
+      ofv.destroy
+      expect( Subscription.where( resource: observation, user: user ).exists? ).to be true
+    end
+  end
 end

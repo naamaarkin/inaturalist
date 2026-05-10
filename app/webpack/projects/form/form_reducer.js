@@ -1,10 +1,11 @@
 import _ from "lodash";
 import inatjs from "inaturalistjs";
 import Project from "../shared/models/project";
-import { setConfirmModalState } from "../../observations/show/ducks/confirm_modal";
+import { setConfirmModalState } from "../../shared/ducks/confirm_modal";
 
 const SET_ATTRIBUTES = "projects-form/project/SET_ATTRIBUTES";
 const UMBRELLA_SUBPROJECT_LIMIT = 500;
+const DELEGATED_UMBRELLA_SUBPROJECT_LIMIT = 1000;
 
 export default function reducer( state = { }, action ) {
   switch ( action.type ) {
@@ -82,7 +83,8 @@ export function createNewProject( type, copyProject ) {
       project_type: type,
       user_id: config.currentUser.id,
       admins: [{ user: config.currentUser, role: "manager" }],
-      rule_quality_grade: { research: true, needs_id: true }
+      rule_quality_grade: { research: true, needs_id: true },
+      umbrella_project_list_sort: type === "umbrella" ? "alphabetical" : undefined
     };
     if ( copyProject ) {
       const attributesToInherit = [
@@ -109,6 +111,7 @@ export function createNewProject( type, copyProject ) {
 }
 
 export function setCopyProject( p ) {
+  delete p.admins;
   setAttributes( { copy_project: new Project( p ) } );
   return createNewProject( p.project_type, p );
 }
@@ -170,16 +173,27 @@ export function validateSubprojects( ) {
   return ( dispatch, getState ) => {
     const { project } = getState( ).form;
     if ( !project ) { return void null; }
-    const subprojectLimit = (
-      project.initialSubprojectCount && project.initialSubprojectCount > UMBRELLA_SUBPROJECT_LIMIT
-    ) ? project.initialSubprojectCount : UMBRELLA_SUBPROJECT_LIMIT;
+    let subprojectLimit = UMBRELLA_SUBPROJECT_LIMIT;
+    if ( project.is_delegated_umbrella ) {
+      subprojectLimit = DELEGATED_UMBRELLA_SUBPROJECT_LIMIT;
+    }
+    if ( project.initialSubprojectCount
+      && project.initialSubprojectCount > subprojectLimit
+    ) {
+      subprojectLimit = project.initialSubprojectCount;
+    }
     const countActiveSubprojects = _.filter(
-      project.project_observation_rules, rule => rule.operand_type === "Project" && !rule._destroy
+      project.project_observation_rules,
+      rule => rule.operand_type === "Project" && !rule._destroy
     ).length;
     if ( countActiveSubprojects > subprojectLimit ) {
-      dispatch( setProjectError( "subprojects",
-        I18n.t( "views.projects.new.errors.cannot_have_more_than_x_project_rules",
-          { x: subprojectLimit } ) ) );
+      dispatch( setProjectError(
+        "subprojects",
+        I18n.t(
+          "views.projects.new.errors.cannot_have_more_than_x_project_rules",
+          { x: subprojectLimit }
+        )
+      ) );
       return void null;
     }
     dispatch( setProjectError( "subprojects", null ) );
@@ -191,7 +205,6 @@ export function addProjectRule( operator, operandType, operand ) {
     const { project } = getState( ).form;
     if ( !project || !operand ) { return; }
     const operandID = operandType ? operand.id : operand;
-
 
     const newRules = [];
     let ruleExists = false;
@@ -261,12 +274,12 @@ export function removeProjectRule( ruleToRemove ) {
 export function removeProjectManager( projectUser ) {
   return ( dispatch, getState ) => {
     const { project } = getState( ).form;
-    if ( !project || !projectUser ) { return; }
+    if ( !project || !projectUser?.id ) { return; }
     const newAdmins = [];
     _.each( project.admins, admin => {
-      if ( projectUser.id && admin.id && projectUser.id === admin.id ) {
+      if ( projectUser.id === admin?.id ) {
         newAdmins.push( Object.assign( { }, admin, { _destroy: true } ) );
-      } else if ( projectUser.user.id !== admin.user.id ) {
+      } else {
         newAdmins.push( admin );
       }
     } );
@@ -308,7 +321,6 @@ export function showError( e ) {
     dispatch( updateProject( { saving: false } ) );
   };
 }
-
 
 export function onFileDrop( droppedFiles, field ) {
   return dispatch => {
@@ -362,8 +374,10 @@ export function submitProject( ) {
       errors = true;
     }
     if ( _.isEmpty( project.description ) ) {
-      dispatch( setProjectError( "description",
-        I18n.t( "views.projects.new.errors.summary_is_required" ) ) );
+      dispatch( setProjectError(
+        "description",
+        I18n.t( "views.projects.new.errors.summary_is_required" )
+      ) );
       errors = true;
     }
     if ( errors ) { return; }
@@ -373,12 +387,12 @@ export function submitProject( ) {
         user_id: project.user_id || state.config.currentUser.id,
         title: project.title,
         description: project.description,
-        icon: project.droppedIcon ? project.droppedIcon : null,
-        cover: project.droppedBanner ? project.droppedBanner : null,
         preferred_banner_color: project.banner_color,
         prefers_hide_title: !!project.hide_title,
+        prefers_umbrella_project_list_sort: project.umbrella_project_list_sort,
         prefers_hide_umbrella_map_flags: !!project.hide_umbrella_map_flags,
         prefers_banner_contain: !!project.header_image_contain,
+        prefers_hide_leaderboard: !!project.hide_leaderboard,
         prefers_rule_quality_grade: project.rule_quality_grade
           ? _.keys( project.rule_quality_grade ).join( "," ) : "",
         prefers_rule_photos: _.isEmpty( project.rule_photos ) ? "" : project.rule_photos,
@@ -402,10 +416,14 @@ export function submitProject( ) {
         prefers_user_trust: project.prefers_user_trust === true
       }
     };
-    if ( !payload.project.icon && project.iconDeleted ) {
+    if ( project.droppedIcon ) {
+      payload.project.icon = project.droppedIcon;
+    } else if ( project.iconDeleted ) {
       payload.icon_delete = true;
     }
-    if ( !payload.project.cover && project.bannerDeleted ) {
+    if ( project.droppedBanner ) {
+      payload.project.cover = project.droppedBanner;
+    } else if ( project.bannerDeleted ) {
       payload.cover_delete = true;
     }
 
@@ -415,6 +433,10 @@ export function submitProject( ) {
     _.each( project.project_observation_rules, rule => {
       if (
         ( project.project_type === "umbrella" && rule.operand_type === "Project" )
+        || (
+          project.project_type === "umbrella"
+          && project.is_delegated_umbrella
+          && rule.operand_type === "Taxon" )
         || (
           project.project_type !== "umbrella"
           && (

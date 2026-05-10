@@ -41,6 +41,12 @@ body > [role="dialog"] .ObservationModal {
         border-left: 2px solid #ddd;
         background-color: $light-grey;
       }
+      .linky {
+        vertical-align: baseline;
+      }
+      .FlagAnItem {
+        padding-bottom: 20px;
+      }
     }
     .btn-primary {
       background-color: $inat-green;
@@ -59,7 +65,7 @@ body > [role="dialog"] .ObservationModal {
     position: relative;
     .SplitTaxon.taxon,
     .quality_grade {
-      font-weight: bold;
+      font-weight: 600;
     }
     .SplitTaxon {
       margin-inline-end: 80px;
@@ -69,7 +75,8 @@ body > [role="dialog"] .ObservationModal {
       inset-inline-end: 0;
     }
     .SplitTaxon.taxon {
-      & > .display-name, .display-names {
+      & > .display-name,
+      .display-names {
         font-size: 180%;
         line-height: 26px;
         display: inline-block;
@@ -77,8 +84,7 @@ body > [role="dialog"] .ObservationModal {
         color: black;
       }
       &.has-com-name > .display-name,
-      &.has-com-name > .secondary-name,
-      &.has-com-name .secondary-names {
+      &.has-com-name > .display-names {
         display: block;
       }
     }
@@ -264,7 +270,7 @@ body > [role="dialog"] .ObservationModal {
       margin-bottom: 0;
     }
     .btn {
-      font-weight: bold;
+      font-weight: 600;
     }
     .btn-link,
     .btn-link:hover {
@@ -401,7 +407,15 @@ body > [role="dialog"] .ObservationModal {
     opacity: 1;
     cursor: zoom-out;
   }
-
+  
+  .image-gallery-content .easyzoom-flyout.short img {
+    height: 100%;
+  }
+  
+  .image-gallery-content .easyzoom-flyout.narrow img {
+    width: 100%;
+  }
+  
   .easyzoom-zoomed img {
     visibility: hidden;
   }
@@ -496,6 +510,7 @@ body > [role="dialog"] .ObservationModal {
   .column-header {
     font-size: 18px;
     margin-bottom: 15px;
+    clear: both;
 
     .header-text {
       color: black;
@@ -546,12 +561,13 @@ body > [role="dialog"] .ObservationModal {
     border: 0 transparent;
     border-bottom: 3px solid transparent;
     color: #555;
-    font-weight: bold;
+    font-weight: 600;
     white-space: nowrap;
     overflow: hidden;
     display: block;
     flex: 1;
     line-height: 45px;
+    text-align: center;
   }
   .inat-tabs li a:focus,
   .inat-tabs li .btn-nostyle:focus {
@@ -581,7 +597,7 @@ body > [role="dialog"] .ObservationModal {
       flex-direction: column;
       justify-content: space-between;
       padding-left: 20px;
-      ul {
+      > ul {
         padding-left: 0px;
         list-style: none;
 
@@ -631,7 +647,7 @@ body > [role="dialog"] .ObservationModal {
           .permalink,
           .FollowButton button {
             color: black;
-            font-weight: bold;
+            font-weight: 600;
           }
           a.permalink:focus,
           .FollowButton button:focus,
@@ -651,10 +667,6 @@ body > [role="dialog"] .ObservationModal {
           .open .dropdown-toggle.btn-default,
           .dropdown-toggle.btn-default:focus {
             background: none;
-          }
-          .unfollow {
-            color: #468cc7;
-            margin-left: 5px;
           }
         }
       }
@@ -724,6 +736,10 @@ body > [role="dialog"] .ObservationModal {
       padding-left: 20px;
     }
     td { vertical-align: top; }
+    .popover-content {
+      max-height: 475px;
+      overflow-y: auto
+    }
   }
 
   .Faves {
@@ -761,7 +777,7 @@ body > [role="dialog"] .ObservationModal {
 
   .ui-autocomplete {
     .ac-result {
-      font-family: Whitney, "Trebuchet MS", Arial, sans-serif;
+      font-family: Lato, "Trebuchet MS", Arial, sans-serif;
       .ac-label {
         color: #555;
         .title {
@@ -777,7 +793,6 @@ body > [role="dialog"] .ObservationModal {
     }
   }
   .gmnoprint.gm-style-mtc {
-    width: 70px !important;
     [role="button"] {
       padding-left: 10px !important;
     }
@@ -829,6 +844,19 @@ body > [role="dialog"] .ObservationModal {
   .IdentificationForm {
     .TaxonAutocomplete > .form-group {
       margin-bottom: 10px;
+    }
+    .nomination {
+      margin-top: 6px;
+      display: flex;
+      align-items: flex-start;
+      input:disabled+label {
+        cursor: not-allowed;
+        opacity: 0.5;
+      }
+      .identificationNomination {
+        display: inline;
+        font-size: 12px;
+      }
     }
   }
 

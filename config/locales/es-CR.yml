@@ -67,6 +67,8 @@ es-CR:
   suspend_user_reason_instructions_html: |
     Explicá por qué suspendés esta cuenta y citá cualquier violación de las
     Directrices de la comunidad (%{link_start_tag}Community Guidelines%{link_end_tag} ). Por favor abstenete de añadir opiniones personales.
+  #e.g. "With iNaturalist, you can track species you've seen worldwide"
+  track: huella
   unsubscribe_from_emails_like_this: Darse de baja de correos como este.
   unsuspend_user_html: Anular suspensión de %{user}
   unsuspend_user_reason_instructions: |
@@ -157,5 +159,4 @@ es-CR:
             action:
               not_supported_for_this_kind_of_content: no se admite para este tipo de contenido
             base:
-              only_staff_can_unhide: Sólo el personal puede hacer visible el contenido oculto
               staff_cannot_be_suspended: No se puede suspender a miembros del personal

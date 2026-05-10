@@ -36,22 +36,27 @@
         });
       } );
     } );
+  :javascript
+    $('#rename').on('shown.bs.modal', function () {
+      $('.modal-footer .btn-danger', this).focus()
+    })
 = content_for :extracss do
   :css
     .dropdown-menu.site-admins li {
       padding: 3px 10px;
     }
+
 .container
   .row
     .col-xs-12
       %form.stacked.form-inline{ method: "get", action: users_admin_path }
-        %input.form-control#id{ name: "q_email", type: "search" }
+        %input.form-control#id{ name: "q_email", type: "search", "data-1p-ignore" => true }
         %input.btn.btn-default{ type: "submit", value: "Search" }
   .row
     .col-xs-8
       %h3 Basics
       %table.table
-        - basic_attrs = %w(id login name email created_at updated_at time_zone description last_ip last_active locale site_id place_id search_place_id spammer spam_count suspended_at suspension_reason suspended_by_user_id)
+        - basic_attrs = %w(id login name email created_at updated_at time_zone description last_ip last_active locale site_id place_id search_place_id spammer spam_count suspended_at suspended_until suspension_reason suspended_by_user_id)
         - for user_attr in basic_attrs
           %tr
             %th= user_attr
@@ -64,6 +69,15 @@
                 - if @geoip_location
                   &nbsp;
                   = link_to @geoip_location, observations_path( user_id: @display_user.id, lat: @geoip_latitude, lng: @geoip_longitude )
+              - elsif user_attr == "suspended_until"
+                = @display_user.suspended_until
+                - if @display_user.suspended_at && @display_user.suspended_until
+                  &nbsp;
+                  %span.text-muted
+                    = surround "(", ")" do
+                      = distance_of_time_in_words( @display_user.suspended_at, @display_user.suspended_until )
+              - elsif user_attr == "suspension_reason"
+                = ModeratorAction.translate_reason( @display_user.suspension_reason )
               - elsif user_attr == "email"
                 = @display_user.send( user_attr ).to_s.html_safe
                 - if @display_user.confirmed?
@@ -76,7 +90,7 @@
                   %summary Edit
                   = form_for @display_user, url: admin_update_user_path( @display_user ), method: :put, data: { confirm: "This will email the user at the old address and the new address and they will still have to confirm the new address. Ok?" }, builder: BootstrapFormBuilder, html: {class: "form-inline"} do | f |
                     .form-group
-                      = f.text_field :email, class: "form-control", label: false, style: "min-width: 300px"
+                      = f.text_field :email, class: "form-control", label: false, style: "min-width: 300px", data: { "1p_ignore" => true }
                     = f.submit "Send confirmation to new email", class: "btn btn-primary"
                 - unless @display_user.unconfirmed_email.blank?
                   .alert.alert-warning
@@ -229,6 +243,17 @@
                       %code= privilege
                       privilege
         %tr
+          %th Recent Donations
+          %td
+            - if @display_user.user_donations.any?
+              %ul
+                - for donation in @display_user.user_donations.order( donated_at: :desc ).limit( 12 )
+                  %li
+                    = donation.donated_at.utc.to_date
+            - else
+              No recent donations
+
+        %tr
           %th Parent
           %td
             - if up = @display_user.user_parent
@@ -250,6 +275,9 @@
                     %tr
                       %th Donorbox donation?
                       %td= up.donorbox_donor_id ? "yes" : "no"
+                    %tr
+                      %th Virtuous donation?
+                      %td= up.virtuous_donor_contact_id ? "yes" : "no"
                     %tr
                       %th Actions
                       %td
@@ -279,12 +307,15 @@
                       %tr
                         %th Donorbox donation?
                         %td= up.donorbox_donor_id ? "yes" : "no"
+                      %tr
+                        %th Virtuous donation?
+                        %td= up.virtuous_donor_contact_id ? "yes" : "no"
             - else
               No children
     .col-xs-3
       %p
         = link_to_user @display_user do
-          = user_image( @display_user, size: "large", class: "img-responsive center-block" )
+          = user_image( @display_user, size: "large", class: "img-responsive center-block", force_img: true )
       - if @display_user.active?
         = link_to "Suspend user", suspend_user_path(@display_user), class: "btn btn-block btn-warning"
       - else
@@ -295,6 +326,8 @@
         = link_to t(:flag_as_non_spammer), set_spammer_path(@display_user, spammer: false), |
           method: :post, data: { confirm: t(:are_you_sure_you_want_to_remove_spammer) },  |
           class: "btn btn-block btn-success"
+      = link_to "#rename", "data-toggle" => "modal", class: "btn btn-block btn-warning" do
+        Replace Username
       %hr
       - if !@display_user.confirmed? || @display_user.unconfirmed_email?
         = link_to "Confirm user email", admin_update_user_path( @display_user.id, confirm: true ), method: :put,
@@ -376,6 +409,21 @@
         %h3 Merge User
         = form_tag merge_user_path( @display_user ), class: "form", method: :put do
           .form-group
-            = text_field_tag :reject_user_name, "", class: "form-control", placeholder: "User to delete"
+            = text_field_tag :reject_user_name, "", class: "form-control", placeholder: "User to delete", data: { "1p_ignore" =>  true }
             = hidden_field_tag :reject_user_id
           = submit_tag "Merge Into #{@display_user.login}", class: "btn btn-danger", data: { confirm: "This will delete the user you just chose and move all their content over to #{@display_user.login}. This can't be undone. Proceed?" }
+#rename.modal.fade
+  .modal-dialog{ role: "document" }
+    .modal-content
+      = form_tag admin_update_user_path( @display_user.id, reset_name: true ), method: :put do
+        .modal-header
+          %button.close{ type: "button", "data-dismiss" => "modal" } ×
+          %h4.modal-title Replace Username
+        .modal-body
+          %p 
+            Are you sure you want to replace this user's username with an anonymized one? This cannot be undone. The new username will look like
+            %code naturalistXXXX
+        .modal-footer
+          %button.btn.btn-default{ type: "button", "data-dismiss" => "modal" } Cancel
+          %button.btn.btn-danger{ type: "submit" } Yes, replace
+          

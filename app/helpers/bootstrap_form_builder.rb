@@ -1,7 +1,21 @@
 # frozen_string_literal: true
 
 class BootstrapFormBuilder < DefaultFormBuilder
-  def form_field( field, field_content = nil, options = {}, &block )
+  def description_tip( description )
+    content_tag(
+      :button,
+      content_tag( :i, "", class: "fa fa-info-circle" ),
+      class: "btn btn-nostyle",
+      data: {
+        toggle: "popover",
+        content: description,
+        placement: "bottom"
+      },
+      onclick: "return false;"
+    )
+  end
+
+  def form_field( field, field_content = nil, options = {}, & )
     options = field_content if block_given?
     options ||= {}
     label_after = options.delete( :label_after )
@@ -11,7 +25,7 @@ class BootstrapFormBuilder < DefaultFormBuilder
     content = ""
     label_content = ""
     description = content_tag( :p, options[:description], class: "help-block" ) if options[:description]
-    content = "#{content}#{block_given? ? @template.capture( &block ) : field_content}"
+    content = "#{content}#{block_given? ? @template.capture( & ) : field_content}"
 
     datalist = nil
     if options[:datalist]
@@ -28,9 +42,16 @@ class BootstrapFormBuilder < DefaultFormBuilder
 
     if options[:label] != false
       label_field = field
+      label_inside = (
+        options[:label] ||
+        I18n.t( "activerecord.attributes.#{object.class.name.underscore}.#{field}", default: field.to_s.humanize )
+      ).to_s.html_safe
+      if options[:description_tip]
+        label_inside += description_tip( description )
+      end
       label_tag = label(
         label_field,
-        options[:label].to_s.html_safe,
+        label_inside,
         class: options[:label_class],
         for: options[:id]
       )
@@ -44,6 +65,8 @@ class BootstrapFormBuilder < DefaultFormBuilder
       "#{content} #{datalist} #{label_content} #{description}"
     elsif description_after
       "#{label_content} #{content} #{datalist} #{description}"
+    elsif options[:description_tip]
+      "#{label_content} #{content} #{datalist}"
     else
       "#{label_content} #{description} #{content} #{datalist}"
     end
@@ -61,27 +84,42 @@ class BootstrapFormBuilder < DefaultFormBuilder
     end
   end
 
-  def select( method, choices = nil, options = {}, html_options = {}, &block )
+  def select( method, choices = nil, options = {}, html_options = {}, & )
     unless options[:skip_builder]
       html_options[:class] = [html_options[:class], "form-control"].join( " " )
     end
-    super( method, choices, options, html_options, &block )
+    super
   end
 
-  # rubocop:disable Metrics/ParameterLists
-
   def check_radio_field( field, field_content = nil, options = {}, wrapper_options = {}, description = nil )
-    wrapper_options[:class] = wrapper_options[:class].gsub( "form-group", field == "check_box" ? "checkbox" : "radio" )
-    label_content = ( options[:label] == false ? nil : options[:label] || field ).to_s.html_safe
+    css_classes = wrapper_options[:class].to_s.split.reject {| klass | klass == "form-group" }
+    css_classes << ( ( options[:field_name] == "check_box" ) ? "checkbox" : "radio" )
+    wrapper_options[:class] = css_classes.join( " " )
+    label_content = if options[:label] == false
+      nil
+    else
+      options[:label] ||
+        I18n.t( "activerecord.attributes.#{object.class.name.underscore}.#{field}", default: nil ) ||
+        field
+    end
+    label_content += description_tip( description ) if options[:description_tip]
+    label_content = label_content.to_s.html_safe
     if options[:required]
       label_content += content_tag( :span, " *", class: "required" )
     end
-    content = @template.content_tag( :label, [field_content, label_content].join( " " ).html_safe )
-    content += @template.content_tag( :div, description.html_safe ) unless description.blank?
+    label_class = if options[:inline]
+      ( field == "check_box" ) ? "checkbox-inline" : "radio-inline"
+    end
+    content = @template.content_tag( :label, [field_content, label_content].join( " " ).html_safe, class: label_class )
+    if !options[:description_tip] && !description.blank?
+      content += @template.content_tag( :div, description.html_safe )
+    end
+    if options[:inline]
+      return content
+    end
+
     @template.content_tag( :div, wrapper_options ) do
       content
     end
   end
-
-  # rubocop:enable Metrics/ParameterLists
 end

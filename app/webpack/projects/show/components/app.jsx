@@ -15,14 +15,12 @@ import StatsHeaderContainer from "../containers/stats_header_container";
 import AboutContainer from "../containers/about_container";
 import BeforeEventTabContainer from "../containers/before_event_tab_container";
 import InsufficientRequirementsContainer from "../containers/insufficient_requirements_container";
-import ConfirmModalContainer from "../../shared/containers/confirm_modal_container";
+import ConfirmModalContainer from "../../../shared/containers/confirm_modal_container";
 import FlagAnItemContainer from "../../../shared/containers/flag_an_item_container";
 import FlaggingModalContainer from "../containers/flagging_modal_container";
 import UsersPopover from "../../../observations/show/components/users_popover";
 import FlashMessagesContainer from "../../../shared/containers/flash_messages_container";
 import ProjectMembershipButtonContainer from "../containers/project_membership_button_container";
-import FlashMessage from "../../../observations/show/components/flash_message";
-import TestGroupToggle from "../../../shared/components/test_group_toggle";
 import RtlTestGroupToggle from "../../../shared/components/rtl_test_group_toggle";
 
 const App = ( {
@@ -30,7 +28,10 @@ const App = ( {
 } ) => {
   let view;
   let tab = config.selectedTab;
-  const showingCountdown = ( project.startDate && !project.started && tab !== "about"
+  const showingCountdown = ( project.startDate
+    && !project.started
+    && tab !== "about"
+    && !project.is_delegated_umbrella
     && !( project.recent_observations && !_.isEmpty( project.recent_observations.results ) ) );
   if ( showingCountdown ) {
     tab = "before_event";
@@ -106,8 +107,11 @@ const App = ( {
     <div className="header-members-button">
       <button
         type="button"
-        className="btn btn-nostyle action clicky"
+        className={`btn btn-nostyle action clicky ${!project.currentUserIsMember && loggedIn ? "inverted" : ""}`}
         onClick={membershipAction}
+        style={!project.currentUserIsMember && loggedIn ? {
+          color: `rgba(${colorRGB.r},${colorRGB.g},${colorRGB.b},1)`
+        } : null}
       >
         { membershipLabel }
       </button>
@@ -138,9 +142,19 @@ const App = ( {
   if ( project.rule_observed_on && project.startDate ) {
     eventDates = project.startDate.format( "MMM D, YYYY" );
   } else if ( project.rule_d1 && project.rule_d2 && project.startDate && project.endDate ) {
-    const start = project.startDate.format( "MMM D, YYYY" );
-    const end = project.endDate.format( "MMM D, YYYY" );
-    eventDates = I18n.t( "date_to_date", { d1: start, d2: end } );
+    const startDay = project.startDate.format( "MMM D, YYYY" );
+    const endDay = project.endDate.format( "MMM D, YYYY" );
+    if ( startDay === endDay ) {
+      if ( !project.startDateIncludesTime && !project.endDateIncludesTime ) {
+        eventDates = startDay;
+      } else {
+        const startTime = project.startDate.format( I18n.t( "momentjs.time_without_zone" ) );
+        const endTime = project.endDate.format( I18n.t( "momentjs.time_with_zone" ) );
+        eventDates = I18n.t( "date_time_to_time", { date: startDay, start_time: startTime, end_time: endTime } );
+      }
+    } else {
+      eventDates = I18n.t( "date_to_date", { d1: startDay, d2: endDay } );
+    }
   }
   const headerDates = eventDates ? (
     <div className="header-dates">
@@ -160,7 +174,9 @@ const App = ( {
       </div>
     </div>
   );
-  const inProgress = ( project.startDate && !showingCountdown ) && !project.ended;
+  const inProgress = ( project.startDate && !showingCountdown )
+    && !project.ended
+    && !project.is_delegated_umbrella;
   const headerInProgress = inProgress ? (
     <div className="header-in-progress">
       { I18n.t( "event_in_progress" ) }
@@ -221,15 +237,6 @@ const App = ( {
           </Row>
         </Grid>
       ) }
-      { config && config.testingApiV2 && (
-        <FlashMessage
-          key="testing_apiv2"
-          title="Testing API V2"
-          message="This page is using V2 of the API. Please report any differences from using the page w/ API v1 at https://forum.inaturalist.org/t/api-v2-feedback/21215"
-          type="warning"
-          html
-        />
-      ) }
       <FlashMessagesContainer
         item={project}
         manageFlagsPath={`/flags?project_id=${project.id}`}
@@ -252,11 +259,13 @@ const App = ( {
               }}
             >
               <div className="header-about-content">
-                <div className="header-about-title">
-                  { I18n.t( "about" ) }
-                </div>
-                <div className="header-about-button">
-                  { headerButton }
+                <div className="header-about-content-head">
+                  <div className="header-about-title">
+                    { I18n.t( "about" ) }
+                  </div>
+                  <div className="header-about-button">
+                    { headerButton }
+                  </div>
                 </div>
                 <div className="header-about-text">
                   <UserText
@@ -265,7 +274,7 @@ const App = ( {
                     moreToggle={false}
                   />
                 </div>
-                <div>
+                <div className="header-about-more">
                   <button
                     type="button"
                     className="header-about-read-more header-link-btn btn btn-nostyle"
@@ -278,25 +287,27 @@ const App = ( {
                     <ProjectMembershipButtonContainer />
                   </div>
                 </div>
-                <div>
-                  { userCanEdit && (
-                    <div className="header-about-edit">
-                      <a href={`/projects/${project.slug}/edit`} className="btn btn-default btn-white">
-                        <i className="fa fa-cog" />
-                        { I18n.t( "edit_project" ) }
+                <div className="header-about-actions">
+                  <div>
+                    { userCanEdit && (
+                      <div className="header-about-edit">
+                        <a href={`/projects/${project.slug}/edit`} className="btn btn-default btn-white">
+                          <i className="fa fa-cog" />
+                          { I18n.t( "edit_project" ) }
+                        </a>
+                      </div>
+                    ) }
+                    { !userCanEdit && project.rule_members_only && (
+                      <div className="header-about-members-only">
+                        { I18n.t( "project_members_only" ) }
+                      </div>
+                    ) }
+                    <div className="header-about-news">
+                      <a href={`/projects/${project.slug}/journal`}>
+                        <span className="glyphicon glyphicon-book" />
+                        { I18n.t( "project_journal" ) }
                       </a>
                     </div>
-                  ) }
-                  { !userCanEdit && project.rule_members_only && (
-                    <div className="header-about-members-only">
-                      { I18n.t( "project_members_only" ) }
-                    </div>
-                  ) }
-                  <div className="header-about-news">
-                    <a href={`/projects/${project.slug}/journal`}>
-                      <span className="glyphicon glyphicon-book" />
-                      { I18n.t( "project_journal" ) }
-                    </a>
                   </div>
                 </div>
               </div>
@@ -322,28 +333,6 @@ const App = ( {
       </div>
       <FlaggingModalContainer />
       <ConfirmModalContainer />
-      {
-        config && config.currentUser
-        && (
-          config.currentUser.roles.indexOf( "curator" ) >= 0
-          || config.currentUser.roles.indexOf( "admin" ) >= 0
-          || config.currentUser.sites_admined.length > 0
-        )
-        && (
-          <div className="container upstacked">
-            <div className="row">
-              <div className="cols-xs-12">
-                <TestGroupToggle
-                  group="apiv2"
-                  joinPrompt="Test API V2? You can also use the test=apiv2 URL param"
-                  joinedStatus="Joined API V2 test"
-                  user={config.currentUser}
-                />
-              </div>
-            </div>
-          </div>
-        )
-      }
       <RtlTestGroupToggle config={config} />
     </div>
   );

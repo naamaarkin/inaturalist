@@ -12,6 +12,8 @@ class PostsController < ApplicationController
   before_action :load_new_post, only: %i[new create]
   before_action :owner_required, only: %i[create edit update destroy]
 
+  prepend_around_action :enable_replica, only: [:index, :show]
+
   # Might want to try this if /journal becomes a problem.
   # caches_action :browse,
   #   expires_in: 15.minutes,
@@ -227,7 +229,12 @@ class PostsController < ApplicationController
   end
 
   def archives
-    @target_date = Date.parse( "#{params[:year]}-#{params[:month]}-01" )
+    @target_date = begin
+      Date.parse( "#{params[:year]}-#{params[:month]}-01" )
+    rescue Date::Error
+      flash[:notice] = t :invalid_date
+      return redirect_back_or_default posts_url
+    end
     @posts = @parent.posts.
       where( ["published_at >= ? AND published_at < ?", @target_date, @target_date + 1.month] ).
       paginate( page: params[:page] || 1, per_page: 10 )
@@ -236,7 +243,7 @@ class PostsController < ApplicationController
 
   def search
     @posts = Post.not_flagged_as_spam.
-      published.dbsearch( parent: @parent, q: params[:q] ).
+      published.dbsearch( @parent, params[:q] ).
       page( params[:page] ).per_page( limited_per_page )
     pagination_headers_for @posts
     respond_to do | format |

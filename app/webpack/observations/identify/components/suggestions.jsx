@@ -1,6 +1,7 @@
 import React from "react";
 import PropTypes from "prop-types";
 import ReactDOM from "react-dom";
+import LazyLoad from "react-lazy-load";
 import _ from "lodash";
 import {
   Button,
@@ -28,7 +29,7 @@ class Suggestions extends React.Component {
     };
   }
 
-  componentWillReceiveProps( nextProps ) {
+  UNSAFE_componentWillReceiveProps( nextProps ) {
     const { detailTaxon, prevTaxon } = this.props;
     if (
       nextProps.detailTaxon
@@ -91,7 +92,9 @@ class Suggestions extends React.Component {
       prevTaxon,
       nextTaxon,
       config,
-      updateCurrentUser
+      updateCurrentUser,
+      updateSuggestionSession,
+      performOrOpenConfirmationModal
     } = this.props;
     let detailTaxonImages;
     if ( detailTaxon && detailTaxon.taxonPhotos && detailTaxon.taxonPhotos.length > 0 ) {
@@ -126,6 +129,7 @@ class Suggestions extends React.Component {
               href={`/photos/${taxonPhoto.photo.id}`}
               target="_blank"
               rel="noopener noreferrer"
+              alt={I18n.t( "more_info" )}
             >
               <i className="fa fa-info-circle" />
             </a>
@@ -149,6 +153,7 @@ class Suggestions extends React.Component {
           disableArrowKeys
           showFullscreenButton={false}
           showPlayButton={false}
+          slideDuration={0}
           slideIndex={detailPhotoIndex}
           currentIndex={detailPhotoIndex}
           renderItem={item => (
@@ -205,8 +210,13 @@ class Suggestions extends React.Component {
     }
     if (
       observation
-      && observation.observation_photos
-      && observation.observation_photos.length > 0
+      && ( (
+        observation.observation_photos
+          && observation.observation_photos.length > 0
+      ) || (
+        observation.photos
+          && observation.photos.length > 0
+      ) )
     ) {
       sources.push( "visual" );
     }
@@ -228,10 +238,10 @@ class Suggestions extends React.Component {
                 postIconClass="fa fa-angle-down"
                 hideClear
                 setChoice={orderBy => {
-                  setQuery( { ...query, order_by: orderBy } );
+                  setQuery( { ...query, order_by: orderBy }, { updateSuggestionSession } );
                 }}
                 clearChoice={( ) => {
-                  setQuery( { ...query, order_by: null } );
+                  setQuery( { ...query, order_by: null }, { updateSuggestionSession } );
                 }}
               />
               <div className="column-header">
@@ -250,10 +260,16 @@ class Suggestions extends React.Component {
                   postIconClass="fa fa-angle-down"
                   hideClear
                   setChoice={source => {
-                    setQuery( Object.assign( { }, query, { source } ) );
+                    setQuery(
+                      Object.assign( { }, query, { source } ),
+                      { updateSuggestionSession }
+                    );
                   }}
                   clearChoice={( ) => {
-                    setQuery( Object.assign( { }, query, { source: null } ) );
+                    setQuery(
+                      Object.assign( { }, query, { source: null } ),
+                      { updateSuggestionSession }
+                    );
                   }}
                 />
                 <TaxonChooserPopover
@@ -324,7 +340,7 @@ class Suggestions extends React.Component {
                   </a>
                 </div>
               ) : null }
-              { response.results.map( r => (
+              { _.uniqBy( response.results, r => r.taxon.id ).map( r => (
                 <SuggestionRow
                   key={`suggestion-row-${r.taxon.id}`}
                   taxon={r.taxon}
@@ -338,6 +354,7 @@ class Suggestions extends React.Component {
                     this.scrollToTop( );
                     setDetailTaxon( taxon, options );
                   }}
+                  performOrOpenConfirmationModal={performOrOpenConfirmationModal}
                 />
               ) ) }
             </div>
@@ -397,27 +414,31 @@ class Suggestions extends React.Component {
                       iconLink
                     />
                   </div>
-                  { detailTaxon.wikipedia_summary
+                  {
+                    detailTaxon.wikipedia_summary
                     && <UserText text={`${detailTaxon.wikipedia_summary} (${I18n.t( "source_wikipedia" )})`} />
                   }
                   <h4>{ I18n.t( "observations_map" ) }</h4>
-                  <TaxonMap
-                    placement="suggestion-detail"
-                    showAllLayer={false}
-                    minZoom={2}
-                    gbifLayerLabel={I18n.t( "maps.overlays.gbif_network" )}
-                    observations={[observation]}
-                    gestureHandling="auto"
-                    reloadKey={`taxondetail-${detailTaxon.id}`}
-                    taxonLayers={[
-                      taxonLayerForTaxon( detailTaxon, {
-                        currentUser: config.currentUser,
-                        updateCurrentUser
-                      } )
-                    ]}
-                    currentUser={config.currentUser}
-                    updateCurrentUser={updateCurrentUser}
-                  />
+                  <LazyLoad debounce={false} height={300}>
+                    <TaxonMap
+                      placement="suggestion-detail"
+                      showAllLayer={false}
+                      minZoom={2}
+                      gbifLayerLabel={I18n.t( "maps.overlays.gbif_network" )}
+                      observations={[observation]}
+                      gestureHandling="auto"
+                      reloadKey={`taxondetail-${detailTaxon.id}`}
+                      scrollwheel={false}
+                      taxonLayers={[
+                        taxonLayerForTaxon( detailTaxon, {
+                          currentUser: config.currentUser,
+                          updateCurrentUser
+                        } )
+                      ]}
+                      currentUser={config.currentUser}
+                      updateCurrentUser={updateCurrentUser}
+                    />
+                  </LazyLoad>
                   <h4>{ I18n.t( "taxonomy" ) }</h4>
                   <TaxonomicBranch
                     taxon={detailTaxon}
@@ -440,10 +461,14 @@ class Suggestions extends React.Component {
             </Button>
             <Button
               bsStyle="primary"
-              onClick={( ) => chooseTaxon( detailTaxon, {
-                observation,
-                vision: query.source === "visual"
-              } )}
+              onClick={( ) => {
+                performOrOpenConfirmationModal( ( ) => {
+                  chooseTaxon( detailTaxon, {
+                    observation,
+                    vision: query.source === "visual"
+                  } );
+                } );
+              }}
             >
               { I18n.t( "select_this_taxon" ) }
             </Button>
@@ -467,7 +492,9 @@ Suggestions.propTypes = {
   prevTaxon: PropTypes.object,
   nextTaxon: PropTypes.object,
   config: PropTypes.object,
-  updateCurrentUser: PropTypes.func
+  updateCurrentUser: PropTypes.func,
+  updateSuggestionSession: PropTypes.bool,
+  performOrOpenConfirmationModal: PropTypes.func
 };
 
 Suggestions.defaultProps = {
@@ -476,7 +503,8 @@ Suggestions.defaultProps = {
     results: []
   },
   detailPhotoIndex: 0,
-  config: {}
+  config: {},
+  updateSuggestionSession: true
 };
 
 export default Suggestions;
